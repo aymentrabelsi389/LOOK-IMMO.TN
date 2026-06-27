@@ -1,0 +1,7 @@
+{
+  "name": "Look Immo",
+  "description": "A premium modern real-estate platform with AI assistance, advanced search, and comprehensive management tools.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}

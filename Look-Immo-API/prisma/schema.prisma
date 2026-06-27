@@ -1,0 +1,364 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  admin
+  agent
+  client
+}
+
+enum PropertyType {
+  rent
+  sale
+}
+
+enum PropertyStatus {
+  available
+  sold
+  rented
+  pending
+}
+
+enum AppointmentStatus {
+  pending
+  accepted
+  rejected
+}
+
+enum PriceType {
+  total
+  per_m2
+}
+
+enum MessageStatus {
+  read
+  unread
+}
+
+
+
+enum NotificationType {
+  property_add
+  property_edit
+  property_delete
+  user_delete
+  user_role_change
+  message_delete
+  appointment_accept
+  appointment_reject
+  appointment_delete
+  rating_delete
+  location_add
+  location_edit
+  location_delete
+  blog_add
+  blog_edit
+  blog_delete
+  settings_edit
+}
+
+enum AppointmentSource {
+  facebook
+  instagram
+  tiktok
+  website
+  whatsapp
+  other
+}
+
+enum AppointmentMeetingType {
+  visite
+  appel
+  reunion
+}
+
+enum DemandPropertyType {
+  appartement
+  villa
+  terrain
+  bureau
+  commerce
+}
+
+enum DemandPriority {
+  high
+  medium
+  low
+}
+
+enum DemandStatus {
+  searching
+  contacted
+  matched
+  closed
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  phone     String?
+  role      Role     @default(client)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  properties    Property[]
+  visits        Visit[]
+
+  notifications Notification[]
+  favorites     Favorite[]
+  ratings       Rating[]
+  lastLogin     DateTime?
+  resetCodeHash String?
+  resetCodeExpiresAt DateTime?
+  resetAttempts Int      @default(0)
+
+  @@index([email])
+  @@index([role, createdAt])
+  @@index([createdAt])
+  @@index([updatedAt])
+}
+
+model Property {
+  id          String         @id @default(cuid())
+  title       String
+  description String?
+  price       Float
+  priceType   PriceType?     @default(total)
+  type        PropertyType
+  city        String
+  zone        String?
+  status      PropertyStatus @default(available)
+  images      String[]
+  createdAt   DateTime       @default(now())
+
+  updatedAt DateTime @updatedAt
+
+  // Location data
+  latitude  Float?
+  longitude Float?
+
+  // New fields for extended details
+  features     Json?
+  category     String? @default("apartment")
+  isFeatured   Boolean @default(false)
+  isNew        Boolean @default(false)
+  isHotDeal    Boolean @default(false)
+  displayOrder Int     @default(autoincrement())
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  appointments Appointment[]
+  visits       Visit[]
+
+  ratings      Rating[]
+  favorites    Favorite[]
+
+  @@index([status, type, createdAt])
+  @@index([city, status])
+  @@index([isFeatured, displayOrder])
+  @@index([displayOrder]) // For ORDER BY displayOrder ASC
+  @@index([ownerId])
+  @@index([category])
+  @@index([price])
+  @@index([type])
+  @@index([city])
+  @@index([isFeatured])
+  @@index([isNew])
+  @@index([isHotDeal])
+  @@index([createdAt])
+  @@index([updatedAt])
+}
+
+model Appointment {
+  id          String                 @id @default(cuid())
+  clientName  String
+  clientEmail String?
+  clientPhone String?
+  source      AppointmentSource      @default(other)
+  meetingType AppointmentMeetingType @default(visite)
+  date        DateTime
+  time        String
+  status      AppointmentStatus      @default(pending)
+  notes       String?
+  createdAt   DateTime               @default(now())
+  updatedAt   DateTime               @updatedAt
+
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  @@index([status, date])
+  @@index([propertyId])
+  @@index([createdAt]) // For recent appointments lookup
+}
+
+
+model Visit {
+  id          String   @id @default(cuid())
+  visitorName String
+  idCard      String
+  date        DateTime
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String?
+  message   String
+  status    MessageStatus @default(unread)
+  createdAt DateTime      @default(now())
+
+  @@index([status, createdAt])
+}
+
+
+model Blog {
+  id        String   @id @default(cuid())
+  title     String
+  content   String
+  excerpt   String?
+  image     String?
+  category  String   @default("Actualités")
+  published Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([published, createdAt])
+  @@index([category])
+  @@index([createdAt])
+  @@index([updatedAt])
+}
+
+model Location {
+  id           String   @id @default(cuid())
+  name         String
+  centerLat    Float
+  centerLng    Float
+  radius       Float
+  displayOrder Int      @default(autoincrement())
+  createdAt    DateTime @default(now())
+
+  @@index([name])
+  @@index([createdAt])
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  userName  String
+  stars     Int
+  comment   String?
+  createdAt DateTime @default(now())
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([propertyId])
+  @@index([userId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  type      NotificationType
+  message   String
+  entityId  String?
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([read, createdAt])
+  @@index([userId])
+}
+
+model Favorite {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, propertyId])
+  @@index([userId])
+  @@index([propertyId])
+}
+
+model SiteSetting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model WebsiteVisit {
+  id        String   @id @default(cuid())
+  ip        String?
+  userAgent String?
+  path      String?
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+model ClientDemand {
+  id                 String             @id @default(cuid())
+  clientName         String
+  phone              String?
+  description        String
+  location           String
+  type               DemandPropertyType
+  budget             Float?
+  priority           DemandPriority     @default(medium)
+  status             DemandStatus       @default(searching)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  ignoredPropertyIds String[]           @default([])
+
+  @@index([status])
+  @@index([type])
+  @@index([location])
+}
+
+model FinanceTransaction {
+  id              String   @id @default(cuid())
+  type            String   // 'vente' | 'location'
+  propertyTitle   String
+  clientName      String
+  date            DateTime @default(now())
+  commission      Float
+  paymentReceived Boolean  @default(false)
+  paymentMode     String   // 'espèces' | 'virement' | 'chèque'
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([type, date])
+}

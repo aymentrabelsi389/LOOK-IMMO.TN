@@ -3,6 +3,7 @@ import React from 'react';
 import { X, ExternalLink, Copy, MapPin, Building2, Maximize2, BedDouble, Trash2 } from 'lucide-react';
 import { Property, ClientDemand } from '../../types';
 import Price from '../Price';
+import { getImageSrc, getLQIP } from '../../utils/imageUtils';
 
 interface PropertyMatchModalProps {
   isOpen: boolean;
@@ -84,9 +85,18 @@ const PropertyMatchModal = ({ isOpen, onClose, demand, matches, onIgnoreMatch }:
           {matches.map(({ property, score }) => (
             <div key={property.id} className="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:border-brand-teal/20 transition-all duration-300 overflow-hidden flex flex-col md:flex-row isolate">
               {/* Image Thumbnail */}
-              <div className="w-full md:w-64 h-48 md:h-auto relative overflow-hidden bg-gray-200 flex-shrink-0 rounded-t-2xl md:rounded-t-none md:rounded-l-2xl isolate">
+              <div
+                className="w-full md:w-64 h-48 md:h-auto relative overflow-hidden bg-gray-200 flex-shrink-0 rounded-t-2xl md:rounded-t-none md:rounded-l-2xl isolate"
+                style={{
+                  backgroundImage: property.images && property.images.length > 0 && getLQIP(property.images[0])
+                    ? `url(${getLQIP(property.images[0])})`
+                    : undefined,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                }}
+              >
                 <img
-                  src={property.images && property.images.length > 0 ? property.images[0] : '/placeholder-property.jpg'}
+                  src={getImageSrc(property.images && property.images.length > 0 ? property.images[0] : '', 'thumb') || '/placeholder-property.jpg'}
                   alt={property.title}
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500 rounded-t-2xl md:rounded-t-none md:rounded-l-2xl"
                 />
@@ -139,7 +149,7 @@ const PropertyMatchModal = ({ isOpen, onClose, demand, matches, onIgnoreMatch }:
                         {property.features.vocation && (
                           <div className="flex items-center gap-2 text-[9px] md:text-[10px] font-black text-gray-400 uppercase tracking-widest">
                             <span className="text-gray-300">🏗️</span>
-                            <span className="truncate">{property.features.vocation}</span>
+                            <span className="truncate">{property.features.vocation.replace(/résidentiel|residentiel/gi, '').trim()}</span>
                           </div>
                         )}
                         {property.features.cos && (

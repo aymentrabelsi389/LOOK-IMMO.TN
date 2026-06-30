@@ -9,7 +9,7 @@ export interface AuthRequest extends Request {
     };
 }
 
-const ACCESS_TOKEN_SECRET = process.env.JWT_SECRET || 'fallback-access-secret';
+const getAccessTokenSecret = () => process.env.JWT_SECRET || 'fallback-access-secret';
 
 export const authMiddleware = async (
     req: AuthRequest,
@@ -20,6 +20,11 @@ export const authMiddleware = async (
         // 1. Prefer HTTP-only cookie
         let token = req.cookies?.access_token;
 
+        
+        // DEV DEBUG: log whether cookie/header present (no token values)
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('[DEBUG auth] hasCookie:', !!req.cookies?.access_token, 'hasAuthHeader:', !!req.headers.authorization);
+        }
         // 2. Fallback to Bearer header (for backward compatibility)
         if (!token) {
             const authHeader = req.headers.authorization;
@@ -35,11 +40,17 @@ export const authMiddleware = async (
 
         // Trust the JWT signature — no DB lookup needed on every request.
         // The access token expires in 15 minutes, limiting any risk from deleted users.
-        const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET) as {
-            id: string;
-            email: string;
-            role: string;
-        };
+        let decoded;
+        try {
+            decoded = jwt.verify(token, getAccessTokenSecret()) as {
+                id: string;
+                email: string;
+                role: string;
+            };
+        } catch (err) {
+            if (process.env.NODE_ENV !== 'production') console.log('[DEBUG auth] token verify error:', err && (err as Error).message);
+            throw err;
+        }
 
         req.user = { id: decoded.id, email: decoded.email, role: decoded.role };
         next();
@@ -64,7 +75,7 @@ export const optionalAuth = async (
         }
 
         if (token) {
-            const decoded = jwt.verify(token, ACCESS_TOKEN_SECRET) as {
+            const decoded = jwt.verify(token, getAccessTokenSecret()) as {
                 id: string;
                 email: string;
                 role: string;

@@ -512,7 +512,7 @@ export const messagesAPI = {
         })) : [];
     },
 
-    create: async (data: { name?: string; fullName?: string; email: string; phone?: string; subject?: string; message: string }) => {
+    create: async (data: { name?: string; fullName?: string; email: string; phone?: string; subject?: string; message: string; website?: string }) => {
         const res = await apiFetch('/messages', { method: 'POST', body: JSON.stringify(data) });
         return res.json();
     },
@@ -819,4 +819,18 @@ export const uploadAPI = {
         });
         return res.json();
     }
+};
+
+// ==================== EXCHANGE RATES API ====================
+// Uses plain fetch (not apiFetch) — this is a public endpoint, no auth needed.
+export const exchangeRatesAPI = {
+    get: async (): Promise<{
+        rates: { TND: number; USD: number; EUR: number };
+        updatedAt: string;
+        source: 'redis' | 'memory' | 'default';
+    }> => {
+        const res = await fetch(`${API_BASE_URL}/exchange-rates`);
+        if (!res.ok) throw new Error(`Exchange rates fetch failed: ${res.status}`);
+        return res.json();
+    },
 };

@@ -121,6 +121,9 @@ export const createRating = async (req: Request, res: Response): Promise<void> =
             });
         }
 
+        // Update denormalized aggregates on Property model
+        await updatePropertyRatingFields(propertyId);
+
         // Invalidate property cache since averageRating changes
         await clearCachePattern('properties:list:*');
         await deleteCache(`properties:detail:${propertyId}`);
@@ -151,6 +154,9 @@ export const deleteRating = async (req: Request, res: Response): Promise<void> =
             where: { id },
         });
 
+        // Update denormalized aggregates on Property model
+        await updatePropertyRatingFields(rating.propertyId);
+
         // Invalidate property cache since averageRating changes
         await clearCachePattern('properties:list:*');
         await deleteCache(`properties:detail:${rating.propertyId}`);
@@ -175,3 +181,24 @@ export const deleteRating = async (req: Request, res: Response): Promise<void> =
         res.status(500).json({ error: error.message || 'Failed to delete rating' });
     }
 };
+
+// Helper to update denormalized rating fields on Property model
+async function updatePropertyRatingFields(propertyId: string): Promise<void> {
+    const aggregate = await prisma.rating.aggregate({
+        where: { propertyId },
+        _count: {
+            stars: true
+        },
+        _avg: {
+            stars: true
+        }
+    });
+
+    await prisma.property.update({
+        where: { id: propertyId },
+        data: {
+            averageRating: aggregate._avg.stars || 0,
+            ratingsCount: aggregate._count.stars || 0
+        } as any
+    });
+}

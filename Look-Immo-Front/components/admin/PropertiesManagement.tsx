@@ -758,7 +758,7 @@ const PropertiesManagement = ({
           });
         }
         
-        setFormData(prev => ({ ...prev, images: [...(prev.images || []), ...results.map(r => r.url)] }));
+        setFormData(prev => ({ ...prev, images: [...(prev.images || []), ...results.map(r => r.srcset ? JSON.stringify(r.srcset) : r.url)] }));
         notify.update(toastId, { 
           type: 'success', 
           message: `${results.length} image(s) ajoutée(s) avec succès`,

@@ -4,9 +4,10 @@ interface SEOProps {
   title: string;
   description?: string;
   keywords?: string;
+  canonical?: string;
 }
 
-export const useSEO = ({ title, description, keywords }: SEOProps) => {
+export const useSEO = ({ title, description, keywords, canonical }: SEOProps) => {
   useEffect(() => {
     // 1. Update Title
     const baseTitle = 'Look Immo';
@@ -44,5 +45,29 @@ export const useSEO = ({ title, description, keywords }: SEOProps) => {
         'immobilier tunisie, villa prestige marsa, appartement haut de gamme tunis, look immo'
       );
     }
-  }, [title, description, keywords]);
+
+    // 4. Update Canonical URL
+    let linkCanonical = document.querySelector('link[rel="canonical"]');
+    if (!linkCanonical) {
+      linkCanonical = document.createElement('link');
+      linkCanonical.setAttribute('rel', 'canonical');
+      document.head.appendChild(linkCanonical);
+    }
+
+    if (canonical) {
+      linkCanonical.setAttribute('href', canonical);
+    } else {
+      // Determine canonical URL dynamically: origin + pathname
+      // If there is a 'page' query param, preserve it because paginated pages have unique content sets.
+      // Other filter parameters (like type, city, sort) are stripped to avoid duplicate indexing.
+      const url = new URL(window.location.href);
+      const page = url.searchParams.get('page');
+      let canonicalUrl = url.origin + url.pathname;
+      if (page) {
+        canonicalUrl += `?page=${page}`;
+      }
+      linkCanonical.setAttribute('href', canonicalUrl);
+    }
+  }, [title, description, keywords, canonical]);
 };
+

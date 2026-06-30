@@ -23,6 +23,14 @@ const SettingsMapUpdater = ({ center }: { center: [number, number] }) => {
   useEffect(() => {
     map.setView(center, map.getZoom());
   }, [center, map]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [map]);
+
   return null;
 };
 

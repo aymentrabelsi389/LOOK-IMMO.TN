@@ -29,3 +29,33 @@ export const forgotPasswordLimiter = rateLimit({
     message: { error: 'Trop de demandes de réinitialisation de mot de passe, veuillez réessayer dans 15 minutes.' }
 });
 
+// ── Public form submission limiters ─────────────────────────────────────────
+// Applied to unauthenticated POST endpoints to prevent bot flooding.
+// In dev mode limits are lifted so local testing isn't affected.
+
+// Contact form: 5 submissions per IP per 15 minutes
+export const messageLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isProd ? 5 : 99999,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Trop de messages envoyés depuis cette IP. Veuillez réessayer dans 15 minutes.' },
+});
+
+// Appointment booking: 5 bookings per IP per 15 minutes
+export const appointmentLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isProd ? 5 : 99999,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Trop de demandes de rendez-vous depuis cette IP. Veuillez réessayer dans 15 minutes.' },
+});
+
+// Property ratings: 10 per IP per 15 minutes (slightly more lenient — one per property)
+export const ratingLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: isProd ? 10 : 99999,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Trop d\'avis soumis depuis cette IP. Veuillez réessayer dans 15 minutes.' },
+});

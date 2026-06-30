@@ -118,6 +118,7 @@ model User {
   notifications Notification[]
   favorites     Favorite[]
   ratings       Rating[]
+  refreshTokens RefreshToken[]
   lastLogin     DateTime?
   resetCodeHash String?
   resetCodeExpiresAt DateTime?
@@ -154,7 +155,9 @@ model Property {
   isFeatured   Boolean @default(false)
   isNew        Boolean @default(false)
   isHotDeal    Boolean @default(false)
-  displayOrder Int     @default(autoincrement())
+  displayOrder  Int            @default(autoincrement())
+  averageRating Float          @default(0.0)
+  ratingsCount  Int            @default(0)
 
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
@@ -165,8 +168,9 @@ model Property {
   ratings      Rating[]
   favorites    Favorite[]
 
-  @@index([status, type, createdAt])
-  @@index([city, status])
+  @@index([status, type, category, city])
+  @@index([status, type, price])
+  @@index([isFeatured, isNew, status])
   @@index([isFeatured, displayOrder])
   @@index([displayOrder]) // For ORDER BY displayOrder ASC
   @@index([ownerId])
@@ -362,3 +366,19 @@ model FinanceTransaction {
 
   @@index([type, date])
 }
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  familyId  String   // To detect reuse of any token in the family
+  used      Boolean  @default(false)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([familyId])
+  @@index([token])
+}
+

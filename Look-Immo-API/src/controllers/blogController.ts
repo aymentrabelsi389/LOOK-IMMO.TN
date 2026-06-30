@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/prisma';
+import { sanitizeHTML } from '../utils/sanitize';
 
 // Get all blog posts
 export const getBlogPosts = async (req: Request, res: Response): Promise<void> => {
@@ -88,11 +89,14 @@ export const createBlogPost = async (req: Request, res: Response): Promise<void>
             return;
         }
 
+        const sanitizedContent = sanitizeHTML(content);
+        const sanitizedExcerpt = excerpt ? sanitizeHTML(excerpt) : '';
+
         const post = await prisma.blog.create({
             data: {
                 title,
-                content,
-                excerpt,
+                content: sanitizedContent,
+                excerpt: sanitizedExcerpt,
                 image,
                 category: category || 'Actualités',
                 published: published || false,
@@ -134,8 +138,8 @@ export const updateBlogPost = async (req: Request, res: Response): Promise<void>
             where: { id },
             data: {
                 ...(title && { title }),
-                ...(content && { content }),
-                ...(excerpt !== undefined && { excerpt }),
+                ...(content && { content: sanitizeHTML(content) }),
+                ...(excerpt !== undefined && { excerpt: sanitizeHTML(excerpt) }),
                 ...(image !== undefined && { image }),
                 ...(category !== undefined && { category }),
                 ...(published !== undefined && { published }),

@@ -1,18 +1,26 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CurrencyCode, ExchangeRates } from '../types';
+import { exchangeRatesAPI } from '../services/api';
 
+// ── Last-resort in-browser defaults ──────────────────────────────────────────
+// These are only used if the backend /api/exchange-rates endpoint is unreachable.
+// In normal operation the backend cron refreshes rates every hour.
 const DEFAULT_RATES: ExchangeRates = {
   USD: 0.32,
   EUR: 0.30,
   TND: 1,
 };
 
+// Stale threshold — matches the backend cron interval (1 hour)
+const STALE_THRESHOLD_MS = 60 * 60 * 1000; // 1 hour
+
 interface CurrencyStore {
   currency: CurrencyCode;
   rates: ExchangeRates;
   autoFetch: boolean;
   lastUpdated: number;
+  rateSource: 'redis' | 'memory' | 'default' | 'local'; // 'local' = browser fallback
   // Actions
   setCurrency: (c: CurrencyCode) => void;
   updateRate: (code: CurrencyCode, rate: number) => void;
@@ -28,6 +36,7 @@ export const useCurrencyStore = create<CurrencyStore>()(
       rates: DEFAULT_RATES,
       autoFetch: true,
       lastUpdated: 0,
+      rateSource: 'default',
 
       setCurrency: (currency) => set({ currency }),
 
@@ -42,24 +51,32 @@ export const useCurrencyStore = create<CurrencyStore>()(
       fetchRatesIfStale: async () => {
         const { autoFetch, lastUpdated } = get();
         if (!autoFetch) return;
-        const isStale = Date.now() - lastUpdated > 43200000; // 12 hours
-        if (!isStale) return;
+
+        // Skip if data is fresher than 1 hour
+        if (Date.now() - lastUpdated < STALE_THRESHOLD_MS) return;
 
         try {
-          const res = await fetch('https://open.er-api.com/v6/latest/TND');
-          const data = await res.json();
-          if (data?.rates) {
-            set({
-              rates: {
-                TND: 1,
-                USD: data.rates.USD || DEFAULT_RATES.USD,
-                EUR: data.rates.EUR || DEFAULT_RATES.EUR,
-              },
-              lastUpdated: Date.now(),
-            });
-          }
+          // Call the backend — rates are already validated and cached there
+          const data = await exchangeRatesAPI.get();
+
+          set({
+            rates: {
+              TND: 1,
+              USD: data.rates.USD ?? DEFAULT_RATES.USD,
+              EUR: data.rates.EUR ?? DEFAULT_RATES.EUR,
+            },
+            lastUpdated: Date.now(),
+            rateSource: data.source,
+          });
         } catch (err) {
-          console.error('Failed to fetch exchange rates:', err);
+          // Backend unreachable (offline dev, network error, etc.)
+          // Keep serving whatever is already in the persisted store.
+          console.warn('[CurrencyStore] Could not fetch rates from backend:', err);
+          // Only mark as local fallback if we're still on stale defaults
+          const { lastUpdated: lu } = get();
+          if (lu === 0) {
+            set({ rateSource: 'local' });
+          }
         }
       },
 
@@ -77,12 +94,13 @@ export const useCurrencyStore = create<CurrencyStore>()(
       },
     }),
     {
-      name: 'lookimmo-currency', // replaces manual localStorage keys
+      name: 'lookimmo-currency',
       partialize: (state) => ({
         currency: state.currency,
         rates: state.rates,
         autoFetch: state.autoFetch,
         lastUpdated: state.lastUpdated,
+        rateSource: state.rateSource,
       }),
     }
   )

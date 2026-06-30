@@ -15,6 +15,7 @@ import { useSEO } from '../hooks/useSEO';
 import { useUI } from '../context/UIContext';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useData } from '../context/DataContext';
+import { getImageSrc, buildSrcSet } from '../utils/imageUtils';
 
 const PropertyDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -132,6 +133,14 @@ const PropertyDetailsPage = () => {
     useEffect(() => {
       map.setView(center, 13);
     }, [center, map]);
+
+    useEffect(() => {
+      const timer = setTimeout(() => {
+        map.invalidateSize();
+      }, 200);
+      return () => clearTimeout(timer);
+    }, [map]);
+
     return null;
   };
 
@@ -351,7 +360,11 @@ const PropertyDetailsPage = () => {
                     </div>
                     <div className="text-center p-4 bg-gray-50 rounded-xl">
                       <div className="text-4xl mx-auto mb-2">🏗️</div>
-                      <p className="text-2xl font-bold text-gray-900">{property.features.vocation || 'N/A'}</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        {property.features.vocation
+                          ? property.features.vocation.replace(/résidentiel|residentiel/gi, '').trim()
+                          : 'N/A'}
+                      </p>
                       <p className="text-sm text-gray-600">Vocation</p>
                     </div>
                     <div className="text-center p-4 bg-gray-50 rounded-xl">
@@ -492,7 +505,7 @@ const PropertyDetailsPage = () => {
               {/* Map Section */}
               <div className="bg-white rounded-2xl p-6 shadow-sm">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">Localisation du Bien</h2>
-                <div className="rounded-xl overflow-hidden h-96 border border-gray-200 relative z-0">
+                <div className="rounded-xl overflow-hidden h-[300px] md:h-96 border border-gray-200 relative z-0">
                   <MapContainer
                     center={[property.location.lat, property.location.lng]}
                     zoom={13}
@@ -673,7 +686,15 @@ const PropertyDetailsPage = () => {
 
                         <div className="relative border border-gray-200 rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer bg-white block isolate">
                           <div className="relative h-48 w-full overflow-hidden rounded-t-2xl isolate">
-                            <img src={prop.images[0]} alt={prop.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 rounded-t-2xl" loading="lazy" decoding="async" />
+                            <img
+                              src={getImageSrc(prop.images[0], 'medium')}
+                              srcSet={buildSrcSet(prop.images[0])}
+                              sizes="(max-width: 640px) 400px, 800px"
+                              alt={prop.title}
+                              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 rounded-t-2xl"
+                              loading="lazy"
+                              decoding="async"
+                            />
 
                             {/* Glassmorphism Status Overlay */}
                             <div className="absolute inset-0 flex items-center justify-center p-4">
@@ -760,7 +781,9 @@ const PropertyDetailsPage = () => {
           {/* Main Image Stage */}
           <div className="relative w-full h-full flex items-center justify-center select-none" onClick={(e) => e.stopPropagation()}>
             <img
-              src={property.images[currentImageIndex]}
+              src={getImageSrc(property.images[currentImageIndex], 'large')}
+              srcSet={buildSrcSet(property.images[currentImageIndex])}
+              sizes="100vw"
               alt={`Full view ${currentImageIndex + 1}`}
               className="max-w-full max-h-full object-contain shadow-2xl animate-zoom-in rounded-sm"
             />

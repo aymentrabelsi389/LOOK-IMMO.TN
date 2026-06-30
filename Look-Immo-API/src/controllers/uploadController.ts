@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
+import { uploadFileToStorage } from '../utils/upload';
 
 /**
  * POST /api/upload/image
@@ -11,6 +12,7 @@ import path from 'path';
  */
 export const handleImageUpload = (req: Request, res: Response): void => {
     const optimizedPath = (req as any).optimizedPath as string | undefined;
+    const optimizedSrcSet = (req as any).optimizedSrcSet as { thumb: string; medium: string; large: string } | null | undefined;
 
     if (!optimizedPath) {
         res.status(400).json({ error: 'No image was uploaded or optimization failed.' });
@@ -18,7 +20,8 @@ export const handleImageUpload = (req: Request, res: Response): void => {
     }
 
     res.status(201).json({
-        url: optimizedPath,
+        url: optimizedPath,           // Large variant (backwards compatible — store this in images[])
+        srcset: optimizedSrcSet || null, // { thumb, medium, large } — store as JSON string in images[] alongside url
         message: 'Image uploaded and optimized successfully',
     });
 };
@@ -29,7 +32,7 @@ export const handleImageUpload = (req: Request, res: Response): void => {
  * Called after `uploadContract.single('file')` middleware.
  * Enforces strictly PDF documents and returns the public URL path.
  */
-export const handleDocumentUpload = (req: Request, res: Response): void => {
+export const handleDocumentUpload = async (req: Request, res: Response): Promise<void> => {
     if (!req.file) {
         res.status(400).json({ error: 'Aucun fichier reçu.' });
         return;
@@ -37,19 +40,29 @@ export const handleDocumentUpload = (req: Request, res: Response): void => {
 
     // Strictly enforce PDF format
     if (req.file.mimetype !== 'application/pdf') {
-        if (fs.existsSync(req.file.path)) {
-            fs.unlinkSync(req.file.path);
-        }
         res.status(400).json({ error: 'Seuls les fichiers PDF sont autorisés.' });
         return;
     }
 
-    const fileUrl = `/uploads/contracts/${req.file.filename}`;
+    try {
+        const uid = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+        const filename = `contract-${uid}${path.extname(req.file.originalname)}`;
+        
+        const fileUrl = await uploadFileToStorage(
+            req.file.buffer,
+            'contracts',
+            filename,
+            req.file.mimetype
+        );
 
-    res.status(201).json({
-        url: fileUrl,
-        message: 'Document mis en ligne avec succès',
-    });
+        res.status(201).json({
+            url: fileUrl,
+            message: 'Document mis en ligne avec succès',
+        });
+    } catch (error) {
+        console.error('[UPLOAD] Document upload failed:', error);
+        res.status(500).json({ error: 'Erreur lors du téléchargement du document.' });
+    }
 };
 
 /**
@@ -61,6 +74,12 @@ export const downloadFile = (req: Request, res: Response): void => {
     const { url } = req.query;
     if (!url || typeof url !== 'string') {
         res.status(400).json({ error: 'L\'URL du fichier est requise.' });
+        return;
+    }
+
+    // If it is an external URL (e.g. S3 public URL), redirect to it directly
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+        res.redirect(url);
         return;
     }
 

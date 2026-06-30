@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Bath, BedDouble, Crown, Flame, Heart, MapPin, Sparkles, Square, Star } from 'lucide-react';
 import { Property } from '../types';
 import Price from './Price';
+import { getImageSrc, buildSrcSet, getLQIP } from '../utils/imageUtils';
 
 interface PropertyCardProps {
   property: Property;
@@ -28,8 +29,24 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onSelect, isFavor
     <div className="relative group h-full">
       <div className="absolute -inset-1 bg-gradient-to-r from-brand-teal to-blue-600 rounded-2xl blur opacity-25 md:group-hover:opacity-50 transition duration-500"></div>
       <div onClick={() => onSelect(property.id)} className="group bg-white rounded-2xl shadow-soft md:hover:shadow-2xl md:hover:shadow-brand-teal/10 transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100 flex flex-col h-full md:transform md:hover:-translate-y-1 relative isolate">
-        <div className="relative h-44 sm:h-52 md:h-64 overflow-hidden rounded-t-2xl isolate">
-          <img src={property.images[0]} alt={property.title} className="w-full h-full object-cover transform md:group-hover:scale-110 transition duration-700 rounded-t-2xl" loading="lazy" decoding="async" />
+        <div
+          className="relative h-44 sm:h-52 md:h-64 overflow-hidden rounded-t-2xl isolate"
+          style={{
+            backgroundImage: getLQIP(property.images[0]) ? `url(${getLQIP(property.images[0])})` : undefined,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            backgroundColor: getLQIP(property.images[0]) ? undefined : '#f3f4f6',
+          }}
+        >
+          <img
+            src={getImageSrc(property.images[0], 'medium')}
+            srcSet={buildSrcSet(property.images[0])}
+            sizes="(max-width: 640px) 400px, (max-width: 1024px) 800px, 1400px"
+            alt={property.title}
+            className="w-full h-full object-cover transform md:group-hover:scale-110 transition duration-700 rounded-t-2xl"
+            loading="lazy"
+            decoding="async"
+          />
           <div className="absolute top-3 left-3 flex flex-col space-y-1 z-10">
             <span className={`px-1.5 md:px-3 py-0.5 md:py-1 rounded-full text-[9px] md:text-xs font-bold uppercase tracking-wide md:tracking-wider text-white shadow-md ${property.listingType === 'sale' ? 'bg-blue-600' : 'bg-green-600'}`}>
               {property.listingType === 'sale' ? 'À VENDRE' : 'À LOUER'}
@@ -108,7 +125,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onSelect, isFavor
             {property.type === 'land' ? (
               <>
                 <div className="flex items-center whitespace-nowrap" title="Surface"><span className="mr-1">📐</span><span className="truncate">{property.features.area} m²</span></div>
-                <div className="flex items-center whitespace-nowrap" title="Vocation"><span className="mr-1">🏗️</span><span className="truncate">{property.features.vocation || 'N/A'}</span></div>
+                <div className="flex items-center whitespace-nowrap" title="Vocation"><span className="mr-1">🏗️</span><span className="truncate">{property.features.vocation ? property.features.vocation.replace(/résidentiel|residentiel/gi, '').trim() : 'N/A'}</span></div>
                 <div className="flex items-center whitespace-nowrap" title="COS"><span className="mr-1">📊</span><span className="truncate">COS {property.features.cos || 'N/A'}</span></div>
               </>
             ) : (

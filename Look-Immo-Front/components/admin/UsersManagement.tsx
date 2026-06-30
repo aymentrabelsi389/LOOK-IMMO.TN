@@ -9,6 +9,7 @@ import {
 import { User, Property, Rating, Message, Appointment } from '../../types';
 import { usersAPI } from '../../services/api';
 import Price from '../Price';
+import { getImageSrc, getLQIP } from '../../utils/imageUtils';
 
 interface CustomDropdownProps<T extends string> {
   value: T;
@@ -701,8 +702,16 @@ const UsersManagement = ({
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {properties.filter(p => selectedUser.favorites?.includes(p.id)).slice(0, 4).map(property => (
                           <div key={property.id} className="flex gap-4 bg-white p-3 rounded-2xl border border-gray-100 hover:shadow-lg transition-all group cursor-pointer">
-                            <div className="w-20 h-20 rounded-xl overflow-hidden shrink-0">
-                              <img src={property.images[0]} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                            <div
+                              className="w-20 h-20 rounded-xl overflow-hidden shrink-0"
+                              style={{
+                                backgroundImage: getLQIP(property.images[0]) ? `url(${getLQIP(property.images[0])})` : undefined,
+                                backgroundSize: 'cover',
+                                backgroundPosition: 'center',
+                                backgroundColor: getLQIP(property.images[0]) ? undefined : '#f3f4f6',
+                              }}
+                            >
+                              <img src={getImageSrc(property.images[0], 'thumb')} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                             </div>
                             <div className="flex-1 min-w-0 flex flex-col justify-center">
                               <h4 className="font-black text-gray-900 text-xs truncate mb-1">{property.title}</h4>

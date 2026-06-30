@@ -66,17 +66,25 @@ const HomePage = () => {
       {/* Hero Section */}
       <div className="relative h-[85vh] bg-brand-dark z-20">
         <div className="absolute inset-0">
-          {heroImages.map((src, index) => (
-            <img
-              key={src}
-              src={src}
-              alt={`Hero property ${index + 1}`}
-              loading={index === 0 ? "eager" : "lazy"}
-              fetchPriority={index === 0 ? "high" : "low"}
-              className={`absolute inset-0 w-full h-full object-cover object-[25%_center] md:object-[85%_center] transition-opacity duration-1000 ease-in-out ${index === currentHeroIndex ? 'opacity-80' : 'opacity-0'
+          {heroImages.map((src, index) => {
+            const isFirst = index === 0;
+            const isActive = index === currentHeroIndex;
+            const isNext = index === (currentHeroIndex + 1) % heroImages.length;
+            const shouldLoad = isFirst || isActive || isNext;
+
+            return (
+              <img
+                key={src}
+                src={shouldLoad ? src : 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'}
+                alt={`Hero property ${index + 1}`}
+                loading={isFirst ? "eager" : "lazy"}
+                fetchPriority={isFirst ? "high" : "low"}
+                className={`absolute inset-0 w-full h-full object-cover object-[25%_center] md:object-[85%_center] transition-opacity duration-1000 ease-in-out ${
+                  isActive ? 'opacity-80' : 'opacity-0'
                 }`}
-            />
-          ))}
+              />
+            );
+          })}
           {/* Balanced Dark Overlay for Readability */}
           <div className="absolute inset-0 bg-black/35"></div>
           <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/80 via-brand-dark/20 to-transparent"></div>

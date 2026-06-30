@@ -21,8 +21,9 @@ import * as statsController from '../controllers/statsController';
 import * as favoriteController from '../controllers/favoriteController';
 import * as settingController from '../controllers/settingController';
 import * as uploadController from '../controllers/uploadController';
+import * as exchangeRateController from '../controllers/exchangeRateController';
 import { validate } from '../middleware/validate';
-import { authLimiter, forgotPasswordLimiter } from '../middleware/rateLimiter';
+import { authLimiter, forgotPasswordLimiter, messageLimiter, appointmentLimiter, ratingLimiter } from '../middleware/rateLimiter';
 import { loginSchema, registerSchema, forgotPasswordSchema, verifyResetCodeSchema, resetPasswordSchema } from '../schemas/authSchema';
 import { createPropertySchema, updatePropertySchema, reorderPropertySchema } from '../schemas/propertySchema';
 import { createAppointmentSchema, updateAppointmentSchema } from '../schemas/appointmentSchema';
@@ -58,7 +59,7 @@ router.delete('/properties/:id', authMiddleware, agentOrAdmin, propertyControlle
 // ==================== APPOINTMENTS ====================
 router.get('/appointments', authMiddleware, appointmentController.getAppointments);
 router.get('/appointments/:id', authMiddleware, appointmentController.getAppointment);
-router.post('/appointments', validate(createAppointmentSchema), appointmentController.createAppointment); // Public - clients can book
+router.post('/appointments', appointmentLimiter, validate(createAppointmentSchema), appointmentController.createAppointment); // Public - clients can book
 router.put('/appointments/:id', authMiddleware, validate(updateAppointmentSchema), appointmentController.updateAppointment);
 router.delete('/appointments/:id', authMiddleware, appointmentController.deleteAppointment);
 
@@ -77,7 +78,7 @@ router.delete('/visits/:id', authMiddleware, agentOrAdmin, visitController.delet
 // ==================== MESSAGES ====================
 router.get('/messages', authMiddleware, agentOrAdmin, messageController.getMessages);
 router.get('/messages/:id', authMiddleware, agentOrAdmin, messageController.getMessage);
-router.post('/messages', validate(createMessageSchema), messageController.createMessage); // Public - contact form
+router.post('/messages', messageLimiter, validate(createMessageSchema), messageController.createMessage); // Public - contact form
 router.put('/messages/:id', authMiddleware, agentOrAdmin, validate(updateMessageSchema), messageController.updateMessage);
 router.delete('/messages/:id', authMiddleware, adminOnly, messageController.deleteMessage);
 
@@ -92,7 +93,7 @@ router.delete('/transactions/:id', authMiddleware, agentOrAdmin, transactionCont
 // ==================== RATINGS ====================
 router.get('/ratings', ratingController.getRatings); // Public
 router.get('/ratings/:id', ratingController.getRating); // Public
-router.post('/ratings', ratingController.createRating); // Public (or authenticated clients)
+router.post('/ratings', ratingLimiter, ratingController.createRating); // Public (or authenticated clients)
 router.delete('/ratings/:id', authMiddleware, agentOrAdmin, ratingController.deleteRating);
 
 // ==================== LOCATIONS ====================
@@ -137,7 +138,7 @@ router.post(
     authMiddleware,
     agentOrAdmin,
     uploadImage.single('image'),
-    optimizeAndSave({ folder: 'properties', width: 1400, quality: 82 }),
+    optimizeAndSave({ folder: 'properties', quality: 82, multiSize: true }),
     uploadController.handleImageUpload
 );
 
@@ -168,5 +169,9 @@ router.post(
 router.get('/settings', settingController.getSettings);
 // Only admin can update settings
 router.put('/settings', authMiddleware, adminOnly, settingController.updateSettings);
+
+// ==================== EXCHANGE RATES ====================
+// Public — backend-managed, hourly cron refresh from open.er-api.com
+router.get('/exchange-rates', exchangeRateController.getExchangeRates);
 
 export default router;

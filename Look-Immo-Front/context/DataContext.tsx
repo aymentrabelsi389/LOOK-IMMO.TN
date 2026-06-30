@@ -365,6 +365,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         phone: data.phone,
         subject: data.subject,
         message: data.message,
+        website: data.website || '', // honeypot — forwarded for backend validation
       });
       notify.success('Message envoyé.');
       if (user?.role === 'admin') {

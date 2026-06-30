@@ -16,6 +16,7 @@ import { useAuthStore } from '../stores/useAuthStore';
 import { useData } from '../context/DataContext';
 import { notify } from '../services/notificationStore';
 import { useConfirm } from '../context/ConfirmContext';
+import { getImageSrc, getLQIP } from '../utils/imageUtils';
 
 const DashboardPage = () => {
   useSEO({
@@ -804,9 +805,16 @@ const DashboardPage = () => {
                   >
                     {/* Property Image & Info */}
                     <div className="flex items-center gap-3 sm:gap-4 min-w-0 w-full sm:w-auto">
-                      {/* Property Image */}
-                      <div className="w-20 h-16 sm:w-24 sm:h-20 rounded-xl overflow-hidden flex-shrink-0 relative shadow-inner">
-                        <img src={property.images[0]} alt={property.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      <div
+                        className="w-20 h-16 sm:w-24 sm:h-20 rounded-xl overflow-hidden flex-shrink-0 relative shadow-inner"
+                        style={{
+                          backgroundImage: getLQIP(property.images[0]) ? `url(${getLQIP(property.images[0])})` : undefined,
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center',
+                          backgroundColor: getLQIP(property.images[0]) ? undefined : '#f3f4f6',
+                        }}
+                      >
+                        <img src={getImageSrc(property.images[0], 'thumb')} alt={property.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                         <div className="absolute inset-0 bg-black/5"></div>
                       </div>
 
@@ -822,7 +830,7 @@ const DashboardPage = () => {
                             <>
                               <span className="flex items-center bg-gray-50 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md flex-shrink-0">
                                 <span className="mr-1 sm:mr-1.5">🏗️</span>
-                                {property.features.vocation || 'N/A'}
+                                {property.features.vocation ? property.features.vocation.replace(/résidentiel|residentiel/gi, '').trim() : 'N/A'}
                               </span>
                               <span className="flex items-center bg-gray-50 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md flex-shrink-0">
                                 <span className="mr-1 sm:mr-1.5">📊</span>

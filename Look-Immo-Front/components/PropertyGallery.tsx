@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Image as ImageIcon } from 'lucide-react';
+import { getImageSrc, buildSrcSet, getLQIP } from '../utils/imageUtils';
 
 interface PropertyGalleryProps {
   images: string[];
@@ -117,23 +118,31 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
           <>
             {/* Background Blur for mixed aspect ratios */}
             <img
-              src={images[currentImageIndex]}
+              src={getImageSrc(images[currentImageIndex], 'medium')}
               alt={`${title} bg`}
               className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 scale-110 transition-all duration-500"
               loading="lazy"
               decoding="async"
             />
 
-            {/* Skeleton Loading State */}
+            {/* LQIP Placeholder — visible while the full image loads */}
             {!loadedImages[currentImageIndex] && (
-              <div className="absolute inset-0 z-0 flex items-center justify-center bg-gray-100/10 animate-pulse">
-                <ImageIcon className="text-white/30" size={48} />
-              </div>
+              <div
+                className="absolute inset-0 z-0 bg-cover bg-center transition-opacity duration-300"
+                style={{
+                  backgroundImage: getLQIP(images[currentImageIndex])
+                    ? `url(${getLQIP(images[currentImageIndex])})`
+                    : undefined,
+                  backgroundColor: getLQIP(images[currentImageIndex]) ? undefined : '#d1d5db',
+                }}
+              />
             )}
 
             {/* Foreground Main Image */}
             <img
-              src={images[currentImageIndex]}
+              src={getImageSrc(images[currentImageIndex], 'large')}
+              srcSet={buildSrcSet(images[currentImageIndex])}
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 800px"
               alt={title}
               onLoad={(e) => handleImageLoad(currentImageIndex, e)}
               className={`relative z-10 w-full h-full transform scale-100 group-hover:scale-[1.02] transition-all duration-700 ease-in-out ${loadedImages[currentImageIndex] ? 'opacity-100' : 'opacity-0'} ${imageOrientations[currentImageIndex] === 'vertical' ? 'object-contain' : 'object-cover'}`}
@@ -207,13 +216,19 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
                 key={idx}
                 onClick={() => setCurrentImageIndex(idx)}
                 aria-label={`Voir l'image ${idx + 1}`}
+                style={{
+                  backgroundImage: getLQIP(img) ? `url(${getLQIP(img)})` : undefined,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  backgroundColor: getLQIP(img) ? undefined : '#e5e7eb',
+                }}
                 className={`flex-shrink-0 w-24 h-16 md:w-28 md:h-20 rounded-lg overflow-hidden border-[3px] transition-all duration-300 snap-center focus:outline-none ${idx === currentImageIndex
                     ? 'border-blue-600 shadow-[0_0_15px_rgba(37,99,235,0.35)] scale-105 z-10'
                     : 'border-transparent opacity-60 hover:opacity-100 hover:border-gray-200'
                   }`}
               >
                 <img
-                  src={img}
+                  src={getImageSrc(img, 'thumb')}
                   alt={`Thumbnail ${idx + 1}`}
                   className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                   loading="lazy"

@@ -1,10 +1,32 @@
 import React from 'react';
 import { Calendar, Clock, ChevronRight } from 'lucide-react';
+import DOMPurify from 'dompurify';
 
 import { useParams } from 'react-router-dom';
 import { useSEO } from '../hooks/useSEO';
 import { useUI } from '../context/UIContext';
 import { useData } from '../context/DataContext';
+
+// Safely sanitize and process HTML content on the client side
+const getSafeBlogContent = (content: string): string => {
+  if (!content) return '';
+  let html = content;
+  // If content has no HTML tags, format it by converting double newlines to paragraphs
+  if (!/<[a-z][\s\S]*>/i.test(content)) {
+    html = content
+      .split('\n\n')
+      .map(para => `<p>${para.replace(/\n/g, '<br />')}</p>`)
+      .join('');
+  }
+  return DOMPurify.sanitize(html, {
+    ALLOWED_TAGS: [
+      'p', 'b', 'i', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+      'span', 'ul', 'ol', 'li', 'br', 'a', 'img', 'blockquote', 'pre', 'code',
+      'hr', 'div'
+    ],
+    ALLOWED_ATTR: ['href', 'target', 'src', 'alt', 'title', 'class', 'style', 'rel'],
+  });
+};
 
 const BlogPostPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -53,12 +75,14 @@ const BlogPostPage = () => {
           <ChevronRight size={18} className="rotate-180 mr-1" /> Retour au blog
         </button>
 
-        <article className="bg-white rounded-2xl shadow-lg overflow-hidden p-10 prose prose-lg max-w-none">
-          {post.content.split('\n\n').map((para, i) => <p key={i} className="mb-6 leading-relaxed">{para}</p>)}
-        </article>
+        <article 
+          className="bg-white rounded-2xl shadow-lg overflow-hidden p-10 prose prose-lg max-w-none"
+          dangerouslySetInnerHTML={{ __html: getSafeBlogContent(post.content) }}
+        />
       </div>
     </div>
   );
 };
+
 
 export default BlogPostPage;

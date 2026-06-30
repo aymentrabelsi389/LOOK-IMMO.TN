@@ -87,13 +87,9 @@ export const getProperties = async (req: Request, res: Response): Promise<void> 
                     owner: {
                         select: { id: true, name: true },
                     },
-                    _count: {
-                        select: { ratings: true },
-                    },
-                    ratings: {
-                        select: { stars: true },
-                    },
-                },
+                    averageRating: true,
+                    ratingsCount: true,
+                } as any,
                 orderBy: [
                     { displayOrder: 'asc' },
                     { createdAt: 'desc' }
@@ -105,22 +101,11 @@ export const getProperties = async (req: Request, res: Response): Promise<void> 
         ]);
 
 
-        // Post-process to calculate average and limit images
-        const optimizedProperties = properties.map(p => {
-            const ratingsCount = p._count.ratings;
-            const averageRating = ratingsCount > 0 
-                ? p.ratings.reduce((acc: number, r: { stars: number }) => acc + r.stars, 0) / ratingsCount 
-                : 0;
-
-            return {
-                ...p,
-                images: p.images && p.images.length > 0 ? [p.images[0]] : [],
-                averageRating,
-                ratingsCount,
-                ratings: undefined, // Remove the raw ratings data from response
-                _count: undefined   // Remove the internal count object
-            };
-        });
+        // Post-process to limit images
+        const optimizedProperties = properties.map(p => ({
+            ...p,
+            images: p.images && p.images.length > 0 ? [p.images[0]] : [],
+        }));
 
         const responseData = {
             data: optimizedProperties,

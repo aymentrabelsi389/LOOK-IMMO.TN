@@ -36,7 +36,8 @@ const ContactPage = () => {
     email: user?.email || '',
     phone: user?.phone || '',
     subject: '',
-    message: ''
+    message: '',
+    website: '', // honeypot — must stay empty; bots fill it, humans don't
   });
   const [submitted, setSubmitted] = useState(false);
   const [subjectDropdownOpen, setSubjectDropdownOpen] = useState(false);
@@ -72,7 +73,8 @@ const ContactPage = () => {
         email: formData.email,
         phone: formData.phone,
         subject: formData.subject,
-        message: formData.message
+        message: formData.message,
+        website: formData.website, // honeypot field — backend rejects if non-empty
       });
       setSubmitted(true);
       setTimeout(() => setSubmitted(false), 5000);
@@ -201,6 +203,20 @@ const ContactPage = () => {
                     rows={6} 
                     className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-teal focus:bg-white outline-none transition-all resize-none" 
                     placeholder="Décrivez votre demande (minimum 10 caractères)..." 
+                  />
+                </div>
+
+                {/* Honeypot anti-bot field — hidden from real users via CSS, bots fill it automatically */}
+                <div aria-hidden="true" style={{ opacity: 0, position: 'absolute', top: 0, left: 0, height: 0, width: 0, zIndex: -1, overflow: 'hidden' }}>
+                  <label htmlFor="website">Ne pas remplir</label>
+                  <input
+                    id="website"
+                    type="text"
+                    name="website"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={formData.website}
+                    onChange={e => setFormData({ ...formData, website: e.target.value })}
                   />
                 </div>
 

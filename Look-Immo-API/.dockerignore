@@ -1,0 +1,15 @@
+node_modules
+dist
+.env
+.git
+.gitignore
+.vscode
+README.md
+Dockerfile
+.dockerignore
+logs
+uploads
+deployment_ssl_guide.md
+npm-debug.log
+yarn-error.log
+prisma/migrations

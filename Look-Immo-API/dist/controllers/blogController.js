@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteBlogPost = exports.updateBlogPost = exports.createBlogPost = exports.getBlogPost = exports.getBlogPosts = void 0;
 const prisma_1 = require("../utils/prisma");
+const sanitize_1 = require("../utils/sanitize");
 // Get all blog posts
 const getBlogPosts = async (req, res) => {
     try {
@@ -83,11 +84,13 @@ const createBlogPost = async (req, res) => {
             res.status(400).json({ error: 'Title and content are required' });
             return;
         }
+        const sanitizedContent = (0, sanitize_1.sanitizeHTML)(content);
+        const sanitizedExcerpt = excerpt ? (0, sanitize_1.sanitizeHTML)(excerpt) : '';
         const post = await prisma_1.prisma.blog.create({
             data: {
                 title,
-                content,
-                excerpt,
+                content: sanitizedContent,
+                excerpt: sanitizedExcerpt,
                 image,
                 category: category || 'Actualités',
                 published: published || false,
@@ -125,8 +128,8 @@ const updateBlogPost = async (req, res) => {
             where: { id },
             data: {
                 ...(title && { title }),
-                ...(content && { content }),
-                ...(excerpt !== undefined && { excerpt }),
+                ...(content && { content: (0, sanitize_1.sanitizeHTML)(content) }),
+                ...(excerpt !== undefined && { excerpt: (0, sanitize_1.sanitizeHTML)(excerpt) }),
                 ...(image !== undefined && { image }),
                 ...(category !== undefined && { category }),
                 ...(published !== undefined && { published }),

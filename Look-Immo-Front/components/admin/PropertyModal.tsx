@@ -27,6 +27,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Property, PropertyType } from '../../types';
 import { uploadAPI, BACKEND_URL, resolveImage } from '../../services/api';
+import { getImageSrc } from '../../utils/imageUtils';
 
 interface PropertyModalProps {
   showModal: boolean;
@@ -101,7 +102,7 @@ const SortableImage: React.FC<SortableImageProps> = ({ url, index, onRemove }) =
       style={style}
       className={`relative group aspect-square rounded-xl overflow-hidden border border-gray-200 bg-gray-50 ${isDragging ? 'opacity-50' : ''}`}
     >
-      <img src={resolveImage(url)} className="w-full h-full object-cover" alt="" />
+      <img src={getImageSrc(url, 'thumb')} className="w-full h-full object-cover" alt="" />
       <div
         {...attributes}
         {...listeners}

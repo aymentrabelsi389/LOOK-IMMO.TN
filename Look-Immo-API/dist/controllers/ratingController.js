@@ -112,6 +112,8 @@ const createRating = async (req, res) => {
                 },
             });
         }
+        // Update denormalized aggregates on Property model
+        await updatePropertyRatingFields(propertyId);
         // Invalidate property cache since averageRating changes
         await (0, redis_1.clearCachePattern)('properties:list:*');
         await (0, redis_1.deleteCache)(`properties:detail:${propertyId}`);
@@ -138,6 +140,8 @@ const deleteRating = async (req, res) => {
         await prisma_1.prisma.rating.delete({
             where: { id },
         });
+        // Update denormalized aggregates on Property model
+        await updatePropertyRatingFields(rating.propertyId);
         // Invalidate property cache since averageRating changes
         await (0, redis_1.clearCachePattern)('properties:list:*');
         await (0, redis_1.deleteCache)(`properties:detail:${rating.propertyId}`);
@@ -163,4 +167,23 @@ const deleteRating = async (req, res) => {
     }
 };
 exports.deleteRating = deleteRating;
+// Helper to update denormalized rating fields on Property model
+async function updatePropertyRatingFields(propertyId) {
+    const aggregate = await prisma_1.prisma.rating.aggregate({
+        where: { propertyId },
+        _count: {
+            stars: true
+        },
+        _avg: {
+            stars: true
+        }
+    });
+    await prisma_1.prisma.property.update({
+        where: { id: propertyId },
+        data: {
+            averageRating: aggregate._avg.stars || 0,
+            ratingsCount: aggregate._count.stars || 0
+        }
+    });
+}
 //# sourceMappingURL=ratingController.js.map

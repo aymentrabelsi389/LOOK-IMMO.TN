@@ -5,11 +5,15 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.optionalAuth = exports.authMiddleware = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const ACCESS_TOKEN_SECRET = process.env.JWT_SECRET || 'fallback-access-secret';
+const getAccessTokenSecret = () => process.env.JWT_SECRET || 'fallback-access-secret';
 const authMiddleware = async (req, res, next) => {
     try {
         // 1. Prefer HTTP-only cookie
         let token = req.cookies?.access_token;
+        // DEV DEBUG: log whether cookie/header present (no token values)
+        if (process.env.NODE_ENV !== 'production') {
+            console.log('[DEBUG auth] hasCookie:', !!req.cookies?.access_token, 'hasAuthHeader:', !!req.headers.authorization);
+        }
         // 2. Fallback to Bearer header (for backward compatibility)
         if (!token) {
             const authHeader = req.headers.authorization;
@@ -23,7 +27,15 @@ const authMiddleware = async (req, res, next) => {
         }
         // Trust the JWT signature — no DB lookup needed on every request.
         // The access token expires in 15 minutes, limiting any risk from deleted users.
-        const decoded = jsonwebtoken_1.default.verify(token, ACCESS_TOKEN_SECRET);
+        let decoded;
+        try {
+            decoded = jsonwebtoken_1.default.verify(token, getAccessTokenSecret());
+        }
+        catch (err) {
+            if (process.env.NODE_ENV !== 'production')
+                console.log('[DEBUG auth] token verify error:', err && err.message);
+            throw err;
+        }
         req.user = { id: decoded.id, email: decoded.email, role: decoded.role };
         next();
     }
@@ -42,7 +54,7 @@ const optionalAuth = async (req, res, next) => {
             }
         }
         if (token) {
-            const decoded = jsonwebtoken_1.default.verify(token, ACCESS_TOKEN_SECRET);
+            const decoded = jsonwebtoken_1.default.verify(token, getAccessTokenSecret());
             // Trust the JWT — no DB lookup on optional auth paths
             req.user = { id: decoded.id, email: decoded.email, role: decoded.role };
         }

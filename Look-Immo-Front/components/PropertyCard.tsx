@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Bath, BedDouble, Crown, Flame, Heart, MapPin, Sparkles, Square, Star } from 'lucide-react';
 import { Property } from '../types';
 import Price from './Price';
-import { getImageSrc, buildSrcSet, getLQIP } from '../utils/imageUtils';
+import { getImageSrc, buildSrcSet, getLQIP, buildPropertyImageAlt } from '../utils/imageUtils';
 
 interface PropertyCardProps {
   property: Property;
@@ -42,7 +42,16 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onSelect, isFavor
             src={getImageSrc(property.images[0], 'medium')}
             srcSet={buildSrcSet(property.images[0])}
             sizes="(max-width: 640px) 400px, (max-width: 1024px) 800px, 1400px"
-            alt={property.title}
+            alt={buildPropertyImageAlt({
+              title:       property.title,
+              type:        property.type,
+              listingType: property.listingType,
+              city:        property.location.city,
+              bedrooms:    property.features.bedrooms,
+              area:        property.features.area,
+              pool:        property.features.pool,
+              parking:     property.features.parking,
+            })}
             className="w-full h-full object-cover transform md:group-hover:scale-110 transition duration-700 rounded-t-2xl"
             loading="lazy"
             decoding="async"

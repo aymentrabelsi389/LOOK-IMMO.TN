@@ -88,3 +88,77 @@ export function getLQIP(
   if (typeof parsed === 'string') return undefined;
   return parsed.lqip;
 }
+
+// ─── Alt Text Generation ─────────────────────────────────────────────────────
+
+/** Minimal property shape needed to generate alt text. */
+export interface PropertyAltContext {
+  title: string;
+  type: string;          // e.g. 'villa' | 'apartment' | 'land'
+  listingType: string;   // 'sale' | 'rent'
+  city: string;
+  bedrooms?: number;
+  area?: number;
+  pool?: boolean;
+  parking?: boolean;
+}
+
+/** Map internal type keys to French labels for alt text. */
+const TYPE_LABELS: Record<string, string> = {
+  apartment:  'Appartement',
+  villa:      'Villa',
+  studio:     'Studio',
+  duplex:     'Duplex',
+  triplex:    'Triplex',
+  penthouse:  'Penthouse',
+  land:       'Terrain',
+  depot:      'Dépôt',
+  commercial: 'Local commercial',
+  commerce:   'Commerce',
+};
+
+/**
+ * Generate a descriptive, SEO-rich alt text for a property image.
+ *
+ * Example output:
+ *   "Villa moderne 4 chambres avec piscine à Carthage — À Vendre — Look Immo"
+ *   "Appartement 2 chambres 85m² à Tunis — À Louer — Look Immo (photo 3/7)"
+ *
+ * @param property  Minimal property context (title, type, listingType, city, features…)
+ * @param index     0-based index of this image in the gallery (optional)
+ * @param total     Total number of images in the gallery (optional)
+ */
+export function buildPropertyImageAlt(
+  property: PropertyAltContext,
+  index?: number,
+  total?: number
+): string {
+  const typeLabel     = TYPE_LABELS[property.type] || property.type;
+  const listingLabel  = property.listingType === 'sale' ? 'À Vendre' : 'À Louer';
+
+  const parts: string[] = [typeLabel];
+
+  if (property.bedrooms && property.bedrooms > 0) {
+    parts.push(`${property.bedrooms} chambre${property.bedrooms > 1 ? 's' : ''}`);
+  }
+
+  if (property.area && property.area > 0) {
+    parts.push(`${property.area}m²`);
+  }
+
+  const amenities: string[] = [];
+  if (property.pool)    amenities.push('piscine');
+  if (property.parking) amenities.push('parking');
+  if (amenities.length > 0) parts.push(`avec ${amenities.join(' et ')}`);
+
+  parts.push(`à ${property.city}`);
+
+  let alt = `${parts.join(' ')} — ${listingLabel} — Look Immo`;
+
+  // Append photo counter when the gallery has multiple images
+  if (typeof index === 'number' && typeof total === 'number' && total > 1) {
+    alt += ` (photo ${index + 1}/${total})`;
+  }
+
+  return alt;
+}

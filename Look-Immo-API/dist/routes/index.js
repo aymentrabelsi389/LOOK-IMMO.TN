@@ -54,6 +54,7 @@ const statsController = __importStar(require("../controllers/statsController"));
 const favoriteController = __importStar(require("../controllers/favoriteController"));
 const settingController = __importStar(require("../controllers/settingController"));
 const uploadController = __importStar(require("../controllers/uploadController"));
+const exchangeRateController = __importStar(require("../controllers/exchangeRateController"));
 const validate_1 = require("../middleware/validate");
 const rateLimiter_1 = require("../middleware/rateLimiter");
 const authSchema_1 = require("../schemas/authSchema");
@@ -86,7 +87,7 @@ router.delete('/properties/:id', auth_1.authMiddleware, roleGuard_1.agentOrAdmin
 // ==================== APPOINTMENTS ====================
 router.get('/appointments', auth_1.authMiddleware, appointmentController.getAppointments);
 router.get('/appointments/:id', auth_1.authMiddleware, appointmentController.getAppointment);
-router.post('/appointments', (0, validate_1.validate)(appointmentSchema_1.createAppointmentSchema), appointmentController.createAppointment); // Public - clients can book
+router.post('/appointments', rateLimiter_1.appointmentLimiter, (0, validate_1.validate)(appointmentSchema_1.createAppointmentSchema), appointmentController.createAppointment); // Public - clients can book
 router.put('/appointments/:id', auth_1.authMiddleware, (0, validate_1.validate)(appointmentSchema_1.updateAppointmentSchema), appointmentController.updateAppointment);
 router.delete('/appointments/:id', auth_1.authMiddleware, appointmentController.deleteAppointment);
 // ==================== CLIENT DEMANDS ====================
@@ -102,7 +103,7 @@ router.delete('/visits/:id', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, vi
 // ==================== MESSAGES ====================
 router.get('/messages', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, messageController.getMessages);
 router.get('/messages/:id', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, messageController.getMessage);
-router.post('/messages', (0, validate_1.validate)(messageSchema_1.createMessageSchema), messageController.createMessage); // Public - contact form
+router.post('/messages', rateLimiter_1.messageLimiter, (0, validate_1.validate)(messageSchema_1.createMessageSchema), messageController.createMessage); // Public - contact form
 router.put('/messages/:id', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, (0, validate_1.validate)(messageSchema_1.updateMessageSchema), messageController.updateMessage);
 router.delete('/messages/:id', auth_1.authMiddleware, roleGuard_1.adminOnly, messageController.deleteMessage);
 // ==================== TRANSACTIONS ====================
@@ -113,7 +114,7 @@ router.delete('/transactions/:id', auth_1.authMiddleware, roleGuard_1.agentOrAdm
 // ==================== RATINGS ====================
 router.get('/ratings', ratingController.getRatings); // Public
 router.get('/ratings/:id', ratingController.getRating); // Public
-router.post('/ratings', ratingController.createRating); // Public (or authenticated clients)
+router.post('/ratings', rateLimiter_1.ratingLimiter, ratingController.createRating); // Public (or authenticated clients)
 router.delete('/ratings/:id', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, ratingController.deleteRating);
 // ==================== LOCATIONS ====================
 router.get('/locations', locationController.getLocations);
@@ -147,7 +148,7 @@ router.delete('/favorites/:propertyId', auth_1.authMiddleware, roleGuard_1.authe
 router.get('/favorites/check/:propertyId', auth_1.optionalAuth, favoriteController.checkFavorite);
 // ==================== IMAGE UPLOADS ====================
 // POST /api/upload/property-image  — accepts 'image' field, returns { url }
-router.post('/upload/property-image', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, upload_1.uploadImage.single('image'), (0, upload_1.optimizeAndSave)({ folder: 'properties', width: 1400, quality: 82 }), uploadController.handleImageUpload);
+router.post('/upload/property-image', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, upload_1.uploadImage.single('image'), (0, upload_1.optimizeAndSave)({ folder: 'properties', quality: 82, multiSize: true }), uploadController.handleImageUpload);
 // POST /api/upload/property-document  — accepts 'file' field, returns { url }
 router.post('/upload/property-document', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, upload_1.uploadContract.single('file'), uploadController.handleDocumentUpload);
 // GET /api/download  — secure direct file download
@@ -159,5 +160,8 @@ router.post('/upload/blog-image', auth_1.authMiddleware, roleGuard_1.adminOnly, 
 router.get('/settings', settingController.getSettings);
 // Only admin can update settings
 router.put('/settings', auth_1.authMiddleware, roleGuard_1.adminOnly, settingController.updateSettings);
+// ==================== EXCHANGE RATES ====================
+// Public — backend-managed, hourly cron refresh from open.er-api.com
+router.get('/exchange-rates', exchangeRateController.getExchangeRates);
 exports.default = router;
 //# sourceMappingURL=index.js.map

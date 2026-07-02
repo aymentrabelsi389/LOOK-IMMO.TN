@@ -9,9 +9,9 @@ const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const crypto_1 = __importDefault(require("crypto"));
 const prisma_1 = require("../utils/prisma");
 const emailService_1 = require("../services/emailService");
-const ACCESS_TOKEN_SECRET = process.env.JWT_SECRET || 'fallback-access-secret';
-const REFRESH_TOKEN_SECRET = process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret';
-const ACCESS_TOKEN_EXPIRY = '15m';
+const getAccessTokenSecret = () => process.env.JWT_SECRET || 'fallback-access-secret';
+const getRefreshTokenSecret = () => process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret';
+const ACCESS_TOKEN_EXPIRY = process.env.NODE_ENV === 'production' ? '15m' : '2h';
 const REFRESH_TOKEN_EXPIRY = '7d';
 const COOKIE_OPTIONS = {
     httpOnly: true,
@@ -19,17 +19,32 @@ const COOKIE_OPTIONS = {
     sameSite: (process.env.NODE_ENV === 'production' ? 'strict' : 'lax'),
     path: '/',
 };
-const setAuthCookies = (res, userId, email, role) => {
-    const accessToken = jsonwebtoken_1.default.sign({ id: userId, email, role }, ACCESS_TOKEN_SECRET, { expiresIn: ACCESS_TOKEN_EXPIRY });
-    const refreshToken = jsonwebtoken_1.default.sign({ id: userId, email, role }, REFRESH_TOKEN_SECRET, { expiresIn: REFRESH_TOKEN_EXPIRY });
+const setAuthCookies = async (res, userId, email, role, existingFamilyId) => {
+    const accessToken = jsonwebtoken_1.default.sign({ id: userId, email, role }, getAccessTokenSecret(), { expiresIn: ACCESS_TOKEN_EXPIRY });
+    // Generate secure random identifiers
+    const tokenId = crypto_1.default.randomUUID();
+    const familyId = existingFamilyId || crypto_1.default.randomUUID();
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const refreshToken = jsonwebtoken_1.default.sign({ id: userId, email, role, token: tokenId, familyId }, getRefreshTokenSecret(), { expiresIn: REFRESH_TOKEN_EXPIRY });
+    // Persist refresh token to the database
+    await prisma_1.prisma.refreshToken.create({
+        data: {
+            token: tokenId,
+            userId,
+            familyId,
+            expiresAt,
+        },
+    });
     res.cookie('access_token', accessToken, {
         ...COOKIE_OPTIONS,
-        maxAge: 15 * 60 * 1000, // 15 minutes
+        maxAge: process.env.NODE_ENV === 'production' ? 15 * 60 * 1000 : 2 * 60 * 60 * 1000, // prod: 15min, dev: 2h
     });
     res.cookie('refresh_token', refreshToken, {
         ...COOKIE_OPTIONS,
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
+    // Also return tokens in response body for Bearer token fallback (useful in dev/proxy setups)
+    return { accessToken, refreshToken };
 };
 const register = async (req, res) => {
     try {
@@ -48,8 +63,8 @@ const register = async (req, res) => {
             data: { name, email, password: hashedPassword, phone, role: 'client' },
             select: { id: true, name: true, email: true, phone: true, role: true, createdAt: true },
         });
-        setAuthCookies(res, user.id, user.email, user.role);
-        res.status(201).json({ user: { ...user, favorites: [] } });
+        const tokens = await setAuthCookies(res, user.id, user.email, user.role);
+        res.status(201).json({ user: { ...user, favorites: [] }, accessToken: tokens.accessToken });
     }
     catch (error) {
         console.error('Register error:', error);
@@ -78,8 +93,9 @@ const login = async (req, res) => {
             return;
         }
         await prisma_1.prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } });
-        setAuthCookies(res, user.id, user.email, user.role);
+        const tokens = await setAuthCookies(res, user.id, user.email, user.role);
         res.json({
+            accessToken: tokens.accessToken,
             user: {
                 id: user.id,
                 name: user.name,
@@ -87,7 +103,7 @@ const login = async (req, res) => {
                 phone: user.phone,
                 role: user.role,
                 createdAt: user.createdAt,
-                lastLogin: user.lastLogin, // ✅ Return actual stored lastLogin (before update)
+                lastLogin: user.lastLogin,
                 favorites: user.favorites.map((f) => f.propertyId),
             },
         });
@@ -99,6 +115,21 @@ const login = async (req, res) => {
 };
 exports.login = login;
 const logout = async (req, res) => {
+    try {
+        const refreshToken = req.cookies?.refresh_token;
+        if (refreshToken) {
+            // Attempt to decode to clean up the token family from the database
+            const decoded = jsonwebtoken_1.default.decode(refreshToken);
+            if (decoded?.familyId) {
+                await prisma_1.prisma.refreshToken.deleteMany({
+                    where: { familyId: decoded.familyId }
+                });
+            }
+        }
+    }
+    catch (error) {
+        console.error('Logout token revocation error:', error);
+    }
     res.clearCookie('access_token', COOKIE_OPTIONS);
     res.clearCookie('refresh_token', COOKIE_OPTIONS);
     res.json({ message: 'Logged out successfully' });
@@ -111,7 +142,43 @@ const refresh = async (req, res) => {
             res.status(401).json({ error: 'No refresh token' });
             return;
         }
-        const decoded = jsonwebtoken_1.default.verify(refreshToken, REFRESH_TOKEN_SECRET);
+        const decoded = jsonwebtoken_1.default.verify(refreshToken, getRefreshTokenSecret());
+        if (!decoded.token || !decoded.familyId) {
+            res.clearCookie('access_token', COOKIE_OPTIONS);
+            res.clearCookie('refresh_token', COOKIE_OPTIONS);
+            res.status(401).json({ error: 'Invalid refresh token structure' });
+            return;
+        }
+        // 1. Look up the token in the database
+        const tokenRecord = await prisma_1.prisma.refreshToken.findUnique({
+            where: { token: decoded.token },
+        });
+        // 2. Reuse detection (Compromise Signal)
+        if (tokenRecord?.used) {
+            console.warn(`[Security Alert] Refresh token reuse detected for family ${decoded.familyId}. Revoking family!`);
+            await prisma_1.prisma.refreshToken.deleteMany({
+                where: { familyId: decoded.familyId },
+            });
+            res.clearCookie('access_token', COOKIE_OPTIONS);
+            res.clearCookie('refresh_token', COOKIE_OPTIONS);
+            res.status(401).json({ error: 'Compromise detected. Session revoked.' });
+            return;
+        }
+        // 3. Token not found at all
+        if (!tokenRecord) {
+            res.clearCookie('access_token', COOKIE_OPTIONS);
+            res.clearCookie('refresh_token', COOKIE_OPTIONS);
+            res.status(401).json({ error: 'Refresh token not found' });
+            return;
+        }
+        // 4. Token expired
+        if (new Date() > tokenRecord.expiresAt) {
+            await prisma_1.prisma.refreshToken.delete({ where: { id: tokenRecord.id } });
+            res.clearCookie('access_token', COOKIE_OPTIONS);
+            res.clearCookie('refresh_token', COOKIE_OPTIONS);
+            res.status(401).json({ error: 'Expired refresh token' });
+            return;
+        }
         // Verify user still exists
         const user = await prisma_1.prisma.user.findUnique({
             where: { id: decoded.id },
@@ -121,9 +188,14 @@ const refresh = async (req, res) => {
             res.status(401).json({ error: 'User not found' });
             return;
         }
-        // Issue new access token (and rotate refresh token)
-        setAuthCookies(res, user.id, user.email, user.role);
-        res.json({ message: 'Token refreshed' });
+        // 5. Rotate: mark current token as used
+        await prisma_1.prisma.refreshToken.update({
+            where: { id: tokenRecord.id },
+            data: { used: true },
+        });
+        // 6. Issue new access token and rotated refresh token (preserving same familyId)
+        const tokens = await setAuthCookies(res, user.id, user.email, user.role, decoded.familyId);
+        res.json({ message: 'Token refreshed', accessToken: tokens.accessToken });
     }
     catch (error) {
         res.clearCookie('access_token', COOKIE_OPTIONS);

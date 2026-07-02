@@ -7,6 +7,7 @@ export declare const createMessageSchema: z.ZodObject<{
         phone: z.ZodUnion<[z.ZodOptional<z.ZodString>, z.ZodLiteral<"">]>;
         subject: z.ZodOptional<z.ZodString>;
         message: z.ZodString;
+        website: z.ZodUnion<[z.ZodOptional<z.ZodString>, z.ZodLiteral<"">]>;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export declare const updateMessageSchema: z.ZodObject<{

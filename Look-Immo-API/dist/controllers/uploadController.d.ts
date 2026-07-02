@@ -13,7 +13,7 @@ export declare const handleImageUpload: (req: Request, res: Response) => void;
  * Called after `uploadContract.single('file')` middleware.
  * Enforces strictly PDF documents and returns the public URL path.
  */
-export declare const handleDocumentUpload: (req: Request, res: Response) => void;
+export declare const handleDocumentUpload: (req: Request, res: Response) => Promise<void>;
 /**
  * GET /api/download
  *

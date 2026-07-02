@@ -24,10 +24,12 @@ import seoRoutes from './routes/seo';
 import { seoInjector } from './middleware/seoInjector';
 import { globalLimiter } from './middleware/rateLimiter';
 import { csrfGuard } from './middleware/csrfGuard';
+import { requestIdMiddleware, httpLogger } from './middleware/requestLogger';
 import { connectRedis } from './utils/redis';
 import { initSocket } from './utils/socket';
 import { prisma } from './utils/prisma';
 import { initExchangeRateCron } from './services/exchangeRateService';
+import { logger } from './utils/logger';
 
 // ─── Startup Environment Validation ──────────────────────────────────────────
 // Fail fast if critical env vars are missing — prevents silent misconfiguration
@@ -43,12 +45,18 @@ for (const key of REQUIRED_ENV_VARS) {
 }
 
 if (isProd && !process.env.FRONTEND_URL) {
-    console.warn('⚠️  WARNING: FRONTEND_URL is not set. CORS will default to localhost:3000 which will break production!');
+    logger.warn('FRONTEND_URL is not set — CORS will default to localhost:3000 which will break production!');
 }
 
 // ─── App Setup ────────────────────────────────────────────────────────────────
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// ─── Core Infrastructure Middleware ──────────────────────────────────────────
+// requestIdMiddleware MUST come first — it seeds AsyncLocalStorage so all
+// subsequent middleware and route handlers have access to requestId.
+app.use(requestIdMiddleware);
+app.use(httpLogger);
 
 // Trust proxy (essential for rate limiting behind Nginx/VPS)
 app.set('trust proxy', 1);
@@ -72,9 +80,14 @@ app.use(cors({
 // Parse cookies (HTTP-only JWT cookies)
 app.use(cookieParser());
 
-// Base security headers
+// Base security headers with 1-year HSTS (HTTP Strict Transport Security)
 app.use(helmet({
     crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow loading images cross-origin
+    hsts: {
+        maxAge: 31536000, // 1 year in seconds
+        includeSubDomains: true,
+        preload: true,
+    }
 }));
 
 // Body parsers (Limited to 30mb to prevent DoS)
@@ -90,24 +103,8 @@ app.use('/api', globalLimiter);
 // Apply CSRF protection to state-mutating API endpoints
 app.use('/api', csrfGuard);
 
-// Debug logger (Disabled in production)
-if (!isProd) {
-    app.use((req, res, next) => {
-        console.log(`[DEBUG] ${req.method} ${req.url}`);
-        const originalSend = res.json;
-        res.json = function (body) {
-            // Redact sensitive fields from debug logs
-            const safe = body && typeof body === 'object'
-                ? JSON.stringify(body, (key, val) =>
-                    ['password', 'access_token', 'refresh_token'].includes(key) ? '[REDACTED]' : val
-                ).slice(0, 150)
-                : body;
-            console.log(`[DEBUG] Response ${res.statusCode} for ${req.method} ${req.url}:`, safe);
-            return originalSend.call(this, body);
-        };
-        next();
-    });
-}
+// HTTP logging is handled by httpLogger (morgan → winston) registered above.
+// The old console-based debug logger has been replaced by structured JSON logs.
 
 // ─── SEO Routes (served at root — before /api) ───────────────────────────────
 app.use(seoRoutes); // /sitemap.xml and /robots.txt
@@ -142,7 +139,7 @@ if (process.env.SENTRY_DSN) {
 // ─── Error Handler ────────────────────────────────────────────────────────────
 // In production: log full error server-side but return generic message to client
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-    console.error('[ERROR]', err.stack || err.message);
+    logger.error(err.message, { stack: err.stack, path: req.path, method: req.method });
     const message = isProd ? 'Internal server error' : (err.message || 'Internal server error');
     res.status(500).json({ error: message });
 });
@@ -154,32 +151,26 @@ connectRedis();
 initExchangeRateCron();
 
 server.listen(PORT, () => {
-    console.log(`
-╔═══════════════════════════════════════════════════════════╗
-║                                                           ║
-║   🏠 Look Immo Backend Server — ${isProd ? 'PRODUCTION' : 'DEVELOPMENT'}   ║
-║                                                           ║
-║   Server running on: http://localhost:${PORT}              ║
-║   API Base URL:      http://localhost:${PORT}/api          ║
-║   WebSockets:        Enabled                               ║
-║   Sitemap:           http://localhost:${PORT}/sitemap.xml  ║
-║   Health Check:      http://localhost:${PORT}/health       ║
-║                                                           ║
-╚═══════════════════════════════════════════════════════════╝
-    `);
+    logger.info('Server started', {
+        env:        process.env.NODE_ENV || 'development',
+        port:       PORT,
+        apiBase:    `http://localhost:${PORT}/api`,
+        health:     `http://localhost:${PORT}/health`,
+        websockets: true,
+    });
 });
 
 // ─── Graceful Shutdown ────────────────────────────────────────────────────────
 const shutdown = async (signal: string) => {
-    console.log(`\n[${signal}] Graceful shutdown initiated...`);
+    logger.info(`Graceful shutdown initiated`, { signal });
     server.close(async () => {
         try {
             await prisma.$disconnect();
-            console.log('✅ Database connections closed.');
+            logger.info('Database connections closed.');
         } catch (e) {
-            console.error('Error disconnecting Prisma:', e);
+            logger.error('Error disconnecting Prisma', { error: e });
         }
-        console.log('✅ HTTP server closed. Goodbye!\n');
+        logger.info('HTTP server closed.');
         process.exit(0);
     });
 

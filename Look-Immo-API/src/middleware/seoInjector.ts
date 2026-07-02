@@ -1,157 +1,273 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { prisma } from '../utils/prisma';
 import fs from 'fs';
 import path from 'path';
 
-const prisma = new PrismaClient();
+// ─── Bot Detection ────────────────────────────────────────────────────────────
+// Matches all major social crawlers, search engine bots, and link-preview agents.
+// Includes: WhatsApp, Facebook, Instagram, Twitter/X, LinkedIn, Slack, Discord,
+//           Telegram, Pinterest, Google, Bing, Yandex, Baidu, Ahrefs, Semrush.
+const BOT_REGEX =
+    /googlebot|bingbot|yandex|baiduspider|twitterbot|facebookexternalhit|facebookcrawler|rogerbot|linkedinbot|embedly|quora link preview|showyoubot|outbrain|pinterest\/0\.|pinterestbot|slackbot|vkshare|w3c_validator|whatsapp|discordbot|telegrambot|applebot|ia_archiver|ahrefsbot|semrushbot|msnbot|duckduckbot/i;
 
-// List of search engine bots and social share scrapers
-const BOT_REGEX = /googlebot|bingbot|yandex|baiduspider|twitterbot|facebookexternalhit|rogerbot|linkedinbot|embedly|quora link preview|showyoubot|outbrain|pinterest\/0\.|pinterestbot|slackbot|vkShare|W3C_Validator|whatsapp|discordbot|telegrambot/i;
+// ─── In-Memory Cache ──────────────────────────────────────────────────────────
+// Avoids a DB hit on every bot re-crawl. TTL: 5 minutes.
+// Structure: Map<cacheKey, { html: string; expiresAt: number }>
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const seoCache = new Map<string, { html: string; expiresAt: number }>();
+
+/** Purge expired entries (called on each request to prevent unbounded growth). */
+const pruneCache = () => {
+    const now = Date.now();
+    for (const [key, entry] of seoCache.entries()) {
+        if (entry.expiresAt <= now) seoCache.delete(key);
+    }
+};
+
+// ─── HTML Helpers ─────────────────────────────────────────────────────────────
 
 /**
- * Resolves the absolute path to the React frontend's index.html template.
+ * Escapes a string for safe embedding inside an HTML attribute value
+ * (quoted with `"`). Prevents XSS via crafted property titles/descriptions.
+ */
+const escAttr = (s: string): string =>
+    s
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+/**
+ * Escapes a string for safe embedding between HTML tags (<title>…</title>).
+ */
+const escHtml = (s: string): string =>
+    s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+// ─── Path Resolution ──────────────────────────────────────────────────────────
+
+/**
+ * Resolves the absolute path to the React frontend's index.html.
+ * Checks the compiled dist/ build first (production), then the dev source file.
  */
 const getIndexPath = (): string | null => {
-    const paths = [
-        path.join(__dirname, '../../../Look-Immo-Front/dist/index.html'), // Production build
-        path.join(__dirname, '../../../Look-Immo-Front/index.html'),      // Development source
+    const candidates = [
+        path.join(__dirname, '../../../Look-Immo-Front/dist/index.html'),
         path.resolve(process.cwd(), '../Look-Immo-Front/dist/index.html'),
+        path.join(__dirname, '../../../Look-Immo-Front/index.html'),
         path.resolve(process.cwd(), '../Look-Immo-Front/index.html'),
     ];
 
-    for (const p of paths) {
-        if (fs.existsSync(p)) {
-            return p;
-        }
+    for (const p of candidates) {
+        if (fs.existsSync(p)) return p;
     }
     return null;
 };
 
 /**
- * Resolves an image path to an absolute URL for crawler preview.
+ * Resolves a stored image path (relative or absolute URL) to a fully-qualified
+ * public URL suitable for og:image.
  */
 const resolveImageUrl = (image: string | null | undefined): string => {
-    if (!image) {
-        return 'https://look-immo.tn/look-immo-icon-gold.png'; // Fallback website icon
-    }
-    if (image.startsWith('http://') || image.startsWith('https://')) {
-        return image;
-    }
-    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5000';
-    const cleanImage = image.startsWith('/') ? image : `/${image}`;
-    return `${backendUrl}${cleanImage}`;
+    const fallback = 'https://look-immo.tn/look-immo-icon-gold.png';
+    if (!image) return fallback;
+    if (image.startsWith('http://') || image.startsWith('https://')) return image;
+    const backendUrl = process.env.BACKEND_URL || 'https://look-immo.tn';
+    return `${backendUrl}${image.startsWith('/') ? '' : '/'}${image}`;
 };
 
+// ─── Meta Tag Builder ─────────────────────────────────────────────────────────
+
+interface MetaData {
+    title: string;
+    description: string;
+    imageUrl: string;
+    pageUrl: string;
+    ogType: 'website' | 'article';
+}
+
+const buildSeoMetaTags = (meta: MetaData): string => {
+    const t  = escAttr(meta.title);
+    const d  = escAttr(meta.description);
+    const ht = escHtml(meta.title);
+
+    return `
+  <!-- Primary Meta Tags -->
+  <title>${ht}</title>
+  <meta name="title" content="${t}">
+  <meta name="description" content="${d}">
+
+  <!-- Open Graph / Facebook / WhatsApp / Instagram -->
+  <meta property="og:type" content="${meta.ogType}">
+  <meta property="og:site_name" content="Look Immo">
+  <meta property="og:locale" content="fr_TN">
+  <meta property="og:url" content="${escAttr(meta.pageUrl)}">
+  <meta property="og:title" content="${t}">
+  <meta property="og:description" content="${d}">
+  <meta property="og:image" content="${escAttr(meta.imageUrl)}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+
+  <!-- Twitter / X Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="${escAttr(meta.pageUrl)}">
+  <meta name="twitter:title" content="${t}">
+  <meta name="twitter:description" content="${d}">
+  <meta name="twitter:image" content="${escAttr(meta.imageUrl)}">
+`;
+};
+
+// ─── Middleware ────────────────────────────────────────────────────────────────
+
 /**
- * Express middleware to inject dynamic SEO metadata for crawlers.
+ * Express middleware that intercepts `/property/:id` and `/blog-post/:id`.
+ *
+ * - Social crawlers  → receives a full HTML page with dynamic OG/Twitter tags
+ *                      populated from the database (cached for 5 min).
+ * - Real users       → receives the SPA index.html served directly from disk
+ *                      (identical result to Nginx serving it, just via Express).
  */
-export const seoInjector = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+export const seoInjector = async (
+    req: Request,
+    res: Response,
+    next: NextFunction,
+): Promise<void> => {
     const userAgent = req.headers['user-agent'] || '';
-    const isBot = BOT_REGEX.test(userAgent);
+    const isBot     = BOT_REGEX.test(userAgent);
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'https://look-immo.tn';
+    const pageUrl     = `${frontendUrl}${req.originalUrl}`;
 
-    // If it's a real user (not a crawler), redirect to the React frontend SPA
+    // ── Real-user fast path: serve the SPA shell directly ─────────────────────
     if (!isBot) {
-        res.redirect(`${frontendUrl}${req.originalUrl}`);
+        const indexPath = getIndexPath();
+        if (indexPath) {
+            res.set('Content-Type', 'text/html');
+            res.sendFile(indexPath);
+        } else {
+            // index.html not found (e.g. fresh dev environment without a build).
+            // Fall through to next handler so Vite dev server can handle it.
+            next();
+        }
         return;
     }
 
+    // ── Bot path: inject OG tags ───────────────────────────────────────────────
     const indexPath = getIndexPath();
     if (!indexPath) {
-        console.warn('[SEO Injector] Frontend index.html not found. Falling back to next handler.');
+        console.warn('[SEO Injector] Frontend index.html not found — skipping OG injection.');
         next();
         return;
     }
 
+    pruneCache();
+
+    const isProperty = req.path.startsWith('/property/');
+    const isBlog     = req.path.startsWith('/blog-post/');
+    const entityId   = req.params.id || '';
+    const cacheKey   = `${isProperty ? 'property' : 'blog'}:${entityId}`;
+
+    // ── Cache hit ──────────────────────────────────────────────────────────────
+    const cached = seoCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+        res.set('Content-Type', 'text/html');
+        res.set('Cache-Control', 'public, max-age=300'); // 5 min browser/CDN cache
+        res.send(cached.html);
+        return;
+    }
+
     try {
-        let html = fs.readFileSync(indexPath, 'utf8');
+        let template = fs.readFileSync(indexPath, 'utf8');
 
-        // Default metadata
-        let title = 'Look Immo | Premium Real Estate Tunisia';
-        let description = "Plateforme immobilière haut de gamme en Tunisie. Vente et location d'appartements, villas, bureaux, et terrains.";
-        let imageUrl = 'https://look-immo.tn/look-immo-icon-gold.png';
+        // Default metadata (used when entity is not found or on DB error)
+        let meta: MetaData = {
+            title:       'Look Immo | Premium Real Estate Tunisia',
+            description: "Plateforme immobilière haut de gamme en Tunisie. Vente et location d'appartements, villas, bureaux, et terrains.",
+            imageUrl:    'https://look-immo.tn/look-immo-icon-gold.png',
+            pageUrl,
+            ogType:      'website',
+        };
 
-        const isProperty = req.path.startsWith('/property/');
-        const isBlog = req.path.startsWith('/blog-post/');
-
-        if (isProperty) {
-            const id = req.params.id;
+        // ── Property metadata ──────────────────────────────────────────────────
+        if (isProperty && entityId) {
             const property = await prisma.property.findUnique({
-                where: { id },
-                include: { owner: true }
+                where: { id: entityId },
+                select: {
+                    title:       true,
+                    description: true,
+                    type:        true,
+                    category:    true,
+                    city:        true,
+                    zone:        true,
+                    price:       true,
+                    images:      true,
+                },
             });
 
             if (property) {
-                // Formulate premium property title
-                const typeLabel = property.type === 'sale' ? 'A Vendre' : 'A Louer';
-                const categoryLabel = (property.category || 'Propriété').charAt(0).toUpperCase() + (property.category || 'propriété').slice(1);
-                
-                title = `${property.title} - ${categoryLabel} ${typeLabel} à ${property.city} | Look Immo`;
-                
-                // Formulate short, descriptions
-                const rawDesc = property.description || '';
-                // Clean metadata tags if any are embedded in description
-                const cleanDesc = rawDesc.replace(/\[METADATA:.*?\]/g, '').replace(/\[Type:.*?\]/g, '').trim();
-                
-                description = cleanDesc 
-                    ? (cleanDesc.length > 160 ? `${cleanDesc.substring(0, 157)}...` : cleanDesc)
-                    : `${categoryLabel} de standing à ${property.city}${property.zone ? `, ${property.zone}` : ''}. Prix : ${property.price.toLocaleString('fr-FR')} TND.`;
+                const typeLabel     = property.type === 'sale' ? 'à Vendre' : 'à Louer';
+                const categoryLabel = property.category
+                    ? property.category.charAt(0).toUpperCase() + property.category.slice(1)
+                    : 'Propriété';
 
-                if (property.images && property.images.length > 0) {
-                    imageUrl = resolveImageUrl(property.images[0]);
-                }
-            }
-        } else if (isBlog) {
-            const id = req.params.id;
-            const blog = await prisma.blog.findUnique({
-                where: { id }
-            });
+                const rawDesc = (property.description || '')
+                    .replace(/\[METADATA:.*?\]/g, '')
+                    .replace(/\[Type:.*?\]/g, '')
+                    .trim();
 
-            if (blog) {
-                title = `${blog.title} | Blog Look Immo`;
-                const rawContent = blog.excerpt || blog.content || '';
-                description = rawContent.length > 160 
-                    ? `${rawContent.substring(0, 157)}...` 
-                    : rawContent;
-                
-                if (blog.image) {
-                    imageUrl = resolveImageUrl(blog.image);
-                }
+                const description = rawDesc
+                    ? (rawDesc.length > 160 ? `${rawDesc.substring(0, 157)}...` : rawDesc)
+                    : `${categoryLabel} de standing ${typeLabel} à ${property.city}${property.zone ? `, ${property.zone}` : ''}. Prix : ${property.price.toLocaleString('fr-FR')} TND.`;
+
+                meta = {
+                    title:       `${property.title} — ${categoryLabel} ${typeLabel} à ${property.city} | Look Immo`,
+                    description,
+                    imageUrl:    resolveImageUrl(property.images?.[0]),
+                    pageUrl,
+                    ogType:      'website',
+                };
             }
         }
 
-        // Build absolute URL for the OpenGraph meta tag
-        const absoluteUrl = `${frontendUrl}${req.originalUrl}`;
+        // ── Blog post metadata ─────────────────────────────────────────────────
+        if (isBlog && entityId) {
+            const blog = await prisma.blog.findUnique({
+                where: { id: entityId },
+                select: { title: true, excerpt: true, content: true, image: true },
+            });
 
-        // Construct complete Meta Tags blocks
-        const seoMetaTags = `
-  <!-- Primary Meta Tags -->
-  <title>${title}</title>
-  <meta name="title" content="${title}">
-  <meta name="description" content="${description}">
+            if (blog) {
+                const rawContent = blog.excerpt || blog.content || '';
+                const description = rawContent.length > 160
+                    ? `${rawContent.substring(0, 157)}...`
+                    : rawContent;
 
-  <!-- Open Graph / Facebook -->
-  <meta property="og:type" content="website">
-  <meta property="og:url" content="${absoluteUrl}">
-  <meta property="og:title" content="${title}">
-  <meta property="og:description" content="${description}">
-  <meta property="og:image" content="${imageUrl}">
+                meta = {
+                    title:       `${blog.title} | Blog Look Immo`,
+                    description,
+                    imageUrl:    resolveImageUrl(blog.image),
+                    pageUrl,
+                    ogType:      'article',
+                };
+            }
+        }
 
-  <!-- Twitter -->
-  <meta property="twitter:card" content="summary_large_image">
-  <meta property="twitter:url" content="${absoluteUrl}">
-  <meta property="twitter:title" content="${title}">
-  <meta property="twitter:description" content="${description}">
-  <meta property="twitter:image" content="${imageUrl}">
-`;
+        // ── Inject into HTML ───────────────────────────────────────────────────
+        // 1. Strip any existing <title> tag (the template has the generic one)
+        // 2. Insert the dynamic SEO block just before </head>
+        const seoBlock = buildSeoMetaTags(meta);
+        let html = template
+            .replace(/<title>.*?<\/title>/gi, '')
+            .replace('</head>', `${seoBlock}\n</head>`);
 
-        // Inject the SEO block into the HTML <head> section
-        // We replace standard Title and dynamically insert OpenGraph tags
-        html = html.replace(/<title>.*?<\/title>/gi, '');
-        html = html.replace('</head>', `${seoMetaTags}\n</head>`);
+        // Store in cache
+        seoCache.set(cacheKey, { html, expiresAt: Date.now() + CACHE_TTL_MS });
 
         res.set('Content-Type', 'text/html');
+        res.set('Cache-Control', 'public, max-age=300');
         res.send(html);
     } catch (err) {
         console.error('[SEO Injector] Failed to inject metadata:', err);

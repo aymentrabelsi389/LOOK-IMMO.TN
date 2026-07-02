@@ -27,7 +27,13 @@ exports.createMessageSchema = zod_1.z.object({
         message: zod_1.z.string()
             .min(10, "Message must be at least 10 characters")
             .max(5000, "Message cannot exceed 5000 characters"),
-    }).refine((data) => data.name || data.fullName, { message: "Either 'name' or 'fullName' must be provided", path: ["name"] }),
+        // Honeypot anti-bot field — rendered as a hidden <input> in the frontend.
+        // Real users never fill it. If a bot fills it, reject silently with 400.
+        website: zod_1.z.string()
+            .max(0, "Bot detected")
+            .optional()
+            .or(zod_1.z.literal('')),
+    }).refine((data) => data.name || data.fullName, { message: "Either 'name' or 'fullName' must be provided", path: ["name"] }).refine((data) => !data.website, { message: "Bot detected", path: ["website"] }),
 });
 // Schema for updating a message status (admin/agent only)
 exports.updateMessageSchema = zod_1.z.object({

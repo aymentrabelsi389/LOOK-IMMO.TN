@@ -15,7 +15,7 @@ import { useSEO } from '../hooks/useSEO';
 import { useUI } from '../context/UIContext';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useData } from '../context/DataContext';
-import { getImageSrc, buildSrcSet } from '../utils/imageUtils';
+import { getImageSrc, buildSrcSet, buildPropertyImageAlt } from '../utils/imageUtils';
 
 const PropertyDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -105,6 +105,30 @@ const PropertyDetailsPage = () => {
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLightbox, setShowLightbox] = useState(false);
+  const [pointerStartX, setPointerStartX] = useState<number | null>(null);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    setPointerStartX(e.clientX);
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (pointerStartX === null || !property?.images) return;
+    const distance = pointerStartX - e.clientX;
+    const minSwipeDistance = 50;
+
+    if (Math.abs(distance) > minSwipeDistance) {
+      if (distance > 0) {
+        // Swipe Left -> Next
+        setCurrentImageIndex((currentImageIndex + 1) % property.images.length);
+      } else {
+        // Swipe Right -> Prev
+        setCurrentImageIndex((currentImageIndex - 1 + property.images.length) % property.images.length);
+      }
+    }
+    setPointerStartX(null);
+    (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+  };
 
   // Fetch full property to get all ratings
   useEffect(() => {
@@ -247,6 +271,16 @@ const PropertyDetailsPage = () => {
                 onOpenLightbox={(idx) => { setCurrentImageIndex(idx); setShowLightbox(true); }}
                 currentImageIndex={currentImageIndex}
                 setCurrentImageIndex={setCurrentImageIndex}
+                propertyAltContext={{
+                  title:       property.title,
+                  type:        property.type,
+                  listingType: property.listingType,
+                  city:        property.location.city,
+                  bedrooms:    property.features.bedrooms,
+                  area:        property.features.area,
+                  pool:        property.features.pool,
+                  parking:     property.features.parking,
+                }}
               />
 
               {/* Property Header */}
@@ -778,14 +812,32 @@ const PropertyDetailsPage = () => {
             </button>
           </div>
 
-          {/* Main Image Stage */}
-          <div className="relative w-full h-full flex items-center justify-center select-none" onClick={(e) => e.stopPropagation()}>
+          {/* Main Image Stage with Pointer-based Swipe Gestures */}
+          <div
+            className="relative w-full h-full flex items-center justify-center select-none touch-pan-y"
+            onClick={(e) => e.stopPropagation()}
+            onPointerDown={handlePointerDown}
+            onPointerUp={handlePointerUp}
+          >
             <img
               src={getImageSrc(property.images[currentImageIndex], 'large')}
               srcSet={buildSrcSet(property.images[currentImageIndex])}
               sizes="100vw"
-              alt={`Full view ${currentImageIndex + 1}`}
-              className="max-w-full max-h-full object-contain shadow-2xl animate-zoom-in rounded-sm"
+              alt={buildPropertyImageAlt(
+                {
+                  title:       property.title,
+                  type:        property.type,
+                  listingType: property.listingType,
+                  city:        property.location.city,
+                  bedrooms:    property.features.bedrooms,
+                  area:        property.features.area,
+                  pool:        property.features.pool,
+                  parking:     property.features.parking,
+                },
+                currentImageIndex,
+                property.images.length
+              )}
+              className="max-w-full max-h-full object-contain shadow-2xl animate-zoom-in rounded-sm pointer-events-none"
             />
 
             {/* Large Navigation Arrows */}
@@ -808,7 +860,7 @@ const PropertyDetailsPage = () => {
           </div>
 
           {/* Caption Overlay */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-white/90 text-sm font-medium">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-white/90 text-sm font-medium text-center whitespace-nowrap">
             {property.title}
           </div>
         </div>

@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables (never commit secrets)
+.env
+.env.local
+
+# Uploaded files (served statically, stored outside repo)
+uploads/*
+!uploads/.gitkeep
+
+# Structured log files (runtime-generated, can be large)
+logs/*
+!logs/.gitkeep
+
+# Editor
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PM2
+.pm2/

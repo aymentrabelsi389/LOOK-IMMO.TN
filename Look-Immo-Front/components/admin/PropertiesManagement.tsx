@@ -19,6 +19,7 @@ import PropertyModal from './PropertyModal';
 import heic2any from 'heic2any';
 import { notify } from '../../services/notificationStore';
 import { useConfirm } from '../../context/ConfirmContext';
+import { getImageSrc } from '../../utils/imageUtils';
 const getDownloadUrl = (url: string) => {
   if (!url) return '';
   const cleanUrl = url.replace(BACKEND_URL, '');
@@ -68,7 +69,7 @@ const SortablePropertyItem = ({ p, openEditModal, handleDelete, appointments, op
           
           {/* Property Image */}
           <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-200 shrink-0 relative shadow-sm">
-            <img src={p.images[0]} className="w-full h-full object-cover" alt="" loading="lazy" />
+            <img src={getImageSrc(p.images[0], 'thumb')} className="w-full h-full object-cover" alt="" loading="lazy" />
           </div>
           
           {/* Details (Title, Location, Price) */}
@@ -234,7 +235,7 @@ const SortablePropertyItem = ({ p, openEditModal, handleDelete, appointments, op
             <GripVertical size={18} />
           </button>
           <div className="w-16 h-12 rounded-lg overflow-hidden border border-gray-200 mr-3 shrink-0 relative">
-            <img src={p.images[0]} className="w-full h-full object-cover" alt="" loading="lazy" />
+            <img src={getImageSrc(p.images[0], 'medium')} className="w-full h-full object-cover" alt="" loading="lazy" />
           </div>
           <div className="min-w-0">
             <h4 className="font-bold text-gray-900 group-hover:text-blue-600 transition truncate text-sm md:text-base">{p.title}</h4>

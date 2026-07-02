@@ -411,10 +411,10 @@ const DashboardPage = () => {
                   Bienvenue, <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-cyan-400 font-bold">{user.name}</span>
                 </h1>
                 <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border ${user.role === 'admin'
-                    ? 'bg-brand-teal/20 text-brand-teal border-brand-teal/30'
-                    : user.role === 'agent'
-                      ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
-                      : 'bg-white/10 text-white/80 border-white/20'
+                  ? 'bg-brand-teal/20 text-brand-teal border-brand-teal/30'
+                  : user.role === 'agent'
+                    ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                    : 'bg-white/10 text-white/80 border-white/20'
                   }`}>
                   {user.role}
                 </span>
@@ -1197,8 +1197,8 @@ const DashboardPage = () => {
                         type="button"
                         onClick={() => setDemandForm({ ...demandForm, type: opt.value as any })}
                         className={`flex flex-col items-center justify-center gap-0.5 py-2 px-1 rounded-xl border-2 text-xs font-bold transition-all duration-200 ${demandForm.type === opt.value
-                            ? 'bg-orange-50 border-orange-400 text-orange-700 shadow-sm shadow-orange-100'
-                            : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-200 hover:bg-white'
+                          ? 'bg-orange-50 border-orange-400 text-orange-700 shadow-sm shadow-orange-100'
+                          : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-200 hover:bg-white'
                           }`}
                       >
                         <span className="text-base leading-none">{opt.emoji}</span>

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Image as ImageIcon } from 'lucide-react';
-import { getImageSrc, buildSrcSet, getLQIP } from '../utils/imageUtils';
+import { getImageSrc, buildSrcSet, getLQIP, buildPropertyImageAlt, PropertyAltContext } from '../utils/imageUtils';
 
 interface PropertyGalleryProps {
   images: string[];
@@ -9,6 +9,8 @@ interface PropertyGalleryProps {
   onOpenLightbox: (index: number) => void;
   currentImageIndex: number;
   setCurrentImageIndex: (index: number) => void;
+  /** Property context for generating SEO-rich alt text on gallery images. */
+  propertyAltContext?: PropertyAltContext;
 }
 
 export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
@@ -18,6 +20,7 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
   onOpenLightbox,
   currentImageIndex,
   setCurrentImageIndex,
+  propertyAltContext,
 }) => {
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
@@ -116,10 +119,11 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
       >
         {images.length > 0 ? (
           <>
-            {/* Background Blur for mixed aspect ratios */}
+            {/* Background Blur — purely decorative, hidden from screen readers */}
             <img
               src={getImageSrc(images[currentImageIndex], 'medium')}
-              alt={`${title} bg`}
+              alt=""
+              aria-hidden="true"
               className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 scale-110 transition-all duration-500"
               loading="lazy"
               decoding="async"
@@ -143,7 +147,11 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
               src={getImageSrc(images[currentImageIndex], 'large')}
               srcSet={buildSrcSet(images[currentImageIndex])}
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 66vw, 800px"
-              alt={title}
+              alt={
+                propertyAltContext
+                  ? buildPropertyImageAlt(propertyAltContext, currentImageIndex, images.length)
+                  : title
+              }
               onLoad={(e) => handleImageLoad(currentImageIndex, e)}
               className={`relative z-10 w-full h-full transform scale-100 group-hover:scale-[1.02] transition-all duration-700 ease-in-out ${loadedImages[currentImageIndex] ? 'opacity-100' : 'opacity-0'} ${imageOrientations[currentImageIndex] === 'vertical' ? 'object-contain' : 'object-cover'}`}
               loading="eager"
@@ -229,7 +237,11 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
               >
                 <img
                   src={getImageSrc(img, 'thumb')}
-                  alt={`Thumbnail ${idx + 1}`}
+                  alt={
+                    propertyAltContext
+                      ? buildPropertyImageAlt(propertyAltContext, idx, images.length)
+                      : `${title} — photo ${idx + 1}`
+                  }
                   className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
                   loading="lazy"
                   decoding="async"

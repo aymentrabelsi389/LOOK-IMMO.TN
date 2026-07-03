@@ -26,69 +26,9 @@ export default defineConfig(() => {
         },
       },
     },
+
     plugins: [react()],
-    build: {
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (!id.includes('node_modules')) return;
 
-            // ── Mapping layer: heaviest libraries first ──────────────────────
-            // Leaflet + react-leaflet (map rendering) — only used on
-            // ContactPage and PropertyDetailsPage
-            if (id.includes('leaflet') || id.includes('react-leaflet')) {
-              return 'vendor-leaflet';
-            }
-
-            // Recharts + D3 (chart rendering) — only used in admin
-            // DashboardStats, never on public routes
-            if (id.includes('recharts') || id.includes('/d3')) {
-              return 'vendor-charts';
-            }
-
-            // socket.io-client — large (~180 kB), only connects after auth
-            if (id.includes('socket.io-client') || id.includes('engine.io-client')) {
-              return 'vendor-socket';
-            }
-
-            // @dnd-kit — drag-and-drop, only in PropertiesManagement (admin)
-            if (id.includes('@dnd-kit')) {
-              return 'vendor-dnd';
-            }
-
-            // @tanstack/react-query — data fetching layer
-            if (id.includes('@tanstack')) {
-              return 'vendor-query';
-            }
-
-            // Lucide icons — large but tree-shaken; keep separate so
-            // per-route chunks don't duplicate icon code
-            if (id.includes('lucide-react')) {
-              return 'vendor-icons';
-            }
-
-            // zod — validation, only used in forms
-            if (id.includes('zod')) {
-              return 'vendor-zod';
-            }
-
-            // date-fns — if present
-            if (id.includes('date-fns')) {
-              return 'vendor-date';
-            }
-
-            // react / react-dom — must stay in a dedicated chunk so Suspense
-            // boundaries and lazy() work before any async chunk loads
-            if (id.includes('react-dom') || id.includes('/react/')) {
-              return 'vendor-react';
-            }
-
-            // Everything else (zustand, cookie utilities, etc.)
-            return 'vendor';
-          }
-        }
-      }
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

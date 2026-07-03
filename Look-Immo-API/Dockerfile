@@ -1,6 +1,12 @@
 # ─── STAGE 1: Build ───────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:20-bookworm-slim AS builder
 WORKDIR /app
+
+# Install build dependencies (required for compiling/generating clients)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy dependency definition files
 COPY package*.json ./
@@ -19,12 +25,18 @@ RUN npx prisma generate
 RUN npm run build
 
 # ─── STAGE 2: Run ─────────────────────────────────────────────────────────────
-FROM node:20-alpine AS runner
+FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 
 # Set production environment
 ENV NODE_ENV=production
 ENV PORT=5000
+
+# Install production runtime dependencies (OpenSSL 3.0/1.1 compatibility)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    openssl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy package files
 COPY package*.json ./

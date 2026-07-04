@@ -13,7 +13,7 @@ const REFRESH_TOKEN_EXPIRY = '7d';
 const COOKIE_OPTIONS = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: (process.env.NODE_ENV === 'production' ? 'strict' : 'lax') as 'strict' | 'lax',
+    sameSite: 'lax' as 'lax',  // 'lax' works for same-domain nginx proxy; 'strict' blocks cookies on navigations
     path: '/',
 };
 

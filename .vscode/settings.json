@@ -1,0 +1,12 @@
+{
+  // Tell the SQL linter this workspace uses PostgreSQL, not T-SQL / SQL Server.
+  // This eliminates false-positive errors in Prisma migration .sql files.
+  "sql.dialect": "PostgreSQL",
+  "[sql]": {
+    "editor.defaultFormatter": "mtxr.sqltools"
+  },
+  "sqltools.useNodeRuntime": true,
+  "files.associations": {
+    "**/migrations/**/*.sql": "sql"
+  }
+}

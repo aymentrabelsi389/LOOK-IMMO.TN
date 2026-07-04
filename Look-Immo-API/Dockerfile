@@ -2,60 +2,62 @@
 FROM node:20-bookworm-slim AS builder
 WORKDIR /app
 
-# Install build dependencies (required for compiling/generating clients)
+# Install build dependencies (required for OpenSSL / Prisma schema-engine)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy dependency definition files
+# Copy dependency definition files and Prisma schema first (cache layer)
 COPY package*.json ./
 COPY prisma/ ./prisma/
 
-# Install all dependencies (including devDependencies for building)
+# Install ALL dependencies (devDeps needed for tsc + prisma generate)
 RUN npm ci
 
-# Copy the rest of the backend source files
-COPY . .
-
-# Generate the Prisma client files
+# Generate the Prisma Client from the schema
 RUN npx prisma generate
 
-# Compile TypeScript to JavaScript (creates /app/dist)
+# Copy the rest of the source
+COPY . .
+
+# Compile TypeScript → JavaScript (output: /app/dist)
 RUN npm run build
 
 # ─── STAGE 2: Run ─────────────────────────────────────────────────────────────
 FROM node:20-bookworm-slim AS runner
 WORKDIR /app
 
-# Set production environment
 ENV NODE_ENV=production
 ENV PORT=5000
 
-# Install production runtime dependencies (OpenSSL 3.0/1.1 compatibility)
+# Runtime dependency: OpenSSL (same version as builder so Prisma engines work)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy package files
+# Copy package files and Prisma schema (needed for migrate deploy at startup)
 COPY package*.json ./
 COPY prisma/ ./prisma/
 
-# Install only production dependencies
+# Production-only dependencies
 RUN npm ci --omit=dev
 
-# Copy compiled JavaScript from the builder stage
+# ── Key fix: copy the already-generated Prisma Client from the builder stage ──
+# This avoids needing to re-run prisma generate (and avoids permission issues
+# with globally-installed binaries).
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder /app/node_modules/@prisma/client ./node_modules/@prisma/client
+
+# Copy compiled JavaScript
 COPY --from=builder /app/dist ./dist
 
-# Install the Prisma CLI globally in the runner stage so we can run migrations at startup
-RUN npm install -g prisma@5.22.0
-
-# Generate Prisma Client specifically for the production node_modules
-RUN prisma generate
-
-# Expose API port
 EXPOSE 5000
 
-# Startup script to run migrations and start the Express server
-CMD ["sh", "-c", "prisma migrate deploy && node dist/index.js"]
+# ── Startup: run pending migrations then start the server ─────────────────────
+# Use npx (resolves the local prisma binary) instead of a global install.
+# npx prisma migrate deploy is safe to run on every container start:
+#   - It is a no-op when all migrations are already applied.
+#   - It applies only new migrations, never rolls back.
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]

@@ -12,4 +12,4 @@ uploads
 deployment_ssl_guide.md
 npm-debug.log
 yarn-error.log
-prisma/migrations
+

@@ -1,94 +1,73 @@
--- ============================================================
--- Migration: add_missing_fields
--- Adds every column/table that exists in schema.prisma but
--- was never captured in a previous migration file.
--- Safe to run on a database that already has some of these
--- columns — each ALTER TABLE uses IF NOT EXISTS guards,
--- and CREATE TABLE uses IF NOT EXISTS too.
--- ============================================================
-
--- ── Property: isHotDeal ─────────────────────────────────────
+-- ── Property: isHotDeal, averageRating, ratingsCount ────────────────────────
 ALTER TABLE "Property"
-    ADD COLUMN IF NOT EXISTS "isHotDeal" BOOLEAN NOT NULL DEFAULT false;
+    ADD COLUMN "isHotDeal"     BOOLEAN          NOT NULL DEFAULT false,
+    ADD COLUMN "averageRating" DOUBLE PRECISION NOT NULL DEFAULT 0.0,
+    ADD COLUMN "ratingsCount"  INTEGER          NOT NULL DEFAULT 0;
 
--- ── Property: averageRating ─────────────────────────────────
-ALTER TABLE "Property"
-    ADD COLUMN IF NOT EXISTS "averageRating" DOUBLE PRECISION NOT NULL DEFAULT 0.0;
-
--- ── Property: ratingsCount ──────────────────────────────────
-ALTER TABLE "Property"
-    ADD COLUMN IF NOT EXISTS "ratingsCount" INTEGER NOT NULL DEFAULT 0;
-
--- ── User: password-reset fields ─────────────────────────────
+-- ── User: password-reset fields ──────────────────────────────────────────────
 ALTER TABLE "User"
-    ADD COLUMN IF NOT EXISTS "resetCodeHash"      TEXT,
-    ADD COLUMN IF NOT EXISTS "resetCodeExpiresAt" TIMESTAMP(3),
-    ADD COLUMN IF NOT EXISTS "resetAttempts"      INTEGER NOT NULL DEFAULT 0;
+    ADD COLUMN "resetCodeHash"      TEXT,
+    ADD COLUMN "resetCodeExpiresAt" TIMESTAMP(3),
+    ADD COLUMN "resetAttempts"      INTEGER NOT NULL DEFAULT 0;
 
--- ── Message: subject ────────────────────────────────────────
+-- ── Message: optional subject line ───────────────────────────────────────────
 ALTER TABLE "Message"
-    ADD COLUMN IF NOT EXISTS "subject" TEXT;
+    ADD COLUMN "subject" TEXT;
 
--- ── RefreshToken table ──────────────────────────────────────
-CREATE TABLE IF NOT EXISTS "RefreshToken" (
-    "id"        TEXT NOT NULL,
-    "token"     TEXT NOT NULL,
-    "userId"    TEXT NOT NULL,
-    "familyId"  TEXT NOT NULL,
-    "used"      BOOLEAN NOT NULL DEFAULT false,
+-- ── Appointment: updatedAt (missing from original CREATE TABLE) ───────────────
+ALTER TABLE "Appointment"
+    ADD COLUMN "updatedAt" TIMESTAMP(3);
+
+-- Backfill updatedAt so NOT NULL constraint can be added safely later
+UPDATE "Appointment" SET "updatedAt" = "createdAt";
+
+-- ── RefreshToken table ────────────────────────────────────────────────────────
+CREATE TABLE "RefreshToken" (
+    "id"        TEXT         NOT NULL,
+    "token"     TEXT         NOT NULL,
+    "userId"    TEXT         NOT NULL,
+    "familyId"  TEXT         NOT NULL,
+    "used"      BOOLEAN      NOT NULL DEFAULT false,
     "expiresAt" TIMESTAMP(3) NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "RefreshToken_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS "RefreshToken_token_key" ON "RefreshToken"("token");
-CREATE INDEX IF NOT EXISTS "RefreshToken_userId_idx"   ON "RefreshToken"("userId");
-CREATE INDEX IF NOT EXISTS "RefreshToken_familyId_idx" ON "RefreshToken"("familyId");
-CREATE INDEX IF NOT EXISTS "RefreshToken_token_idx"    ON "RefreshToken"("token");
+CREATE UNIQUE INDEX "RefreshToken_token_key"    ON "RefreshToken"("token");
+CREATE INDEX        "RefreshToken_userId_idx"   ON "RefreshToken"("userId");
+CREATE INDEX        "RefreshToken_familyId_idx" ON "RefreshToken"("familyId");
+CREATE INDEX        "RefreshToken_token_idx"    ON "RefreshToken"("token");
 
-ALTER TABLE "RefreshToken"
-    DROP CONSTRAINT IF EXISTS "RefreshToken_userId_fkey";
 ALTER TABLE "RefreshToken"
     ADD CONSTRAINT "RefreshToken_userId_fkey"
-        FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+        FOREIGN KEY ("userId") REFERENCES "User"("id")
+        ON DELETE CASCADE ON UPDATE CASCADE;
 
--- ── FinanceTransaction table ─────────────────────────────────
-CREATE TABLE IF NOT EXISTS "FinanceTransaction" (
-    "id"              TEXT NOT NULL,
-    "type"            TEXT NOT NULL,
-    "propertyTitle"   TEXT NOT NULL,
-    "clientName"      TEXT NOT NULL,
-    "date"            TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+-- ── FinanceTransaction table ──────────────────────────────────────────────────
+CREATE TABLE "FinanceTransaction" (
+    "id"              TEXT             NOT NULL,
+    "type"            TEXT             NOT NULL,
+    "propertyTitle"   TEXT             NOT NULL,
+    "clientName"      TEXT             NOT NULL,
+    "date"            TIMESTAMP(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "commission"      DOUBLE PRECISION NOT NULL,
-    "paymentReceived" BOOLEAN NOT NULL DEFAULT false,
-    "paymentMode"     TEXT NOT NULL,
+    "paymentReceived" BOOLEAN          NOT NULL DEFAULT false,
+    "paymentMode"     TEXT             NOT NULL,
     "notes"           TEXT,
-    "createdAt"       TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt"       TIMESTAMP(3) NOT NULL,
+    "createdAt"       TIMESTAMP(3)     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt"       TIMESTAMP(3)     NOT NULL,
 
     CONSTRAINT "FinanceTransaction_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX IF NOT EXISTS "FinanceTransaction_type_date_idx" ON "FinanceTransaction"("type", "date");
+CREATE INDEX "FinanceTransaction_type_date_idx" ON "FinanceTransaction"("type", "date");
 
--- ── Property: missing indexes ────────────────────────────────
-CREATE INDEX IF NOT EXISTS "Property_isNew_idx"         ON "Property"("isNew");
-CREATE INDEX IF NOT EXISTS "Property_isHotDeal_idx"     ON "Property"("isHotDeal");
-CREATE INDEX IF NOT EXISTS "Property_displayOrder_idx"  ON "Property"("displayOrder");
-CREATE INDEX IF NOT EXISTS "Property_isFeatured_isNew_status_idx"
-    ON "Property"("isFeatured", "isNew", "status");
-CREATE INDEX IF NOT EXISTS "Property_status_type_price_idx"
-    ON "Property"("status", "type", "price");
-CREATE INDEX IF NOT EXISTS "Property_status_type_category_city_idx"
-    ON "Property"("status", "type", "category", "city");
-
--- ── Appointment: updatedAt (was missing from initial create) ─
-ALTER TABLE "Appointment"
-    ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3);
-
--- Backfill updatedAt for existing rows (set to createdAt)
-UPDATE "Appointment" SET "updatedAt" = "createdAt" WHERE "updatedAt" IS NULL;
-
--- ── Appointment: createdAt index ─────────────────────────────
-CREATE INDEX IF NOT EXISTS "Appointment_createdAt_idx" ON "Appointment"("createdAt");
+-- ── Property: missing indexes ─────────────────────────────────────────────────
+CREATE INDEX "Property_isNew_idx"                     ON "Property"("isNew");
+CREATE INDEX "Property_isHotDeal_idx"                 ON "Property"("isHotDeal");
+CREATE INDEX "Property_displayOrder_idx"              ON "Property"("displayOrder");
+CREATE INDEX "Property_isFeatured_isNew_status_idx"   ON "Property"("isFeatured", "isNew", "status");
+CREATE INDEX "Property_status_type_price_idx"         ON "Property"("status", "type", "price");
+CREATE INDEX "Property_status_type_category_city_idx" ON "Property"("status", "type", "category", "city");
+CREATE INDEX "Appointment_createdAt_idx"              ON "Appointment"("createdAt");

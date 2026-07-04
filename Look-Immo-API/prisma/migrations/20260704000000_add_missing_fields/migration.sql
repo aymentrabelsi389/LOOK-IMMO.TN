@@ -16,10 +16,10 @@ ALTER TABLE "Message"
 
 -- ── Appointment: updatedAt (missing from original CREATE TABLE) ───────────────
 ALTER TABLE "Appointment"
-    ADD COLUMN "updatedAt" TIMESTAMP(3);
+    ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3);
 
 -- Backfill updatedAt so NOT NULL constraint can be added safely later
-UPDATE "Appointment" SET "updatedAt" = "createdAt";
+UPDATE "Appointment" SET "updatedAt" = "createdAt" WHERE "updatedAt" IS NULL;
 
 -- ── RefreshToken table ────────────────────────────────────────────────────────
 CREATE TABLE "RefreshToken" (

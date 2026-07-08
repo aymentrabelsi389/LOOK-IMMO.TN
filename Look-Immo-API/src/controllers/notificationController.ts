@@ -1,26 +1,48 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/prisma';
 
-// Get all notifications
+// Get all notifications (with pagination and filters)
 export const getNotifications = async (req: Request, res: Response): Promise<void> => {
     try {
-        const { type, read, limit } = req.query;
+        const { filter, page = '1', limit = '20' } = req.query;
+        const p = parseInt(page as string) || 1;
+        const l = parseInt(limit as string) || 20;
+        const skip = (p - 1) * l;
 
-        const notifications = await prisma.notification.findMany({
-            where: {
-                ...(type ? { type: type as any } : {}),
-                ...(read !== undefined ? { read: read === 'true' } : {}),
-            },
-            include: {
-                user: {
-                    select: { id: true, name: true },
+        const todayStart = new Date();
+        todayStart.setUTCHours(0, 0, 0, 0);
+
+        const weekStart = new Date();
+        weekStart.setDate(weekStart.getDate() - 7);
+
+        const where: any = {
+            ...(filter === 'unread' ? { read: false } : {}),
+            ...(filter === 'today' ? { createdAt: { gte: todayStart } } : {}),
+            ...(filter === 'week' ? { createdAt: { gte: weekStart } } : {}),
+        };
+
+        const [notifications, total] = await Promise.all([
+            prisma.notification.findMany({
+                where,
+                include: {
+                    user: {
+                        select: { id: true, name: true },
+                    },
                 },
-            },
-            orderBy: { createdAt: 'desc' },
-            take: limit ? parseInt(limit as string) : 50,
-        });
+                orderBy: { createdAt: 'desc' },
+                skip,
+                take: l,
+            }),
+            prisma.notification.count({ where })
+        ]);
 
-        res.json(notifications);
+        res.json({
+            notifications,
+            total,
+            page: p,
+            limit: l,
+            totalPages: Math.ceil(total / l),
+        });
     } catch (error) {
         console.error('Get notifications error:', error);
         res.status(500).json({ error: 'Failed to get notifications' });
@@ -100,5 +122,16 @@ export const deleteReadNotifications = async (req: Request, res: Response): Prom
     } catch (error) {
         console.error('Delete read notifications error:', error);
         res.status(500).json({ error: 'Failed to delete read notifications' });
+    }
+};
+
+// Delete all notifications
+export const deleteAllNotifications = async (req: Request, res: Response): Promise<void> => {
+    try {
+        await prisma.notification.deleteMany({});
+        res.json({ message: 'All notifications deleted successfully' });
+    } catch (error) {
+        console.error('Delete all notifications error:', error);
+        res.status(500).json({ error: 'Failed to delete all notifications' });
     }
 };

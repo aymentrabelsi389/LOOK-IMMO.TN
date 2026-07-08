@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { deleteCache, clearCachePattern } from '../utils/redis';
 import { prisma } from '../utils/prisma';
+import { createNotification } from '../services/notificationService';
 
 // Get all ratings
 export const getRatings = async (req: Request, res: Response): Promise<void> => {
@@ -129,6 +130,21 @@ export const createRating = async (req: Request, res: Response): Promise<void> =
         await deleteCache(`properties:detail:${propertyId}`);
 
         res.status(201).json(rating);
+
+        // Send new rating notification for admins
+        try {
+            await createNotification({
+                type: 'rating_new',
+                title: 'Nouvel Avis',
+                message: `Le bien "${rating.property.title}" a reçu un nouvel avis de ${rating.stars} étoiles de ${rating.userName}.`,
+                icon: 'Star',
+                link: `/property/${propertyId}`,
+                userId: null,
+                metadata: { ratingId: rating.id, propertyId }
+            });
+        } catch (notifErr) {
+            console.error('Failed to create rating notification:', notifErr);
+        }
     } catch (error) {
         console.error('Create rating error:', error);
         res.status(500).json({ error: 'Failed to create rating' });

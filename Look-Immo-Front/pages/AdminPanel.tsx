@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ClientDemand } from '../types';
 import { statsAPI, clientDemandsAPI } from '../services/api';
 
@@ -44,7 +45,17 @@ const AdminPanel = () => {
     notify[type](message, options?.duration ? { duration: options.duration } : undefined);
   };
 
+  const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
+
+  useEffect(() => {
+    if (location.state && (location.state as any).tab) {
+      setActiveTab((location.state as any).tab);
+      // Clean up the location state so it doesn't trigger again on component updates
+      navigate(location.pathname, { replace: true, state: { ...location.state, tab: undefined } });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   const getPageTitle = (tab: string) => {
     const titles: Record<string, string> = {

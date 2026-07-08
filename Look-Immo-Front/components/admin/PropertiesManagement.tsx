@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   GripVertical, MapPin, Star, Edit, Trash2, Search, Plus,
   ChevronLeft, ChevronRight, X, Image as ImageIcon, List, ChevronDown,
@@ -69,7 +70,7 @@ const SortablePropertyItem = ({ p, openEditModal, handleDelete, appointments, op
           
           {/* Property Image */}
           <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-200 shrink-0 relative shadow-sm">
-            <img src={getImageSrc(p.images[0], 'thumb')} className="w-full h-full object-cover" alt="" loading="lazy" />
+            <img src={getImageSrc(p.images?.[0], 'thumb')} className="w-full h-full object-cover" alt="" loading="lazy" />
           </div>
           
           {/* Details (Title, Location, Price) */}
@@ -235,7 +236,7 @@ const SortablePropertyItem = ({ p, openEditModal, handleDelete, appointments, op
             <GripVertical size={18} />
           </button>
           <div className="w-16 h-12 rounded-lg overflow-hidden border border-gray-200 mr-3 shrink-0 relative">
-            <img src={getImageSrc(p.images[0], 'medium')} className="w-full h-full object-cover" alt="" loading="lazy" />
+            <img src={getImageSrc(p.images?.[0], 'medium')} className="w-full h-full object-cover" alt="" loading="lazy" />
           </div>
           <div className="min-w-0">
             <h4 className="font-bold text-gray-900 group-hover:text-blue-600 transition truncate text-sm md:text-base">{p.title}</h4>
@@ -474,6 +475,8 @@ const PropertiesManagement = ({
   user,
   clientDemands = []
 }: PropertiesManagementProps) => {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { appointments, setAppointments } = useData();
   const { confirm } = useConfirm();
   const [showModal, setShowModal] = useState(false);
@@ -574,6 +577,14 @@ const PropertiesManagement = ({
   const [gpsInput, setGpsInput] = useState('');
 
   const openAddModal = () => { setIsEditing(false); setEditingId(null); setFormData(initialPropertyState); setShowModal(true); };
+
+  useEffect(() => {
+    if (location.state && (location.state as any).action === 'new-property') {
+      openAddModal();
+      // Clear the action so it doesn't trigger again on subsequent updates
+      navigate(location.pathname, { replace: true, state: { ...location.state, action: undefined } });
+    }
+  }, [location.state, location.pathname, navigate]);
   const openEditModal = useCallback(async (p: Property) => {
     setIsEditing(true);
     setEditingId(p.id);
@@ -798,9 +809,10 @@ const PropertiesManagement = ({
   };
 
   const filteredProperties = properties.filter(p => {
-    const matchesSearch = p.title.toLowerCase().includes(propertySearchQuery.toLowerCase()) || p.location.city.toLowerCase().includes(propertySearchQuery.toLowerCase());
+    const city = p.location?.city || (p as any).city || '';
+    const matchesSearch = p.title.toLowerCase().includes(propertySearchQuery.toLowerCase()) || city.toLowerCase().includes(propertySearchQuery.toLowerCase());
     const matchesType = propertyTypeFilter === 'all' || p.type === propertyTypeFilter;
-    const matchesCity = propertyCityFilter === 'all' || p.location.city === propertyCityFilter;
+    const matchesCity = propertyCityFilter === 'all' || city === propertyCityFilter;
     return matchesSearch && matchesType && matchesCity;
   });
 
@@ -825,17 +837,17 @@ const PropertiesManagement = ({
 
   const handleDragEnd = async (event: any) => {
     const { active, over } = event;
-    if (active.id !== over.id) {
-      const oldIndex = sortedProperties.findIndex(p => p.id === active.id);
-      const newIndex = sortedProperties.findIndex(p => p.id === over.id);
-      const newOrder = arrayMove(sortedProperties, oldIndex, newIndex);
-      const updates = newOrder.map((p, i) => ({ id: p.id, displayOrder: i + 1 }));
-      setProperties(prev => prev.map(p => {
-        const up = updates.find(u => u.id === p.id);
-        return up ? { ...p, displayOrder: up.displayOrder } : p;
-      }));
-      await propertiesAPI.updateOrder(updates);
-    }
+    // Guard: over is null when dropping outside a droppable container (common on mobile touch)
+    if (!over || active.id === over.id) return;
+    const oldIndex = sortedProperties.findIndex(p => p.id === active.id);
+    const newIndex = sortedProperties.findIndex(p => p.id === over.id);
+    const newOrder = arrayMove(sortedProperties, oldIndex, newIndex);
+    const updates = newOrder.map((p, i) => ({ id: p.id, displayOrder: i + 1 }));
+    setProperties(prev => prev.map(p => {
+      const up = updates.find(u => u.id === p.id);
+      return up ? { ...p, displayOrder: up.displayOrder } : p;
+    }));
+    await propertiesAPI.updateOrder(updates);
   };
 
   return (

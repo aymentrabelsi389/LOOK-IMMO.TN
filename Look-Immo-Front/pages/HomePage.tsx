@@ -123,15 +123,15 @@ const HomePage = () => {
             {/* Input Row */}
             <div className="flex flex-col md:flex-row gap-4 relative">
               {/* Location Search with Dropdown */}
-              <div className="relative flex-1 group z-30">
-                <div className="absolute left-5 top-1/2 transform -translate-y-1/2 text-white">
+              <div className="relative flex-1 group z-30 min-h-[70px]">
+                <div className="absolute left-5 top-1/2 transform -translate-y-1/2 text-white pointer-events-none z-10">
                   <MapPin size={24} />
                 </div>
                 <input
                   type="text"
                   readOnly
                   placeholder="Choisir une ville..."
-                  className="w-full h-full bg-white/20 backdrop-blur-md text-white pl-14 pr-12 py-5 rounded-2xl border-2 border-white/30 focus:outline-none focus:border-brand-teal transition-all duration-300 white-placeholder text-lg shadow-lg cursor-pointer"
+                  className="absolute inset-0 w-full h-full bg-white/20 backdrop-blur-md text-white pl-14 pr-12 py-5 rounded-2xl border-2 border-white/30 focus:outline-none focus:border-brand-teal transition-all duration-300 white-placeholder text-lg shadow-lg cursor-pointer"
                   value={searchQuery}
                   onFocus={() => {
                     setForceShowAllLocations(true);

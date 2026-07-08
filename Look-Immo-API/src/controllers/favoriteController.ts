@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../utils/prisma';
+import { createNotification } from '../services/notificationService';
 
 // Get user's favorites
 export const getFavorites = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -57,6 +58,21 @@ export const addFavorite = async (req: AuthRequest, res: Response): Promise<void
         });
 
         res.status(201).json(favorite);
+
+        // Send favorite notification to admins/agents
+        try {
+            await createNotification({
+                type: 'wishlist_add',
+                title: 'Bien Enregistré',
+                message: `Le bien "${favorite.property.title}" a été ajouté aux favoris d'un utilisateur.`,
+                icon: 'Heart',
+                link: `/property/${propertyId}`,
+                userId: null,
+                metadata: { propertyId, userId }
+            });
+        } catch (notifErr) {
+            console.error('Failed to create favorite notification:', notifErr);
+        }
     } catch (error: any) {
         if (error.code === 'P2002') {
             res.status(400).json({ error: 'Already in favorites' });

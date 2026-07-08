@@ -117,6 +117,7 @@ router.get('/notifications/unread-count', authMiddleware, adminOnly, notificatio
 router.put('/notifications/:id/read', authMiddleware, adminOnly, notificationController.markAsRead);
 router.put('/notifications/mark-all-read', authMiddleware, adminOnly, notificationController.markAllAsRead);
 router.delete('/notifications/read', authMiddleware, adminOnly, notificationController.deleteReadNotifications);
+router.delete('/notifications/all', authMiddleware, adminOnly, notificationController.deleteAllNotifications);
 router.delete('/notifications/:id', authMiddleware, adminOnly, notificationController.deleteNotification);
 
 // ==================== STATISTICS ====================

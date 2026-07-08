@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { prisma } from '../utils/prisma';
 import { sendResetCodeEmail } from '../services/emailService';
+import { createNotification } from '../services/notificationService';
 
 const getAccessTokenSecret = () => process.env.JWT_SECRET || 'fallback-access-secret';
 const getRefreshTokenSecret = () => process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret';
@@ -88,6 +89,21 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         });
 
         const tokens = await setAuthCookies(res, user.id, user.email, user.role);
+
+        // Send registration notification for admins
+        try {
+            await createNotification({
+                type: 'user_signup',
+                title: 'Nouvel Utilisateur',
+                message: `${user.name} a créé un nouveau compte.`,
+                icon: 'UserPlus',
+                link: '/admin',
+                userId: null,
+                metadata: { userId: user.id }
+            });
+        } catch (notifErr) {
+            console.error('Failed to create signup notification:', notifErr);
+        }
 
         res.status(201).json({ user: { ...user, favorites: [] }, accessToken: tokens.accessToken });
     } catch (error) {
@@ -244,7 +260,7 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
         const tokens = await setAuthCookies(res, user.id, user.email, user.role, decoded.familyId);
 
         res.json({ message: 'Token refreshed', accessToken: tokens.accessToken });
-    } catch (error) {
+    } catch {
         res.clearCookie('access_token', COOKIE_OPTIONS);
         res.clearCookie('refresh_token', COOKIE_OPTIONS);
         res.status(401).json({ error: 'Invalid or expired refresh token' });

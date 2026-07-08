@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
   User as UserIcon, Plus, Clock, Heart, MapPin,
   BedDouble, Bath, Square, CalendarDays, Calendar, Edit2, X,
@@ -25,6 +26,8 @@ const DashboardPage = () => {
   });
 
   const { handleNavigate } = useUI();
+  const location = useLocation();
+  const navigate = useNavigate();
   const { confirm } = useConfirm();
   const { user, handleUpdateUser: onUpdateUser, handleToggleFavorite } = useAuthStore();
   const {
@@ -85,24 +88,9 @@ const DashboardPage = () => {
   // Additional props for the Add-Appointment modal
   const [addAdditionalProps, setAddAdditionalProps] = useState<string[]>([]);
 
-  // Property picker open/close state + refs for outside-click
-  const [aptPropPickerOpen, setAptPropPickerOpen] = useState(false);
-  const [editPropPickerOpen, setEditPropPickerOpen] = useState(false);
+  // Refs for property picker containers (outside-click)
   const aptPropPickerRef = React.useRef<HTMLDivElement>(null);
   const editPropPickerRef = React.useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (aptPropPickerRef.current && !aptPropPickerRef.current.contains(e.target as Node)) {
-        setAptPropPickerOpen(false);
-      }
-      if (editPropPickerRef.current && !editPropPickerRef.current.contains(e.target as Node)) {
-        setEditPropPickerOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
 
   const openEditAppointment = (apt: Appointment) => {
     setEditingAppointment(apt);
@@ -155,6 +143,24 @@ const DashboardPage = () => {
   const [aptForm, setAptForm] = useState<Partial<Appointment>>({
     clientName: '', clientPhone: '', source: 'other', meetingType: 'visite', date: '', time: '', message: '', propertyId: ''
   });
+
+  useEffect(() => {
+    if (location.state && (location.state as any).action === 'new-appointment') {
+      setAptForm({
+        clientName: '', clientPhone: '', source: 'other', meetingType: 'visite', date: '', time: '', message: '', propertyId: ''
+      });
+      setShowAptModal(true);
+      // Clear the action so it doesn't trigger again on subsequent updates
+      navigate(location.pathname, { replace: true, state: { ...location.state, action: undefined } });
+    } else if (location.state && (location.state as any).action === 'new-demand') {
+      setDemandForm({
+        clientName: '', phone: '', description: '', location: '', type: 'appartement', budget: 0, priority: 'medium', status: 'searching'
+      });
+      setShowDemandModal(true);
+      // Clear the action so it doesn't trigger again on subsequent updates
+      navigate(location.pathname, { replace: true, state: { ...location.state, action: undefined } });
+    }
+  }, [location.state, location.pathname, navigate]);
 
   // State for working hours editing
   const [isEditingHours, setIsEditingHours] = useState(false);
@@ -1011,8 +1017,8 @@ const DashboardPage = () => {
       {/* Add Appointment Modal */}
       {showAptModal && (
         <div className="fixed inset-0 bg-brand-dark/60 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in" onClick={() => setShowAptModal(false)}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col transform transition-all duration-300 border border-gray-100/50 scale-100 animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
-            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col transform transition-all duration-300 border border-gray-100/50 scale-100 animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 flex-shrink-0">
               <h3 className="text-lg font-serif font-bold text-brand-dark flex items-center">
                 <CalendarDays className="mr-2 text-brand-teal animate-pulse" size={22} />
                 Nouveau Rendez-vous
@@ -1021,7 +1027,7 @@ const DashboardPage = () => {
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleAddApt} className="p-6 space-y-4">
+            <form onSubmit={handleAddApt} className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="apt-client-name" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Nom Client *</label>
@@ -1107,12 +1113,13 @@ const DashboardPage = () => {
                       const isMain = aptForm.propertyId === p.id;
                       const isExtra = addAdditionalProps.includes(p.id);
                       const isSelected = isMain || isExtra;
+                      const priceStr = p.price ? p.price.toLocaleString('fr-TN') + ' DT' : '';
                       return (
                         <button
                           key={p.id}
                           type="button"
                           className={`prop-picker-item w-full flex items-center gap-3 px-4 py-2.5 text-left text-xs font-semibold transition-all border-t border-gray-50 ${isSelected ? 'bg-brand-teal/5 text-brand-teal' : 'text-gray-600 hover:bg-white'}`}
-                          data-title={p.title.toLowerCase()}
+                          data-title={`${p.title.toLowerCase()} ${p.price ?? ''}`}
                           onClick={() => {
                             if (isMain) {
                               setAptForm({ ...aptForm, propertyId: '' });
@@ -1128,8 +1135,11 @@ const DashboardPage = () => {
                           <span className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected ? 'border-brand-teal bg-brand-teal' : 'border-gray-300'}`}>
                             {isSelected && <Check size={10} className="text-white" />}
                           </span>
-                          <span className="flex-1 line-clamp-1">{p.title}</span>
-                          {isMain && <span className="text-[9px] font-black text-brand-teal uppercase tracking-wider bg-brand-teal/10 px-1.5 py-0.5 rounded-full">Principal</span>}
+                          <span className="flex-1 min-w-0">
+                            <span className="block line-clamp-1">{p.title}</span>
+                            {priceStr && <span className={`block text-[10px] font-bold mt-0.5 ${isSelected ? 'text-brand-teal/70' : 'text-gray-400'}`}>{priceStr}</span>}
+                          </span>
+                          {isMain && <span className="text-[9px] font-black text-brand-teal uppercase tracking-wider bg-brand-teal/10 px-1.5 py-0.5 rounded-full flex-shrink-0">Principal</span>}
                         </button>
                       );
                     })}
@@ -1152,8 +1162,8 @@ const DashboardPage = () => {
       {/* Add Demand Modal */}
       {showDemandModal && (
         <div className="fixed inset-0 bg-brand-dark/60 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in" onClick={() => setShowDemandModal(false)}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col transform transition-all duration-300 border border-gray-100/50 scale-100 animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
-            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-orange-50/50">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col transform transition-all duration-300 border border-gray-100/50 scale-100 animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-orange-50/50 flex-shrink-0">
               <h3 className="text-lg font-serif font-bold text-brand-dark flex items-center">
                 <Target className="mr-2 text-orange-500 animate-bounce" size={22} />
                 Nouvelle Demande Client
@@ -1162,7 +1172,7 @@ const DashboardPage = () => {
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleAddDemand} className="p-6 space-y-4">
+            <form onSubmit={handleAddDemand} className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="demand-client-name" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Nom Client *</label>
@@ -1258,8 +1268,8 @@ const DashboardPage = () => {
       {/* Edit Appointment Modal */}
       {editingAppointment && (
         <div className="fixed inset-0 bg-brand-dark/60 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in" onClick={() => setEditingAppointment(null)}>
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col transform transition-all duration-300 border border-gray-100/50 scale-100 animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
-            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col transform transition-all duration-300 border border-gray-100/50 scale-100 animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 flex-shrink-0">
               <h3 className="text-lg font-serif font-bold text-brand-dark">Modifier le rendez-vous</h3>
               <button
                 onClick={() => setEditingAppointment(null)}
@@ -1270,7 +1280,7 @@ const DashboardPage = () => {
               </button>
             </div>
 
-            <form onSubmit={saveEditAppointment} className="p-6 space-y-4">
+            <form onSubmit={saveEditAppointment} className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Date</label>
@@ -1346,12 +1356,13 @@ const DashboardPage = () => {
                       const isMain = editForm.propertyId === p.id;
                       const isExtra = editAdditionalProps.includes(p.id);
                       const isSelected = isMain || isExtra;
+                      const priceStr = p.price ? p.price.toLocaleString('fr-TN') + ' DT' : '';
                       return (
                         <button
                           key={p.id}
                           type="button"
                           className={`edit-prop-picker-item w-full flex items-center gap-3 px-4 py-2.5 text-left text-xs font-semibold transition-all border-t border-gray-50 ${isSelected ? 'bg-brand-teal/5 text-brand-teal' : 'text-gray-600 hover:bg-white'}`}
-                          data-title={p.title.toLowerCase()}
+                          data-title={`${p.title.toLowerCase()} ${p.price ?? ''}`}
                           onClick={() => {
                             if (isMain) {
                               setEditForm({ ...editForm, propertyId: '' });
@@ -1367,8 +1378,11 @@ const DashboardPage = () => {
                           <span className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected ? 'border-brand-teal bg-brand-teal' : 'border-gray-300'}`}>
                             {isSelected && <Check size={10} className="text-white" />}
                           </span>
-                          <span className="flex-1 line-clamp-1">{p.title}</span>
-                          {isMain && <span className="text-[9px] font-black text-brand-teal uppercase tracking-wider bg-brand-teal/10 px-1.5 py-0.5 rounded-full">Principal</span>}
+                          <span className="flex-1 min-w-0">
+                            <span className="block line-clamp-1">{p.title}</span>
+                            {priceStr && <span className={`block text-[10px] font-bold mt-0.5 ${isSelected ? 'text-brand-teal/70' : 'text-gray-400'}`}>{priceStr}</span>}
+                          </span>
+                          {isMain && <span className="text-[9px] font-black text-brand-teal uppercase tracking-wider bg-brand-teal/10 px-1.5 py-0.5 rounded-full flex-shrink-0">Principal</span>}
                         </button>
                       );
                     })}

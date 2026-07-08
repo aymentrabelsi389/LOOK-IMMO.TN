@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { emitToAdmin } from '../utils/socket';
 import { prisma } from '../utils/prisma';
+import { createNotification } from '../services/notificationService';
 
 // Get all messages
 export const getMessages = async (req: Request, res: Response): Promise<void> => {
@@ -77,6 +78,21 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
 
         // Emit socket event for real-time updates
         emitToAdmin('message_new', message);
+
+        // Create contact message notification for admins
+        try {
+            await createNotification({
+                type: 'message_new',
+                title: 'Nouveau Message',
+                message: `Vous avez reçu un nouveau message de ${message.name}.`,
+                icon: 'MessageSquare',
+                link: '/admin', // Will show messages tab in AdminPanel
+                userId: null,
+                metadata: { messageId: message.id }
+            });
+        } catch (notifErr) {
+            console.error('Failed to create message notification:', notifErr);
+        }
     } catch (error) {
         console.error('Create message error:', error);
         res.status(500).json({ error: 'Failed to create message' });

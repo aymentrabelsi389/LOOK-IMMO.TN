@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { emitToAdmin, emitToUser } from '../utils/socket';
 import { prisma } from '../utils/prisma';
+import { createNotification } from '../services/notificationService';
 
 // Get all appointments
 export const getAppointments = async (req: Request, res: Response): Promise<void> => {
@@ -158,20 +159,49 @@ export const createAppointment = async (req: Request, res: Response): Promise<vo
         // Emit socket event for real-time updates
         emitToAdmin('appointment_new', appointment);
 
-        // Find matching user to emit to their personal socket room
-        if (appointment.clientEmail || appointment.clientPhone) {
-            const clientUser = await prisma.user.findFirst({
-                where: {
-                    OR: [
-                        ...(appointment.clientEmail ? [{ email: appointment.clientEmail }] : []),
-                        ...(appointment.clientPhone ? [{ phone: appointment.clientPhone }] : [])
-                    ]
-                },
-                select: { id: true }
+        // Send appointment booking notifications
+        try {
+            const formattedDate = new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+            
+            // Create notification for admins/agents
+            await createNotification({
+                type: 'appointment_new',
+                title: 'Nouveau Rendez-vous',
+                message: `Nouveau rendez-vous planifié pour le ${formattedDate} à ${time}.`,
+                icon: 'Calendar',
+                link: '/admin', // Will point to appointments management
+                userId: null,
+                metadata: { appointmentId: appointment.id }
             });
-            if (clientUser) {
-                emitToUser(clientUser.id, 'appointment_new', appointment);
+
+            // Find matching user to emit to their personal socket room and create personal notification
+            if (appointment.clientEmail || appointment.clientPhone) {
+                const clientUser = await prisma.user.findFirst({
+                    where: {
+                        OR: [
+                            ...(appointment.clientEmail ? [{ email: appointment.clientEmail }] : []),
+                            ...(appointment.clientPhone ? [{ phone: appointment.clientPhone }] : [])
+                        ]
+                    },
+                    select: { id: true }
+                });
+                if (clientUser) {
+                    emitToUser(clientUser.id, 'appointment_new', appointment);
+                    
+                    // Create notification for the client user
+                    await createNotification({
+                        type: 'appointment_new',
+                        title: 'Rendez-vous Confirmé',
+                        message: `Votre demande de rendez-vous pour le ${formattedDate} à ${time} a été reçue.`,
+                        icon: 'Calendar',
+                        link: '/dashboard',
+                        userId: clientUser.id,
+                        metadata: { appointmentId: appointment.id }
+                    });
+                }
             }
+        } catch (notifErr) {
+            console.error('Failed to create appointment notifications:', notifErr);
         }
     } catch (error) {
         console.error('Create appointment error:', error);

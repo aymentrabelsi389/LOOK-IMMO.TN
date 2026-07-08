@@ -659,9 +659,9 @@ export const blogAPI = {
 
 // ==================== NOTIFICATIONS API ====================
 export const notificationsAPI = {
-    getAll: async (params?: Record<string, string>) => {
-        const query = params ? new URLSearchParams(params).toString() : '';
-        const res = await apiFetch(`/notifications${query ? `?${query}` : ''}`);
+    getAll: async (params?: { filter?: string; page?: number; limit?: number }) => {
+        const query = params ? '?' + new URLSearchParams(params as any).toString() : '';
+        const res = await apiFetch(`/notifications${query}`);
         return res.json();
     },
 
@@ -677,6 +677,21 @@ export const notificationsAPI = {
 
     markAllAsRead: async () => {
         const res = await apiFetch('/notifications/mark-all-read', { method: 'PUT' });
+        return res.json();
+    },
+
+    delete: async (id: string) => {
+        const res = await apiFetch(`/notifications/${id}`, { method: 'DELETE' });
+        return res.json();
+    },
+
+    deleteRead: async () => {
+        const res = await apiFetch('/notifications/read', { method: 'DELETE' });
+        return res.json();
+    },
+
+    deleteAll: async () => {
+        const res = await apiFetch('/notifications/all', { method: 'DELETE' });
         return res.json();
     },
 };
@@ -834,3 +849,5 @@ export const exchangeRatesAPI = {
         return res.json();
     },
 };
+
+

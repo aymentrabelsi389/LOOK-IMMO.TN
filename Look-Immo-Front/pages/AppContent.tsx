@@ -17,6 +17,7 @@ import SocialSidebar from '../layouts/SocialSidebar';
 import ToastContainer from '../components/ui/ToastContainer';
 import AuthRequiredModal from '../components/ui/AuthRequiredModal';
 import { PrivacyModal, TermsModal } from '../components/ui/LegalModals';
+import MobileBottomNavigation from '../components/admin/MobileBottomNavigation';
 
 // Page Components (Lazy Loaded)
 const HomePage = lazy(() => import('./HomePage'));
@@ -90,7 +91,7 @@ const AppContent = () => {
         />
       )}
 
-      <main className={`flex-1 flex flex-col ${!isAdminView ? 'pt-20 overflow-x-hidden' : ''}`}>
+      <main className={`flex-1 flex flex-col ${!isAdminView ? 'pt-20 overflow-x-hidden' : ''} ${(user?.role === 'admin' || user?.role === 'agent') ? 'pb-24 lg:pb-0' : ''}`}>
         <Suspense fallback={<LuxuryLoader message="Chargement de la page..." />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -128,6 +129,7 @@ const AppContent = () => {
       />
       <PrivacyModal isOpen={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} />
       <TermsModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
+      {(user?.role === 'admin' || user?.role === 'agent') && <MobileBottomNavigation />}
     </div>
   );
 };

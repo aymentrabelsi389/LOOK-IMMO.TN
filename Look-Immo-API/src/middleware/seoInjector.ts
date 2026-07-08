@@ -120,6 +120,49 @@ const buildSeoMetaTags = (meta: MetaData): string => {
 `;
 };
 
+let cachedIndexHtml: string | null = null;
+let cachedIndexHtmlTime = 0;
+const INDEX_HTML_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+/**
+ * Resolves the frontend index.html content.
+ * Checks the local filesystem first (development), then falls back to an HTTP fetch
+ * from the frontend container/service (production/Docker). Caches the result for 5 minutes.
+ */
+const getIndexHtml = async (): Promise<string | null> => {
+    // 1. Try local filesystem candidates first (efficient for dev/local)
+    const localPath = getIndexPath();
+    if (localPath) {
+        try {
+            return fs.readFileSync(localPath, 'utf8');
+        } catch (err) {
+            console.error('[SEO Injector] Failed to read local index.html:', err);
+        }
+    }
+
+    // 2. Try cache
+    const now = Date.now();
+    if (cachedIndexHtml && (now - cachedIndexHtmlTime < INDEX_HTML_CACHE_TTL)) {
+        return cachedIndexHtml;
+    }
+
+    // 3. Fallback to HTTP fetch from frontend service (crucial for Docker/production)
+    try {
+        const frontendUrl = process.env.FRONTEND_INTERNAL_URL || process.env.FRONTEND_URL || 'http://frontend';
+        const response = await fetch(`${frontendUrl}/index.html`);
+        if (response.ok) {
+            const html = await response.text();
+            cachedIndexHtml = html;
+            cachedIndexHtmlTime = now;
+            return html;
+        }
+    } catch (err) {
+        console.error('[SEO Injector] Failed to fetch index.html from frontend server:', err);
+    }
+
+    return null;
+};
+
 // ─── Middleware ────────────────────────────────────────────────────────────────
 
 /**
@@ -143,10 +186,10 @@ export const seoInjector = async (
 
     // ── Real-user fast path: serve the SPA shell directly ─────────────────────
     if (!isBot) {
-        const indexPath = getIndexPath();
-        if (indexPath) {
+        const html = await getIndexHtml();
+        if (html) {
             res.set('Content-Type', 'text/html');
-            res.sendFile(indexPath);
+            res.send(html);
         } else {
             // index.html not found (e.g. fresh dev environment without a build).
             // Fall through to next handler so Vite dev server can handle it.
@@ -156,8 +199,8 @@ export const seoInjector = async (
     }
 
     // ── Bot path: inject OG tags ───────────────────────────────────────────────
-    const indexPath = getIndexPath();
-    if (!indexPath) {
+    const template = await getIndexHtml();
+    if (!template) {
         console.warn('[SEO Injector] Frontend index.html not found — skipping OG injection.');
         next();
         return;
@@ -180,8 +223,6 @@ export const seoInjector = async (
     }
 
     try {
-        let template = fs.readFileSync(indexPath, 'utf8');
-
         // Default metadata (used when entity is not found or on DB error)
         let meta: MetaData = {
             title:       'Look Immo | Premium Real Estate Tunisia',

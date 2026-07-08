@@ -360,13 +360,13 @@ const Navbar = ({
             ? "translate-x-0 opacity-100 scale-100"
             : "-translate-x-full opacity-0 scale-[0.98]"
         }`}
-        style={{ height: "calc(85vh + 80px)" }}
+        style={{ height: "100dvh" }}
       >
         <div className="flex items-center justify-between px-5 py-5 border-b border-gray-100 bg-white shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 shrink-0 rounded-full bg-[#0B1C2D] border border-[#C6A75E]/30 p-[2px] flex items-center justify-center shadow-sm">
               <img
-                src="/look-immo-icon-gold.png"
+                src={logo}
                 alt="Logo"
                 className="w-full h-full object-contain"
                 loading="eager"

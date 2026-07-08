@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { getCache, setCache, deleteCache, clearCachePattern } from '../utils/redis';
 import { prisma } from '../utils/prisma';
+import { createNotification, checkPropertyMatchesAndNotify } from '../services/notificationService';
 
 // Get all properties
 export const getProperties = async (req: Request, res: Response): Promise<void> => {
@@ -214,15 +215,23 @@ export const createProperty = async (req: AuthRequest, res: Response): Promise<v
             },
         });
 
-        // Create notification
-        await prisma.notification.create({
-            data: {
+        // Create notification using the notification service
+        try {
+            await createNotification({
                 type: 'property_add',
-                message: `New property added: ${property.title}`,
-                entityId: property.id,
-                userId: ownerId,
-            },
-        });
+                title: 'Nouvelle Propriété',
+                message: `Une nouvelle propriété a été ajoutée : ${property.title}`,
+                icon: 'Home',
+                link: `/property/${property.id}`,
+                userId: null, // Send to all admins/agents
+                metadata: { propertyId: property.id }
+            });
+
+            // Check client demands and notify about matches
+            await checkPropertyMatchesAndNotify(property);
+        } catch (notifErr) {
+            console.error('Failed to create property notifications:', notifErr);
+        }
 
         // Invalidate property list cache
         await clearCachePattern('properties:list:*');

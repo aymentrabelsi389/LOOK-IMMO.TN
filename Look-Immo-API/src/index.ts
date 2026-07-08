@@ -29,6 +29,7 @@ import { connectRedis } from './utils/redis';
 import { initSocket } from './utils/socket';
 import { prisma } from './utils/prisma';
 import { initExchangeRateCron } from './services/exchangeRateService';
+import { initMorningReminderCron } from './services/cronService';
 import { logger } from './utils/logger';
 
 // ─── Startup Environment Validation ──────────────────────────────────────────
@@ -149,6 +150,7 @@ const server = http.createServer(app);
 initSocket(server);
 connectRedis();
 initExchangeRateCron();
+initMorningReminderCron();
 
 server.listen(PORT, () => {
     logger.info('Server started', {

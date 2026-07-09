@@ -17,7 +17,6 @@ import { propertiesAPI, uploadAPI, appointmentsAPI, BACKEND_URL } from '../../se
 import { useData } from '../../context/DataContext';
 import Price from '../Price';
 import PropertyModal from './PropertyModal';
-import heic2any from 'heic2any';
 import { notify } from '../../services/notificationStore';
 import { useConfirm } from '../../context/ConfirmContext';
 import { getImageSrc } from '../../utils/imageUtils';
@@ -739,7 +738,9 @@ const PropertiesManagement = ({
               progress: Math.round((idx / total) * 100)
             });
             try {
-              const convertedBlob = await heic2any({
+              const heic2anyModule = await import('heic2any');
+              const heic2anyFn = (heic2anyModule.default || heic2anyModule) as any;
+              const convertedBlob = await heic2anyFn({
                 blob: file,
                 toType: 'image/jpeg',
                 quality: 0.85

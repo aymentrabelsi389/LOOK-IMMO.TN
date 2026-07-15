@@ -205,25 +205,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     };
   }, [unreadCount, onUnreadCountChange]);
 
-  // Lock body scroll when drawer is open
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-  }, [isOpen]);
-
-  // Handle browser back
-  useEffect(() => {
-    if (!isOpen) return;
-    window.history.pushState({ notifDrawerOpen: true }, '');
-    const handlePopState = (e: PopStateEvent) => {
-      if (!e.state?.notifDrawerOpen) onClose();
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [isOpen, onClose]);
 
   const handleClose = async () => {
     // Mark all unread as read silently when closing
@@ -235,11 +216,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         onUnreadCountChange(0);
       } catch {}
     }
-    if (window.history.state?.notifDrawerOpen) {
-      window.history.back();
-    } else {
-      onClose();
-    }
+    onClose();
   };
 
   const handleMarkAsRead = async (id: string) => {

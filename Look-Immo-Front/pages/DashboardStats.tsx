@@ -43,8 +43,8 @@ const DashboardStats = ({ stats, propertiesCount }: DashboardStatsProps) => {
         <div className="flex items-center justify-between mb-6">
           <div><h3 className="text-xl font-bold text-gray-900">Performance Annuelle</h3><p className="text-sm text-gray-500 mt-1">Visites et nouveaux comptes par mois</p></div>
         </div>
-        <div className="h-72 w-full">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="relative w-full h-72 min-h-[288px] min-w-0 overflow-hidden">
+          <ResponsiveContainer width="99%" height="100%" minWidth={0}>
             <BarChart data={stats?.performance || []}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
               <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: '#94a3b8', fontSize: 12 }} />

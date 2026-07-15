@@ -386,7 +386,10 @@ const Navbar = ({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto pt-8 pb-6 px-4 bg-gradient-to-b from-white to-gray-50/30">
+        <div 
+          className="flex-1 overflow-y-auto overscroll-contain pt-8 pb-6 px-4 bg-gradient-to-b from-white to-gray-50/30"
+          style={{ WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}
+        >
           <div className="mb-8">
             <p className="px-5 mb-4 text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">
               Navigation

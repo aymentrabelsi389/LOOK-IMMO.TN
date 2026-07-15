@@ -6,7 +6,7 @@ const SocialSidebar = ({ settings }: { settings: SiteSettings | null }) => {
   const { user } = useAuthStore();
   const isAdmin = user?.role === 'admin' || user?.role === 'agent';
 
-  if (!settings || !settings.socialMedia) return null;
+  if (!settings || !settings.socialMedia || isAdmin) return null;
 
   const socialLinks = {
     facebook: settings.socialMedia.facebook || '#',

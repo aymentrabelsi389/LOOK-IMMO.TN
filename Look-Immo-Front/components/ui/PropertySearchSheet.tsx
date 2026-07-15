@@ -151,23 +151,9 @@ const PropertySearchSheet: React.FC<PropertySearchSheetProps> = ({ isOpen, onClo
     return () => { document.body.style.overflow = ''; };
   }, [isOpen]);
 
-  // Browser back closes the sheet
-  useEffect(() => {
-    if (!isOpen) return;
-    window.history.pushState({ searchOpen: true }, '');
-    const handlePop = (e: PopStateEvent) => {
-      if (!e.state?.searchOpen) onClose();
-    };
-    window.addEventListener('popstate', handlePop);
-    return () => window.removeEventListener('popstate', handlePop);
-  }, [isOpen, onClose]);
 
   const handleClose = useCallback(() => {
-    if (window.history.state?.searchOpen) {
-      window.history.back();
-    } else {
-      onClose();
-    }
+    onClose();
   }, [onClose]);
 
   // Debounced search
@@ -221,9 +207,9 @@ const PropertySearchSheet: React.FC<PropertySearchSheetProps> = ({ isOpen, onClo
 
   const handleSelectResult = useCallback((property: SearchResult) => {
     if (query.trim()) saveRecentSearch(query.trim());
-    handleClose();
+    onClose();
     navigate(`/property/${property.id}`);
-  }, [query, navigate, handleClose]);
+  }, [query, navigate, onClose]);
 
   const handleSelectSuggestion = useCallback((term: string) => {
     setQuery(term);

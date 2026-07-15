@@ -120,6 +120,7 @@ export const UIProvider = ({ children }: { children: React.ReactNode }) => {
     // ✅ Don't spread prev: always start from INITIAL_FILTERS so old values don't bleed through
     setFilters({ ...INITIAL_FILTERS, ...newFilters });
     navigate('/listings');
+    window.scrollTo({ top: 0, behavior: 'instant' });
   };
 
   return (

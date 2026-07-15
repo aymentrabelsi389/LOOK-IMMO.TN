@@ -93,7 +93,10 @@ const Footer = ({
                   <li
                     key={index}
                     className="hover:text-white cursor-pointer transition-colors duration-200"
-                    onClick={() => onSearch({ query: link.label })}
+                    onClick={() => {
+                      onSearch({ query: link.label });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                   >
                     {link.label}
                   </li>
@@ -102,19 +105,28 @@ const Footer = ({
                 <>
                   <li
                     className="hover:text-white cursor-pointer transition-colors duration-200"
-                    onClick={() => onSearch({ query: "Tunis" })}
+                    onClick={() => {
+                      onSearch({ query: "Tunis" });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                   >
                     Tunis
                   </li>
                   <li
                     className="hover:text-white cursor-pointer transition-colors duration-200"
-                    onClick={() => onSearch({ query: "Sousse" })}
+                    onClick={() => {
+                      onSearch({ query: "Sousse" });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                   >
                     Sousse
                   </li>
                   <li
                     className="hover:text-white cursor-pointer transition-colors duration-200"
-                    onClick={() => onSearch({ query: "Hammamet" })}
+                    onClick={() => {
+                      onSearch({ query: "Hammamet" });
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                   >
                     Hammamet
                   </li>

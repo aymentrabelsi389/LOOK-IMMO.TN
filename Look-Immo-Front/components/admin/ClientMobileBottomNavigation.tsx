@@ -110,7 +110,10 @@ const ClientMobileBottomNavigation = () => {
 
           {/* Item 2: Vente */}
           <button
-            onClick={() => handleSearch({ listingType: 'sale' })}
+            onClick={() => {
+              handleSearch({ listingType: 'sale' });
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             className="flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-200 cursor-pointer border-none bg-transparent"
             aria-label="Vente"
           >
@@ -143,7 +146,10 @@ const ClientMobileBottomNavigation = () => {
 
           {/* Item 4: Location */}
           <button
-            onClick={() => handleSearch({ listingType: 'rent' })}
+            onClick={() => {
+              handleSearch({ listingType: 'rent' });
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             className="flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-200 cursor-pointer border-none bg-transparent"
             aria-label="Location"
           >

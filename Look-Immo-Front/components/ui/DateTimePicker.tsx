@@ -148,6 +148,22 @@ interface TimePickerProps {
 export const CustomTimePicker: React.FC<TimePickerProps> = ({ value, onChange, required }) => {
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
+  
+  // Local states for custom hour and minute inputs
+  const [customHour, setCustomHour] = useState('');
+  const [customMinute, setCustomMinute] = useState('');
+
+  // Sync inputs with value whenever the popover is opened or value changed
+  useEffect(() => {
+    if (value && value.includes(':')) {
+      const [h, m] = value.split(':');
+      setCustomHour(h);
+      setCustomMinute(m);
+    } else {
+      setCustomHour('');
+      setCustomMinute('');
+    }
+  }, [value, isOpen]);
 
   // Close when clicking outside
   useEffect(() => {
@@ -160,10 +176,21 @@ export const CustomTimePicker: React.FC<TimePickerProps> = ({ value, onChange, r
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const timeSlots = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00"];
 
-  const handleSelectTime = (time: string) => {
-    onChange(time);
+
+  const handleCustomConfirm = () => {
+    let h = parseInt(customHour, 10);
+    let m = parseInt(customMinute, 10);
+
+    if (isNaN(h) || h < 0 || h > 23) {
+      h = 12; // default fallback
+    }
+    if (isNaN(m) || m < 0 || m > 59) {
+      m = 0; // default fallback
+    }
+
+    const formattedTime = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+    onChange(formattedTime);
     setIsOpen(false);
   };
 
@@ -187,26 +214,54 @@ export const CustomTimePicker: React.FC<TimePickerProps> = ({ value, onChange, r
       {required && <input type="text" value={value} readOnly className="absolute opacity-0 w-0 h-0" required />}
 
       {isOpen && (
-        <div className="absolute z-[100] mt-2 w-full bg-white rounded-2xl shadow-2xl border border-gray-100 p-2 animate-scale-in origin-top-left max-h-60 overflow-y-auto custom-scrollbar">
-          <div className="space-y-0.5">
-            {timeSlots.map((time) => {
-              const isSelected = value === time;
-              return (
-                <button
-                  key={time}
-                  type="button"
-                  onClick={() => handleSelectTime(time)}
-                  className={`w-full text-left px-4 py-3.5 text-sm font-semibold rounded-xl transition-all flex items-center justify-between cursor-pointer hover:scale-[1.02] active:scale-[0.98]
-                    ${isSelected
-                      ? 'bg-brand-teal text-white shadow-md shadow-brand-teal/20'
-                      : 'text-gray-700 hover:bg-gray-50'
-                    }`}
-                >
-                  <span>{time}</span>
-                  {isSelected && <span className="text-white text-xs font-bold">✓</span>}
-                </button>
-              );
-            })}
+        <div className="absolute z-[100] mt-2 w-full bg-white rounded-2xl shadow-2xl border border-gray-100 p-4 animate-scale-in origin-top-left">
+          {/* Custom Time Selector Section */}
+          <div className="mb-4">
+            <span className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Saisir une heure</span>
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1 bg-gray-50 p-1.5 border border-gray-200 rounded-xl flex-1 justify-center">
+                <input
+                  type="text"
+                  maxLength={2}
+                  value={customHour}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    if (val === '' || (parseInt(val, 10) >= 0 && parseInt(val, 10) <= 23)) {
+                      setCustomHour(val);
+                      // Auto-focus minutes if 2 digits are entered
+                      if (val.length === 2 && parseInt(val, 10) <= 23) {
+                        const minInput = document.getElementById('custom-minute-input');
+                        if (minInput) (minInput as HTMLInputElement).focus();
+                      }
+                    }
+                  }}
+                  placeholder="HH"
+                  className="w-10 text-center font-bold text-base bg-transparent border-none outline-none focus:ring-0 focus:outline-none p-0 text-gray-800"
+                />
+                <span className="text-gray-400 font-bold text-lg">:</span>
+                <input
+                  id="custom-minute-input"
+                  type="text"
+                  maxLength={2}
+                  value={customMinute}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, '');
+                    if (val === '' || (parseInt(val, 10) >= 0 && parseInt(val, 10) <= 59)) {
+                      setCustomMinute(val);
+                    }
+                  }}
+                  placeholder="MM"
+                  className="w-10 text-center font-bold text-base bg-transparent border-none outline-none focus:ring-0 focus:outline-none p-0 text-gray-800"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => handleCustomConfirm()}
+                className="px-4 py-2 bg-brand-teal hover:bg-brand-teal/90 text-white font-bold text-sm rounded-xl transition-all shadow-md shadow-brand-teal/20 flex items-center justify-center cursor-pointer"
+              >
+                Valider
+              </button>
+            </div>
           </div>
         </div>
       )}

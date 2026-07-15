@@ -64,7 +64,9 @@ const QuickCreateSheet: React.FC<QuickCreateSheetProps> = ({ isOpen, onClose }) 
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center lg:hidden pointer-events-none">
+    <div className={`fixed inset-0 z-[100] flex items-end justify-center lg:hidden ${
+      isOpen ? 'pointer-events-auto' : 'pointer-events-none'
+    }`}>
       {/* Backdrop overlay */}
       <div 
         onClick={handleClose}

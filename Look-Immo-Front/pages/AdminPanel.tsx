@@ -27,6 +27,7 @@ const FinancesManagement = lazy(() => import('../components/admin/FinancesManage
 const AdminPanel = () => {
   const { handleNavigate } = useUI();
   const { user, handleLogout: onLogout } = useAuthStore();
+
   const {
     properties, setProperties,
     availableLocations, setAvailableLocations,
@@ -78,8 +79,7 @@ const AdminPanel = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [targetUserId, setTargetUserId] = useState<string | null>(null);
   const [clientDemands, setClientDemands] = useState<ClientDemand[]>([]);
-  // Persist notification flag in localStorage so it only fires once, not on every mount
-  const MATCH_NOTIF_KEY = 'admin_match_notif_shown';
+
 
 
   useEffect(() => {
@@ -109,21 +109,7 @@ const AdminPanel = () => {
     fetchDemands();
   }, []);
 
-  useEffect(() => {
-    if (properties.length > 0 && clientDemands.length > 0) {
-      // Only show once — check if we've already notified this session
-      const alreadyShown = sessionStorage.getItem(MATCH_NOTIF_KEY);
-      if (alreadyShown) return;
 
-      const activeDemandsWithMatches = clientDemands.filter(
-        d => (d.status === 'searching' || d.status === 'contacted') && getMatchesCountForDemand(d) > 0
-      );
-      if (activeDemandsWithMatches.length > 0) {
-        notify.info(`Opportunités: ${activeDemandsWithMatches.length} demande(s) client ont des biens correspondants.`, { duration: 6000 });
-        sessionStorage.setItem(MATCH_NOTIF_KEY, 'true');
-      }
-    }
-  }, [properties, clientDemands]);
 
   // Helper to count matches for a single demand (to display badge count)
   const getMatchesCountForDemand = (demand: ClientDemand) => {
@@ -250,7 +236,7 @@ const AdminPanel = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F6FA] flex font-sans">
+    <div className="h-screen bg-[#F5F6FA] flex font-sans overflow-hidden">
       <AdminSidebar
         activeTab={activeTab} setActiveTab={setActiveTab}
         sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}
@@ -267,8 +253,9 @@ const AdminPanel = () => {
           sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}
           onLogout={onLogout} onNavigate={() => handleNavigate('home')}
           onProfileClick={() => handleNavigate('dashboard')}
+          isVisible={true}
         />
-        <main className="flex-1 p-6 md:p-8 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto p-6 md:p-8 pb-[72px] md:pb-8">
           <Suspense fallback={
             <div className="flex flex-col items-center justify-center p-20 space-y-4">
               <div className="w-10 h-10 border-4 border-brand-teal border-t-transparent rounded-full animate-spin"></div>

@@ -10,6 +10,7 @@ interface AdminHeaderProps {
   onNavigate: () => void;
   onProfileClick: () => void;
   title: string;
+  isVisible?: boolean;
 }
 
 const AdminHeader = ({
@@ -19,9 +20,8 @@ const AdminHeader = ({
   onLogout,
   onNavigate,
   onProfileClick,
-  title
+  title,
 }: AdminHeaderProps) => {
-
 
   return (
     <header className="h-20 bg-white border-b border-gray-200 sticky top-0 z-30 px-6 flex items-center justify-between shadow-sm">
@@ -29,8 +29,6 @@ const AdminHeader = ({
         <button onClick={() => setSidebarOpen(!sidebarOpen)} className="md:hidden mr-4 text-gray-500" aria-label="Basculer le menu latéral">
           <Menu size={24} />
         </button>
-
-        {/* Spacer for mobile menu alignment */}
         <h1 className="text-2xl font-bold text-gray-800 ml-4 hidden md:block">{title}</h1>
       </div>
 

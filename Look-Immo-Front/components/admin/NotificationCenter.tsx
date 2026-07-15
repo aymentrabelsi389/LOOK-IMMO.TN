@@ -22,7 +22,7 @@ export interface AppNotification {
   user?: { id: string; name: string } | null;
 }
 
-type FilterType = 'all' | 'unread' | 'today' | 'week';
+type FilterType = 'today' | 'week' | 'all';
 
 // ── Icon resolver ─────────────────────────────────────────────────────────────
 const getIcon = (iconName?: string, type?: string) => {
@@ -99,32 +99,34 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notif, onRead, onDe
 
   return (
     <div
-      className={`group relative flex items-start gap-3 px-4 py-3.5 transition-all duration-200 cursor-pointer hover:bg-white/[0.035] ${
-        !notif.read ? 'bg-brand-teal/[0.04]' : ''
-      }`}
       onClick={handleClick}
+      className={`relative px-5 py-4 flex items-start gap-3.5 transition-all duration-200 cursor-pointer ${
+        notif.read ? 'bg-transparent hover:bg-white/[0.02]' : 'bg-brand-teal/[0.03] hover:bg-brand-teal/[0.05]'
+      } group`}
     >
-      {/* Unread indicator */}
+      {/* Unread indicator dot */}
       {!notif.read && (
         <div className="absolute left-1.5 top-1/2 -translate-y-1/2 w-1.5 h-1.5 rounded-full bg-brand-teal" />
       )}
 
-      {/* Icon */}
-      <div className={`flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center ${getIconColors(notif.type)}`}>
+      {/* Icon wrapper */}
+      <div className={`flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center ${getIconColors(notif.type)}`}>
         {getIcon(notif.icon, notif.type)}
       </div>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className={`text-[13px] leading-snug ${notif.read ? 'text-white/60' : 'text-white font-medium'}`}>
-          {notif.title && (
-            <span className={`block text-[11px] uppercase tracking-wider mb-0.5 ${notif.read ? 'text-white/30' : 'text-brand-teal'}`}>
-              {notif.title}
-            </span>
-          )}
+        {notif.title && (
+          <h4 className="text-[11px] font-bold text-[#C6A75E] uppercase tracking-wider mb-0.5">
+            {notif.title}
+          </h4>
+        )}
+        <p className="text-[13px] text-white/80 font-medium leading-relaxed break-words">
           {notif.message}
         </p>
-        <p className="text-[11px] text-white/30 mt-1">{formatRelativeTime(notif.createdAt)}</p>
+        <span className="text-[10px] text-white/30 font-medium mt-1 block">
+          {formatRelativeTime(notif.createdAt)}
+        </span>
       </div>
 
       {/* Delete action */}
@@ -155,7 +157,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
 }) => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [filter, setFilter] = useState<FilterType>('all');
+  const [filter, setFilter] = useState<FilterType>('today');
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -210,9 +212,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     } else {
       document.body.style.overflow = '';
     }
-    return () => {
-      document.body.style.overflow = '';
-    };
   }, [isOpen]);
 
   // Handle browser back
@@ -226,7 +225,16 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
     return () => window.removeEventListener('popstate', handlePopState);
   }, [isOpen, onClose]);
 
-  const handleClose = () => {
+  const handleClose = async () => {
+    // Mark all unread as read silently when closing
+    const hasUnreadNotifs = notifications.some(n => !n.read);
+    if (hasUnreadNotifs) {
+      try {
+        await notificationsAPI.markAllAsRead();
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+        onUnreadCountChange(0);
+      } catch {}
+    }
     if (window.history.state?.notifDrawerOpen) {
       window.history.back();
     } else {
@@ -243,16 +251,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
       await refreshUnreadCount();
     } catch (err) {
       console.error('Mark as read failed:', err);
-    }
-  };
-
-  const handleMarkAllAsRead = async () => {
-    try {
-      await notificationsAPI.markAllAsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-      onUnreadCountChange(0);
-    } catch (err) {
-      console.error('Mark all as read failed:', err);
     }
   };
 
@@ -280,7 +278,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const handleNavigate = (notif: AppNotification) => {
     handleClose();
     if (notif.link) {
-      // If it's a demand match, pass metadata so the admin panel can highlight the match
       if (notif.type === 'demand_match' && notif.metadata?.demandId) {
         navigate('/admin', {
           replace: true,
@@ -300,16 +297,15 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
   };
 
   const filters: { key: FilterType; label: string }[] = [
-    { key: 'all',    label: 'Tout' },
-    { key: 'unread', label: 'Non lu' },
     { key: 'today',  label: "Auj." },
     { key: 'week',   label: 'Semaine' },
+    { key: 'all',    label: 'Tout' },
   ];
 
-  const hasUnread = notifications.some(n => !n.read);
-
   return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center lg:hidden pointer-events-none">
+    <div className={`fixed inset-0 z-[100] flex items-end justify-center lg:hidden ${
+      isOpen ? 'pointer-events-auto' : 'pointer-events-none'
+    }`}>
       {/* Backdrop */}
       <div
         onClick={handleClose}
@@ -323,7 +319,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
         className={`relative w-full max-w-md bg-[#0C1F32] rounded-t-[28px] border-t border-white/10 shadow-[0_-12px_40px_rgba(0,0,0,0.5)] z-10 transition-transform duration-300 ease-in-out transform flex flex-col ${
           isOpen ? 'translate-y-0 pointer-events-auto' : 'translate-y-full pointer-events-none'
         }`}
-        style={{ height: '70svh', maxHeight: '85svh' }}
+        style={{ height: '70%', maxHeight: '85%' }}
       >
         {/* Drag handle */}
         <div className="w-10 h-1 bg-white/20 rounded-full mx-auto my-3 flex-shrink-0" />
@@ -340,7 +336,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
             )}
           </div>
           <div className="flex items-center gap-2">
-            {/* Refresh */}
             <button
               onClick={handleRefresh}
               className="p-1.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-full transition-all duration-200"
@@ -348,7 +343,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
             >
               <RefreshCw size={14} className={isRefreshing ? 'animate-spin' : ''} />
             </button>
-            {/* Close */}
             <button
               onClick={handleClose}
               className="p-1.5 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded-full transition-all duration-200"
@@ -374,18 +368,6 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
               {f.label}
             </button>
           ))}
-
-          {/* Spacer + batch actions */}
-          <div className="flex-1" />
-          {hasUnread && (
-            <button
-              onClick={handleMarkAllAsRead}
-              className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold bg-white/5 text-white/50 hover:bg-white/10 hover:text-white/80 transition-all duration-200"
-            >
-              <CheckCheck size={12} />
-              <span>Tout lire</span>
-            </button>
-          )}
         </div>
 
         {/* Notifications List */}
@@ -402,7 +384,7 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({
               </div>
               <p className="text-white/50 text-sm font-medium">Aucune notification</p>
               <p className="text-white/25 text-xs">
-                {filter === 'unread' ? 'Tout est lu !' : 'Aucune activité pour cette période.'}
+                Aucune activité pour cette période.
               </p>
             </div>
           ) : (

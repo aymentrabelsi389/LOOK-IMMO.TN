@@ -1118,7 +1118,7 @@ const DashboardPage = () => {
                         <button
                           key={p.id}
                           type="button"
-                          className={`prop-picker-item w-full flex items-center gap-3 px-4 py-2.5 text-left text-xs font-semibold transition-all border-t border-gray-50 ${isSelected ? 'bg-brand-teal/5 text-brand-teal' : 'text-gray-600 hover:bg-white'}`}
+                          className={`prop-picker-item w-full flex items-center gap-3 px-4 py-2 text-left text-xs font-semibold transition-all border-t border-gray-50 ${isSelected ? 'bg-brand-teal/5 text-brand-teal' : 'text-gray-600 hover:bg-white'}`}
                           data-title={`${p.title.toLowerCase()} ${p.price ?? ''}`}
                           onClick={() => {
                             if (isMain) {
@@ -1135,8 +1135,25 @@ const DashboardPage = () => {
                           <span className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected ? 'border-brand-teal bg-brand-teal' : 'border-gray-300'}`}>
                             {isSelected && <Check size={10} className="text-white" />}
                           </span>
+                          
+                          {/* Property Thumbnail */}
+                          <div 
+                            className="w-9 h-7 rounded-md overflow-hidden flex-shrink-0 relative bg-gray-100 border border-gray-100/70 shadow-sm"
+                            style={{
+                              backgroundImage: p.images && p.images[0] && getLQIP(p.images[0]) ? `url(${getLQIP(p.images[0])})` : undefined,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                            }}
+                          >
+                            {p.images && p.images[0] ? (
+                              <img src={getImageSrc(p.images[0], 'thumb')} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-300 text-[10px]">🏠</div>
+                            )}
+                          </div>
+
                           <span className="flex-1 min-w-0">
-                            <span className="block line-clamp-1">{p.title}</span>
+                            <span className="block truncate">{p.title}</span>
                             {priceStr && <span className={`block text-[10px] font-bold mt-0.5 ${isSelected ? 'text-brand-teal/70' : 'text-gray-400'}`}>{priceStr}</span>}
                           </span>
                           {isMain && <span className="text-[9px] font-black text-brand-teal uppercase tracking-wider bg-brand-teal/10 px-1.5 py-0.5 rounded-full flex-shrink-0">Principal</span>}
@@ -1184,41 +1201,15 @@ const DashboardPage = () => {
                 </div>
               </div>
               <div>
-                <label htmlFor="demand-description" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Description / Recherche *</label>
+                <label htmlFor="demand-description" className="block text-xs font-bold text-gray-505 mb-1.5 uppercase tracking-wider">Description / Recherche *</label>
                 <textarea id="demand-description" required value={demandForm.description} onChange={e => setDemandForm({ ...demandForm, description: e.target.value })} rows={2} className="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm" placeholder="Ex: Cherche villa avec piscine..."></textarea>
               </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="demand-location" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Localisation *</label>
+                  <label htmlFor="demand-location" className="block text-xs font-bold text-gray-505 mb-1.5 uppercase tracking-wider">Localisation *</label>
                   <input id="demand-location" required type="text" value={demandForm.location} onChange={e => setDemandForm({ ...demandForm, location: e.target.value })} placeholder="Ex: La Marsa, Tunis..." className="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm" />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Type de bien *</label>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {[
-                      { value: 'appartement', label: 'Appart.', emoji: '🏢' },
-                      { value: 'villa', label: 'Villa', emoji: '🏡' },
-                      { value: 'terrain', label: 'Terrain', emoji: '🌿' },
-                      { value: 'bureau', label: 'Bureau', emoji: '💼' },
-                      { value: 'commerce', label: 'Commerce', emoji: '🏪' },
-                    ].map(opt => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setDemandForm({ ...demandForm, type: opt.value as any })}
-                        className={`flex flex-col items-center justify-center gap-0.5 py-2 px-1 rounded-xl border-2 text-xs font-bold transition-all duration-200 ${demandForm.type === opt.value
-                          ? 'bg-orange-50 border-orange-400 text-orange-700 shadow-sm shadow-orange-100'
-                          : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-200 hover:bg-white'
-                          }`}
-                      >
-                        <span className="text-base leading-none">{opt.emoji}</span>
-                        <span className="leading-none mt-0.5">{opt.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="demand-budget" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Budget Max (DT)</label>
                   <input
@@ -1235,25 +1226,52 @@ const DashboardPage = () => {
                     className="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Priorité</label>
-                  <div className="flex gap-2">
-                    {[
-                      { value: 'high', label: '🔴 Haute', active: 'bg-red-50 border-red-400 text-red-700 shadow-sm shadow-red-100', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-red-200 hover:bg-red-50/50' },
-                      { value: 'medium', label: '🟡 Moyenne', active: 'bg-amber-50 border-amber-400 text-amber-700 shadow-sm shadow-amber-100', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-amber-200 hover:bg-amber-50/50' },
-                      { value: 'low', label: '🟢 Basse', active: 'bg-green-50 border-green-400 text-green-700 shadow-sm shadow-green-100', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-green-200 hover:bg-green-50/50' },
-                    ].map(opt => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setDemandForm({ ...demandForm, priority: opt.value as any })}
-                        className={`flex-1 py-2.5 rounded-xl border-2 text-xs font-bold transition-all duration-200 ${demandForm.priority === opt.value ? opt.active : opt.inactive
-                          }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Type de bien *</label>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  {[
+                    { value: 'appartement', label: 'Appartement', emoji: '🏢' },
+                    { value: 'villa', label: 'Villa', emoji: '🏡' },
+                    { value: 'terrain', label: 'Terrain', emoji: '🌿' },
+                    { value: 'bureau', label: 'Bureau', emoji: '💼' },
+                    { value: 'commerce', label: 'Commerce', emoji: '🏪' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setDemandForm({ ...demandForm, type: opt.value as any })}
+                      className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl border-2 text-xs font-bold transition-all duration-200 ${demandForm.type === opt.value
+                        ? 'bg-orange-50 border-orange-400 text-orange-700 shadow-sm shadow-orange-100'
+                        : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-200 hover:bg-white'
+                        }`}
+                    >
+                      <span className="text-lg leading-none">{opt.emoji}</span>
+                      <span className="leading-none mt-0.5">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-505 mb-2 uppercase tracking-wider">Priorité</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'high', label: '🔴 Haute', active: 'bg-red-50 border-red-400 text-red-700 shadow-sm shadow-red-100', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-red-200 hover:bg-red-50/50' },
+                    { value: 'medium', label: '🟡 Moyenne', active: 'bg-amber-50 border-amber-400 text-amber-700 shadow-sm shadow-amber-100', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-amber-200 hover:bg-amber-50/50' },
+                    { value: 'low', label: '🟢 Basse', active: 'bg-green-50 border-green-400 text-green-700 shadow-sm shadow-green-100', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-green-200 hover:bg-green-50/50' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setDemandForm({ ...demandForm, priority: opt.value as any })}
+                      className={`py-2.5 rounded-2xl border-2 text-xs font-bold transition-all duration-200 text-center ${demandForm.priority === opt.value ? opt.active : opt.inactive
+                        }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               </div>
               <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
@@ -1361,7 +1379,7 @@ const DashboardPage = () => {
                         <button
                           key={p.id}
                           type="button"
-                          className={`edit-prop-picker-item w-full flex items-center gap-3 px-4 py-2.5 text-left text-xs font-semibold transition-all border-t border-gray-50 ${isSelected ? 'bg-brand-teal/5 text-brand-teal' : 'text-gray-600 hover:bg-white'}`}
+                          className={`edit-prop-picker-item w-full flex items-center gap-3 px-4 py-2 text-left text-xs font-semibold transition-all border-t border-gray-50 ${isSelected ? 'bg-brand-teal/5 text-brand-teal' : 'text-gray-600 hover:bg-white'}`}
                           data-title={`${p.title.toLowerCase()} ${p.price ?? ''}`}
                           onClick={() => {
                             if (isMain) {
@@ -1378,8 +1396,25 @@ const DashboardPage = () => {
                           <span className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${isSelected ? 'border-brand-teal bg-brand-teal' : 'border-gray-300'}`}>
                             {isSelected && <Check size={10} className="text-white" />}
                           </span>
+                          
+                          {/* Property Thumbnail */}
+                          <div 
+                            className="w-9 h-7 rounded-md overflow-hidden flex-shrink-0 relative bg-gray-100 border border-gray-100/70 shadow-sm"
+                            style={{
+                              backgroundImage: p.images && p.images[0] && getLQIP(p.images[0]) ? `url(${getLQIP(p.images[0])})` : undefined,
+                              backgroundSize: 'cover',
+                              backgroundPosition: 'center',
+                            }}
+                          >
+                            {p.images && p.images[0] ? (
+                              <img src={getImageSrc(p.images[0], 'thumb')} alt="" className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-gray-300 text-[10px]">🏠</div>
+                            )}
+                          </div>
+
                           <span className="flex-1 min-w-0">
-                            <span className="block line-clamp-1">{p.title}</span>
+                            <span className="block truncate">{p.title}</span>
                             {priceStr && <span className={`block text-[10px] font-bold mt-0.5 ${isSelected ? 'text-brand-teal/70' : 'text-gray-400'}`}>{priceStr}</span>}
                           </span>
                           {isMain && <span className="text-[9px] font-black text-brand-teal uppercase tracking-wider bg-brand-teal/10 px-1.5 py-0.5 rounded-full flex-shrink-0">Principal</span>}

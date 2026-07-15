@@ -135,7 +135,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onSelect, isFavor
               <>
                 <div className="flex items-center whitespace-nowrap" title="Surface"><span className="mr-1">📐</span><span className="truncate">{property.features.area} m²</span></div>
                 <div className="flex items-center whitespace-nowrap" title="Vocation"><span className="mr-1">🏗️</span><span className="truncate">{property.features.vocation ? property.features.vocation.replace(/résidentiel|residentiel/gi, '').trim() : 'N/A'}</span></div>
-                <div className="flex items-center whitespace-nowrap" title="COS"><span className="mr-1">📊</span><span className="truncate">COS {property.features.cos || 'N/A'}</span></div>
+
               </>
             ) : (
               <>

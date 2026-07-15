@@ -852,7 +852,7 @@ const DemandsManagement = ({
                 ></textarea>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Localisation *</label>
                   <input
@@ -863,35 +863,6 @@ const DemandsManagement = ({
                     className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium transition-all"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Type de bien *</label>
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {[
-                      { value: 'appartement', label: 'Appart.', emoji: '🏢' },
-                      { value: 'villa', label: 'Villa', emoji: '🏡' },
-                      { value: 'terrain', label: 'Terrain', emoji: '🌿' },
-                      { value: 'bureau', label: 'Bureau', emoji: '💼' },
-                      { value: 'commerce', label: 'Commerce', emoji: '🏪' },
-                    ].map(opt => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setEditingDemand({ ...editingDemand, type: opt.value as any })}
-                        className={`flex flex-col items-center justify-center gap-0.5 py-2 px-1 rounded-xl border-2 text-xs font-bold transition-all duration-200 ${
-                          editingDemand.type === opt.value
-                            ? 'bg-blue-50 border-blue-400 text-blue-700 shadow-sm shadow-blue-100'
-                            : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-300 hover:bg-white'
-                        }`}
-                      >
-                        <span className="text-base leading-none">{opt.emoji}</span>
-                        <span className="leading-none mt-0.5">{opt.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Budget Max (DT)</label>
                   <input
@@ -907,26 +878,54 @@ const DemandsManagement = ({
                     className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium transition-all"
                   />
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Priorité</label>
-                  <div className="flex gap-2">
-                    {[
-                      { value: 'high', label: '🔴 Haute', active: 'bg-red-50 border-red-400 text-red-700 shadow-sm', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-red-200 hover:bg-red-50/50' },
-                      { value: 'medium', label: '🟡 Moyenne', active: 'bg-amber-50 border-amber-400 text-amber-700 shadow-sm', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-amber-200 hover:bg-amber-50/50' },
-                      { value: 'low', label: '🟢 Basse', active: 'bg-green-50 border-green-400 text-green-700 shadow-sm', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-green-200 hover:bg-green-50/50' },
-                    ].map(opt => (
-                      <button
-                        key={opt.value}
-                        type="button"
-                        onClick={() => setEditingDemand({ ...editingDemand, priority: opt.value as any })}
-                        className={`flex-1 py-2.5 rounded-xl border-2 text-xs font-bold transition-all duration-200 ${
-                          editingDemand.priority === opt.value ? opt.active : opt.inactive
-                        }`}
-                      >
-                        {opt.label}
-                      </button>
-                    ))}
-                  </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Type de bien *</label>
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
+                  {[
+                    { value: 'appartement', label: 'Appartement', emoji: '🏢' },
+                    { value: 'villa', label: 'Villa', emoji: '🏡' },
+                    { value: 'terrain', label: 'Terrain', emoji: '🌿' },
+                    { value: 'bureau', label: 'Bureau', emoji: '💼' },
+                    { value: 'commerce', label: 'Commerce', emoji: '🏪' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setEditingDemand({ ...editingDemand, type: opt.value as any })}
+                      className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl border-2 text-xs font-bold transition-all duration-200 ${
+                        editingDemand.type === opt.value
+                          ? 'bg-blue-50 border-blue-400 text-blue-700 shadow-sm shadow-blue-100'
+                          : 'bg-gray-50 border-gray-100 text-gray-500 hover:border-gray-300 hover:bg-white'
+                      }`}
+                    >
+                      <span className="text-lg leading-none">{opt.emoji}</span>
+                      <span className="leading-none mt-0.5">{opt.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Priorité</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'high', label: '🔴 Haute', active: 'bg-red-50 border-red-400 text-red-700 shadow-sm', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-red-200 hover:bg-red-50/50' },
+                    { value: 'medium', label: '🟡 Moyenne', active: 'bg-amber-50 border-amber-400 text-amber-700 shadow-sm', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-amber-200 hover:bg-amber-50/50' },
+                    { value: 'low', label: '🟢 Basse', active: 'bg-green-50 border-green-400 text-green-700 shadow-sm', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-green-200 hover:bg-green-50/50' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setEditingDemand({ ...editingDemand, priority: opt.value as any })}
+                      className={`py-2.5 rounded-2xl border-2 text-xs font-bold transition-all duration-200 text-center ${
+                        editingDemand.priority === opt.value ? opt.active : opt.inactive
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 

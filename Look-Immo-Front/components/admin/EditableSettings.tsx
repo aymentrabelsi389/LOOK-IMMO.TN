@@ -160,14 +160,14 @@ const EditableSettings = ({ settings, setSettings, availableLocations }: Editabl
     <div className="animate-fade-in-up pb-12">
       {/* Sticky Save Bar — only shown when there are unsaved changes */}
       {hasChanges && (
-        <div className="flex justify-between items-center mb-6 bg-white p-4 rounded-2xl border border-brand-teal/30 shadow-md sticky top-0 z-20">
-          <p className="text-sm text-brand-teal font-medium">Vous avez des modifications non enregistrées</p>
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-center justify-between mb-6 bg-white p-4 rounded-2xl border border-brand-teal/30 shadow-md sticky top-0 z-20">
+          <p className="text-sm text-brand-teal font-semibold text-center sm:text-left">Vous avez des modifications non enregistrées</p>
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center space-x-2 bg-brand-teal text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-brand-teal/30 hover:shadow-brand-teal/50 transition transform hover:-translate-y-0.5"
+            className="w-full sm:w-auto flex items-center justify-center space-x-2 bg-brand-teal text-white px-5 sm:px-8 py-3 rounded-xl font-bold shadow-lg shadow-brand-teal/30 hover:shadow-brand-teal/50 transition transform hover:-translate-y-0.5 text-sm"
           >
-            {isSaving ? <RefreshCw size={20} className="animate-spin" /> : <Check size={20} />}
+            {isSaving ? <RefreshCw size={18} className="animate-spin" /> : <Check size={18} />}
             <span>Enregistrer les modifications</span>
           </button>
         </div>

@@ -33,6 +33,17 @@ const ListingsPage = () => {
   const [isTypeOpen, setIsTypeOpen] = useState(false);
   const [isListingTypeOpen, setIsListingTypeOpen] = useState(false);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
+  const [isFilterAnimating, setIsFilterAnimating] = useState(false);
+
+  const openFilter = () => {
+    setIsMobileFilterOpen(true);
+    requestAnimationFrame(() => setIsFilterAnimating(true));
+  };
+
+  const closeFilter = () => {
+    setIsFilterAnimating(false);
+    setTimeout(() => setIsMobileFilterOpen(false), 350);
+  };
   const cityDropdownRef = useRef<HTMLDivElement>(null);
   const typeDropdownRef = useRef<HTMLDivElement>(null);
   const listingTypeDropdownRef = useRef<HTMLDivElement>(null);
@@ -394,9 +405,9 @@ const ListingsPage = () => {
     <div className="max-w-7xl mx-auto w-full px-4 py-6 md:py-8 pb-28 md:pb-8 bg-brand-light min-h-screen">
 
       {/* ── MOBILE: Floating Filter Button ── */}
-      <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
+      <div className="md:hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-40">
         <button
-          onClick={() => setIsMobileFilterOpen(true)}
+          onClick={openFilter}
           className="flex items-center gap-2 px-5 py-3 bg-brand-dark text-white rounded-full shadow-2xl border border-brand-dark hover:bg-brand-teal transition-all duration-300 transform active:scale-95 whitespace-nowrap"
           id="mobile-filter-toggle"
         >
@@ -422,13 +433,19 @@ const ListingsPage = () => {
       {isMobileFilterOpen && (
         <div
           className="fixed inset-0 z-50 md:hidden"
-          onClick={() => setIsMobileFilterOpen(false)}
+          onClick={closeFilter}
         >
           {/* Backdrop */}
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+          <div
+            className={`absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300 ease-in-out ${
+              isFilterAnimating ? 'opacity-100' : 'opacity-0'
+            }`}
+          />
           {/* Drawer */}
           <div
-            className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[88vh] flex flex-col animate-in slide-in-from-bottom duration-300"
+            className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[88vh] flex flex-col transition-transform duration-300 ease-in-out ${
+              isFilterAnimating ? 'translate-y-0' : 'translate-y-full'
+            }`}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Drawer handle + header */}
@@ -442,7 +459,7 @@ const ListingsPage = () => {
                   <h3 className="font-bold text-lg text-brand-dark">Filtres</h3>
                 </div>
                 <button
-                  onClick={() => setIsMobileFilterOpen(false)}
+                  onClick={closeFilter}
                   className="p-2 rounded-full hover:bg-gray-100 transition text-gray-400"
                 >
                   <X size={20} />
@@ -456,7 +473,7 @@ const ListingsPage = () => {
             {/* Apply button */}
             <div className="flex-shrink-0 px-6 pb-8 pt-4 border-t border-gray-100">
               <button
-                onClick={() => setIsMobileFilterOpen(false)}
+                onClick={closeFilter}
                 className="w-full py-4 bg-gradient-to-r from-brand-teal to-cyan-500 text-white font-bold rounded-2xl text-base shadow-lg shadow-brand-teal/20 hover:from-cyan-500 hover:to-brand-teal transition-all duration-300"
               >
                 Afficher {isListingsLoading ? '...' : pagination.total} résultats

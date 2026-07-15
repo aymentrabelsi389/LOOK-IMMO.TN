@@ -1,11 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
+const DefaultCardWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => <>{children}</>;
+
 // Auto-slide: 3s, pauses for 5s after manual swipe
 const InfiniteCarousel = <T extends { id: string }>({
   items,
   renderItem,
-  CardWrapper = ({ children }: { children: React.ReactNode }) => <>{children}</>
+  CardWrapper = DefaultCardWrapper
 }: {
   items: T[],
   renderItem: (item: T) => React.ReactNode,
@@ -13,13 +15,13 @@ const InfiniteCarousel = <T extends { id: string }>({
 }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [transitionEnabled, setTransitionEnabled] = useState(true);
   const pauseTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Touch state for swipe gestures
   const [touchStartX, setTouchStartX] = useState(0);
   const [touchEndX, setTouchEndX] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
-
 
   // Responsive visible count
   const [visibleCount, setVisibleCount] = useState(() => {
@@ -54,7 +56,7 @@ const InfiniteCarousel = <T extends { id: string }>({
     if (isPaused || !shouldCarousel) return;
 
     const interval = setInterval(() => {
-      setCurrentIndex(prev => (prev + 1) % totalSlides);
+      handleNext();
     }, 3000);
 
     return () => clearInterval(interval);
@@ -67,6 +69,36 @@ const InfiniteCarousel = <T extends { id: string }>({
     pauseTimeoutRef.current = setTimeout(() => {
       setIsPaused(false);
     }, 5000);
+  };
+
+  const handleNext = () => {
+    if (!transitionEnabled) return;
+    setCurrentIndex(prev => prev + 1);
+  };
+
+  const handlePrev = () => {
+    if (!transitionEnabled) return;
+    if (currentIndex === 0) {
+      // Instantly jump to the clone end, then slide backward
+      setTransitionEnabled(false);
+      setCurrentIndex(totalSlides);
+      setTimeout(() => {
+        setTransitionEnabled(true);
+        setCurrentIndex(totalSlides - 1);
+      }, 50);
+    } else {
+      setCurrentIndex(prev => prev - 1);
+    }
+  };
+
+  const handleTransitionEnd = () => {
+    if (currentIndex >= totalSlides) {
+      setTransitionEnabled(false);
+      setCurrentIndex(0);
+      setTimeout(() => {
+        setTransitionEnabled(true);
+      }, 50);
+    }
   };
 
   // Touch handlers for swipe gestures (mobile)
@@ -93,24 +125,11 @@ const InfiniteCarousel = <T extends { id: string }>({
     if (Math.abs(diff) > swipeThreshold) {
       pauseAutoPlay();
       if (diff < 0) {
-        // Swipe left -> next
-        setCurrentIndex(prev => (prev + 1) % totalSlides);
+        handleNext();
       } else {
-        // Swipe right -> previous
-        setCurrentIndex(prev => (prev - 1 + totalSlides) % totalSlides);
+        handlePrev();
       }
     }
-  };
-
-  // Navigation controls
-  const goToNext = () => {
-    pauseAutoPlay();
-    setCurrentIndex(prev => (prev + 1) % totalSlides);
-  };
-
-  const goToPrev = () => {
-    pauseAutoPlay();
-    setCurrentIndex(prev => (prev - 1 + totalSlides) % totalSlides);
   };
 
   // Create extended items for infinite loop (must be before any returns - React hooks rule)
@@ -121,8 +140,7 @@ const InfiniteCarousel = <T extends { id: string }>({
   // Don't carousel if not enough items (based on shouldCarousel logic)
   if (!shouldCarousel) {
     return (
-      <div className={`grid gap-4 ${visibleCount === 2 ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'
-        }`}>
+      <div className={`grid gap-4 ${visibleCount === 2 ? 'grid-cols-2' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
         {items.map((item) => (
           <CardWrapper key={item.id}>
             {renderItem(item)}
@@ -132,21 +150,20 @@ const InfiniteCarousel = <T extends { id: string }>({
     );
   }
 
-
-
   return (
     <div
       className="relative overflow-hidden py-4"
       onMouseEnter={() => !isMobile && setIsPaused(true)}
       onMouseLeave={() => !isMobile && setIsPaused(false)}
     >
-      {/* Carousel Track - Simplified */}
+      {/* Carousel Track */}
       <div
-        className="flex transition-transform duration-500 ease-in-out"
+        className="flex"
         style={{
           transform: `translateX(-${currentIndex * (100 / visibleCount)}%)`,
-          transition: isSwiping ? 'none' : undefined,
+          transition: isSwiping || !transitionEnabled ? 'none' : 'transform 500ms ease-in-out',
         }}
+        onTransitionEnd={handleTransitionEnd}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
@@ -170,15 +187,17 @@ const InfiniteCarousel = <T extends { id: string }>({
       {!isMobile && totalSlides > visibleCount && (
         <>
           <button
-            onClick={goToPrev}
-            className="absolute left-2 top-[40%] -translate-y-1/2 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white hover:scale-110 transition-all"
+            type="button"
+            onClick={handlePrev}
+            className="absolute left-2 top-[40%] -translate-y-1/2 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white hover:scale-110 transition-all cursor-pointer"
             aria-label="Previous"
           >
             <ChevronLeft size={24} className="text-gray-700" />
           </button>
           <button
-            onClick={goToNext}
-            className="absolute right-2 top-[40%] -translate-y-1/2 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white hover:scale-110 transition-all"
+            type="button"
+            onClick={handleNext}
+            className="absolute right-2 top-[40%] -translate-y-1/2 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white hover:scale-110 transition-all cursor-pointer"
             aria-label="Next"
           >
             <ChevronRight size={24} className="text-gray-700" />
@@ -192,11 +211,12 @@ const InfiniteCarousel = <T extends { id: string }>({
           {items.map((_, index) => (
             <button
               key={index}
+              type="button"
               onClick={() => {
                 pauseAutoPlay();
                 setCurrentIndex(index);
               }}
-              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${index === currentIndex
+              className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${index === (currentIndex % totalSlides)
                 ? 'bg-brand-teal w-6'
                 : 'bg-gray-300 hover:bg-gray-400'
                 }`}

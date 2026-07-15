@@ -1,11 +1,23 @@
 # Product Design Requirements (PDR)
 ## Look Immo — Tunisian Real Estate Platform (lOOK-IMMO.TN)
 
-**Version:** 1.0  
-**Date:** 2026-06-21  
+**Version:** 1.4  
+**Date:** 2026-07-15  
 **Status:** Active Development  
 **Primary Target Market:** Tunisian Real Estate Industry  
 **Language Context:** Bilingual (French for the User Interface, English for Technical Documentation and API design)
+
+---
+
+## Changelog
+
+| Version | Date | Summary of Changes |
+| :--- | :--- | :--- |
+| 1.0 | 2026-06-21 | Initial PDR — full platform specification |
+| 1.1 | 2026-07-XX | Added appointment time input (free-text), VPS image carousel fix, blog section bug fix |
+| 1.2 | 2026-07-XX | Property search with thumbnail preview in admin appointment form |
+| 1.3 | 2026-07-XX | Property card title truncation (single-line ellipsis), admin header scroll behavior |
+| 1.4 | 2026-07-15 | Admin header always-visible (sticky), notification system, appointment time as free text, property thumbnail in search |
 
 ---
 
@@ -18,6 +30,7 @@
 *   Perform operational actions (registering walk-in visits with ID cards, tracking commissions).
 *   Run content marketing via a publishing blog.
 *   Control system-wide options (social links, GPS location, business hours).
+*   Send and receive real-time in-app notifications via Socket.IO.
 
 ### Architecture & Repositories
 The workspace is split into two primary components:
@@ -80,6 +93,8 @@ The workspace is split into two primary components:
 
 #### 5.1.1 Homepage
 *   **Hero Carousel:** Automatically transitions between featured images every 5 seconds. Includes an integrated search overlay.
+    *   **VPS Smooth Transition Fix:** CSS transitions are applied using `opacity` and `transition-opacity` with a short cross-fade duration so the carousel animates smoothly even on VPS/production where GPU acceleration may differ from local dev.
+    *   **Blog Section Stability:** The blog section grid layout on the homepage is stabilized to handle 3+ blog posts without causing layout overflow or visual bugs on VPS.
 *   **Search Widget:** Allows searching for "Acheter" (Buy) or "Louer" (Rent) properties across Tunisian cities.
 *   **Featured & Hot Properties:** Displays scrollable lists of listings marked `isFeatured` or `isHotDeal`.
 *   **Organic SEO:** SEO meta updates for keywords, description, and title are automatically driven page-by-page.
@@ -88,6 +103,7 @@ The workspace is split into two primary components:
 *   **Flexible Filters:** Filter properties by listing type (Sale/Rent), category (Apartment, Villa, Land, Commercial, Depot, etc.), price range, bedrooms, area size, and city.
 *   **Sorting Options:** Sort properties by price, creation date, or size.
 *   **Reset Controls:** Easily clear all active filters to view all listings.
+*   **Property Card Titles:** Long property titles are truncated with an ellipsis (`...`) after one line using `truncate` / `line-clamp-1` to prevent multi-line overflow in cards.
 
 #### 5.1.3 Property Details Page
 *   **Interactive Gallery:** Offers a full-width image viewport with thumbnail scrolling.
@@ -116,6 +132,7 @@ The workspace is split into two primary components:
 *   **Client Demand Pipeline:** Track buyer requirements (desired category, budget, location) and transition status from `searching` -> `contacted` -> `matched` -> `closed`.
 *   **Appointment Actions:** Approve or decline appointment requests, reschedule visits, and log notes.
 *   **Working Hours:** Update agency operational hours displayed to the public.
+*   **Real-time Notifications:** Receive instant Socket.IO push notifications when new appointments or contact form submissions arrive. Notifications display a badge counter and a dropdown list with read/unread management.
 
 ---
 
@@ -127,6 +144,24 @@ The workspace is split into two primary components:
 *   **Finance Transactions:** Log transaction history, record commission percentages, toggle payment statuses (received/pending), and filter by payment type (cash, check, bank transfer).
 *   **Offline Visit Logs:** Document physical property viewings by recording visitor names and ID card numbers.
 *   **System Settings:** Customize core settings like site name, email, phone numbers, social media links, and coordinate pins for the maps.
+
+---
+
+### 5.5 Admin Panel UX Decisions
+
+#### 5.5.1 Admin Header Behavior
+*   The admin panel header is **always visible** and **sticky at the top** of the admin layout. The earlier experimental "auto-hide on scroll" feature was removed due to layout feedback loop bugs on VPS.
+*   The header uses `sticky top-0 z-30` so it remains at the top of the content area while the sidebar remains fixed.
+
+#### 5.5.2 Appointment Form — Time Input
+*   The appointment time field is a **free-text input** (`<input type="text">`) instead of a dropdown list.
+*   This supports non-standard times (e.g., `20:30`, `09:15`, `Matin`) that would otherwise be excluded from a fixed range picker.
+*   A placeholder hint (e.g., `Ex: 10:30`) is shown to guide the user.
+
+#### 5.5.3 Property Search with Thumbnail Preview
+*   In the "Add/Edit Appointment" form, the property search field shows a **thumbnail image** next to each result in the dropdown suggestions.
+*   The thumbnail is sized small (`w-10 h-10 object-cover rounded`) so it doesn't dominate the list item.
+*   Property titles that exceed one line are truncated with ellipsis to maintain a clean, compact list.
 
 ---
 
@@ -228,6 +263,16 @@ erDiagram
         string paymentMode
         string notes
     }
+
+    NOTIFICATION {
+        string id PK
+        string userId FK
+        string title
+        string message
+        boolean isRead
+        string type
+        datetime createdAt
+    }
 ```
 
 ### 6.1 Database Migration Protocol
@@ -273,6 +318,10 @@ To prevent downtime and ensure system stability during schema changes, the follo
 | | `POST` | `/api/visits` | Agent/Admin | Log visit details |
 | | `GET` | `/api/transactions` | Agent/Admin | View logged commissions |
 | | `POST` | `/api/transactions` | Agent/Admin | Log sale or rent commission |
+| **Notifications** | `GET` | `/api/notifications` | Agent/Admin | Fetch user notifications |
+| | `PUT` | `/api/notifications/:id/read` | Agent/Admin | Mark notification as read |
+| | `PUT` | `/api/notifications/read-all` | Agent/Admin | Mark all notifications read |
+| | `DELETE` | `/api/notifications/:id` | Agent/Admin | Delete a notification |
 | **Settings** | `GET` | `/api/settings` | Public | Fetch site configuration |
 | | `PUT` | `/api/settings` | Admin | Edit website settings |
 | **Uploads** | `POST` | `/api/upload/property-image` | Agent/Admin | Upload property picture |
@@ -285,6 +334,7 @@ To prevent downtime and ensure system stability during schema changes, the follo
 ### 8.1 Performance
 *   **Media Compression:** Image uploads must pass through Sharp pipeline, restricting dimension width to 1400px with a 82% quality setting, outputting web-friendly formats.
 *   **Page Loading:** Core public pages (listings, homepage) should render in under 2 seconds.
+*   **VPS Rendering:** CSS animations (carousels, transitions) must be validated on VPS/production, not just local. Use `opacity`-based transitions instead of `transform`-only where rendering consistency is required.
 
 ### 8.2 Security
 *   **Session Management:** Keep JWTs in secure, httpOnly cookies to mitigate Cross-Site Scripting (XSS) risks.
@@ -295,6 +345,14 @@ To prevent downtime and ensure system stability during schema changes, the follo
 *   **Dynamic Head Tags:** Use react state hooks to modify title and meta descriptions on the fly.
 *   **Mobile Adaptiveness:** Fully responsive interface designed via Tailwind CSS viewport prefixes, optimized for 375px up to 1440px widths.
 *   **Micro-interactions:** Add interactive hover transitions and dynamic alerts to create a premium feel.
+*   **Text Truncation:** Property card titles and search result labels must truncate at one line to maintain consistent card heights across all screen sizes.
+
+---
+
+### 8.4 Known VPS Constraints & Fixes
+*   **Carousel Jitter:** On VPS, JS-based `setInterval` animation combined with CSS `transform: translateX` can stutter. Fixed by using `opacity` fade transitions instead.
+*   **Blog Grid Overflow:** Rendering more than 2 blog cards in a CSS grid on VPS caused layout shifts. Fixed by ensuring grid column definitions are explicit and items have `min-w-0` to prevent overflow.
+*   **Admin Header Scroll Feedback Loop:** The experimental auto-hide header caused a scroll feedback loop (animating the header changed the main container height → changed `scrollTop` → re-triggered scroll handler). Removed. Header is now always visible.
 
 ---
 
@@ -305,3 +363,4 @@ To prevent downtime and ensure system stability during schema changes, the follo
 *   **CDN Integration:** Store user-uploaded images on AWS S3 or Cloudinary instead of the backend filesystem.
 *   **Arabic Language Toggle:** Fully support dual French/Arabic translation options.
 *   **Virtual Viewing:** Enable interactive 360-degree virtual property tours.
+*   **Push Notifications (Web):** Extend the current in-app Socket.IO notifications to browser push notifications using the Web Push API.

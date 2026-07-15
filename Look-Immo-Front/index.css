@@ -206,3 +206,17 @@ body:has(.fixed.inset-0[class*="bg-black"]) header {
   scrollbar-width: thin;
   scrollbar-color: rgba(100, 116, 139, 0.2) transparent;
 }
+
+/* Prevent iOS auto-zoom on input focus on mobile */
+@media (max-width: 767px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="search"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

@@ -61,7 +61,7 @@ const AdminSidebar = ({
           <span className="font-serif text-2xl font-bold tracking-wider">Look<span className="text-brand-teal">Admin</span></span>
         </div>
 
-        <div className="p-4">
+        <div className="flex-1 overflow-y-auto p-4 pb-[72px] md:pb-4">
           <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 px-4">Menu Principal</div>
           <nav className="space-y-2">
             {menuItems.map(item => (

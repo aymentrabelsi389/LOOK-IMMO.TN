@@ -372,7 +372,7 @@ const UsersManagement = ({
                           </button>
                           <button
                             onClick={() => confirmDelete(user.id)}
-                            disabled={currentUser && currentUser.id === user.id}
+                            disabled={!!(currentUser && currentUser.id === user.id)}
                             className={`p-2.5 bg-white border border-gray-200 text-gray-400 rounded-xl hover:text-red-500 hover:shadow-sm transition-all ${currentUser && currentUser.id === user.id ? 'opacity-30 cursor-not-allowed' : ''}`}
                             title={currentUser && currentUser.id === user.id ? "Vous ne pouvez pas supprimer votre propre compte" : "Supprimer"}
                           >
@@ -440,7 +440,7 @@ const UsersManagement = ({
                     </button>
                     <button
                       onClick={() => confirmDelete(user.id)}
-                      disabled={currentUser && currentUser.id === user.id}
+                      disabled={!!(currentUser && currentUser.id === user.id)}
                       className={`p-3 bg-gray-50 text-gray-400 rounded-xl hover:text-red-500 transition-all ${currentUser && currentUser.id === user.id ? 'opacity-30 cursor-not-allowed' : ''}`}
                     >
                       <Trash2 size={18} />

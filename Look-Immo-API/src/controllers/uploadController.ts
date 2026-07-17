@@ -4,6 +4,31 @@ import path from 'path';
 import { uploadFileToStorage } from '../utils/upload';
 
 /**
+ * Build the set of trusted redirect origins from env vars at startup.
+ * Only URLs whose origin matches one of these will be followed by downloadFile.
+ *
+ * Populated from:
+ *   S3_PUBLIC_URL  — CDN / Spaces public URL
+ *   S3_ENDPOINT    — S3-compatible endpoint
+ *   BACKEND_URL    — own server (serves local /uploads/ files)
+ *
+ * If none are set the set is empty and all external redirects are blocked.
+ */
+function buildAllowedOrigins(): Set<string> {
+    const origins = new Set<string>();
+    const add = (raw: string | undefined) => {
+        if (!raw) return;
+        try { origins.add(new URL(raw).origin); } catch { /* ignore invalid URL */ }
+    };
+    add(process.env.S3_PUBLIC_URL);
+    add(process.env.S3_ENDPOINT);
+    add(process.env.BACKEND_URL);
+    return origins;
+}
+
+const ALLOWED_REDIRECT_ORIGINS = buildAllowedOrigins();
+
+/**
  * POST /api/upload/image
  *
  * Called after `uploadImage.single('image')` and `optimizeAndSave(...)` middleware.
@@ -77,8 +102,20 @@ export const downloadFile = (req: Request, res: Response): void => {
         return;
     }
 
-    // If it is an external URL (e.g. S3 public URL), redirect to it directly
+    // If it is an external URL (e.g. S3 public URL), only redirect to trusted origins.
+    // Unrestricted redirect would allow open-redirect phishing via /api/download?url=...
     if (url.startsWith('http://') || url.startsWith('https://')) {
+        let origin: string;
+        try {
+            origin = new URL(url).origin;
+        } catch {
+            res.status(400).json({ error: 'URL invalide.' });
+            return;
+        }
+        if (!ALLOWED_REDIRECT_ORIGINS.has(origin)) {
+            res.status(403).json({ error: 'Redirect vers une URL non autorisée.' });
+            return;
+        }
         res.redirect(url);
         return;
     }

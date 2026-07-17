@@ -190,7 +190,7 @@ const PropertyModal = ({
   };
 
   const renderDocBox = (label: string, fieldName: 'propertyPlan' | 'ownerPaper', description: string) => {
-    const docUrl = formData.features?.[fieldName as any];
+    const docUrl = (formData.features as any)?.[fieldName];
 
     return (
       <div className="border border-gray-150 rounded-xl p-4 bg-gray-50/50 hover:bg-gray-50 transition-all">
@@ -205,7 +205,7 @@ const PropertyModal = ({
               onClick={() => {
                 const newFeatures = { ...formData.features };
                 delete (newFeatures as any)[fieldName];
-                setFormData({ ...formData, features: newFeatures });
+                setFormData({ ...formData, features: newFeatures as any });
               }}
               className="text-red-500 hover:text-red-600 transition-colors p-1"
             >

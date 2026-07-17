@@ -87,18 +87,16 @@ export async function uploadFileToStorage(
 
 // ─── File filters ─────────────────────────────────────────────────────────────
 
+// SVG, GIF, BMP and ICO are intentionally excluded:
+// - SVG can carry embedded scripts → stored XSS if served raw
+// - GIF, BMP, ICO are not rasterized by Sharp and not needed for property/blog photos
 const imageTypes = [
     'image/jpeg',
+    'image/jpg',
     'image/png',
     'image/webp',
-    'image/jpg',
-    'image/gif',
-    'image/svg+xml',
-    'image/bmp',
-    'image/x-icon',
-    'image/vnd.microsoft.icon',
     'image/heic',
-    'image/heif'
+    'image/heif',
 ];
 
 const contractTypes = [
@@ -117,6 +115,107 @@ const makeFilter =
             console.error(`[UPLOAD] Rejected file type: ${file.mimetype} for file: ${file.originalname}`);
             cb(new Error(`Type de fichier non autorisé: ${file.mimetype}`));
         }
+    };
+
+// ─── Magic-byte file-type validation ─────────────────────────────────────────
+
+const HEIF_BRANDS = new Set([
+    'heic', 'heis', 'heix', 'hevc', 'hevx', 'heim', 'hevs', 'mif1', 'msf1',
+]);
+
+/**
+ * Inspects the first 16 bytes of `buffer` and returns the actual MIME type,
+ * or `null` if the bytes do not match any format we accept.
+ *
+ * Supported: JPEG, PNG, WebP, HEIC/HEIF, PDF.
+ * SVG and other text-based formats intentionally return `null` — they cannot
+ * be verified by magic bytes and must not be accepted.
+ */
+export function detectMimeFromMagicBytes(buffer: Buffer): string | null {
+    if (buffer.length < 4) return null;
+
+    // JPEG: FF D8 FF
+    if (buffer[0] === 0xFF && buffer[1] === 0xD8 && buffer[2] === 0xFF) {
+        return 'image/jpeg';
+    }
+
+    // PNG: 89 50 4E 47 0D 0A 1A 0A
+    if (
+        buffer.length >= 8 &&
+        buffer[0] === 0x89 && buffer[1] === 0x50 &&
+        buffer[2] === 0x4E && buffer[3] === 0x47 &&
+        buffer[4] === 0x0D && buffer[5] === 0x0A &&
+        buffer[6] === 0x1A && buffer[7] === 0x0A
+    ) {
+        return 'image/png';
+    }
+
+    // WebP: RIFF at bytes 0-3, WEBP at bytes 8-11
+    if (
+        buffer.length >= 12 &&
+        buffer[0] === 0x52 && buffer[1] === 0x49 &&  // RI
+        buffer[2] === 0x46 && buffer[3] === 0x46 &&  // FF
+        buffer[8] === 0x57 && buffer[9] === 0x45 &&  // WE
+        buffer[10] === 0x42 && buffer[11] === 0x50   // BP
+    ) {
+        return 'image/webp';
+    }
+
+    // HEIC/HEIF: 'ftyp' box at offset 4, brand string at offset 8
+    if (
+        buffer.length >= 12 &&
+        buffer[4] === 0x66 && buffer[5] === 0x74 &&  // ft
+        buffer[6] === 0x79 && buffer[7] === 0x70     // yp
+    ) {
+        const brand = buffer.slice(8, 12).toString('ascii').toLowerCase();
+        if (HEIF_BRANDS.has(brand)) return 'image/heic';
+    }
+
+    // PDF: %PDF-
+    if (
+        buffer.length >= 5 &&
+        buffer[0] === 0x25 && buffer[1] === 0x50 &&  // %P
+        buffer[2] === 0x44 && buffer[3] === 0x46 &&  // DF
+        buffer[4] === 0x2D                           // -
+    ) {
+        return 'application/pdf';
+    }
+
+    return null;
+}
+
+/**
+ * Express middleware that validates `req.file.buffer` magic bytes against
+ * the client-declared `req.file.mimetype`. Returns 415 if:
+ *  - the bytes do not match any known/allowed format, or
+ *  - the detected type conflicts with the declared MIME type (spoofed header).
+ *
+ * Place AFTER a multer middleware (so req.file is populated in memory)
+ * and BEFORE any processing (optimizeAndSave / handleDocumentUpload).
+ */
+export const assertMagicBytes =
+    () =>
+    (req: Request, res: Response, next: NextFunction): void => {
+        if (!req.file) {
+            next();
+            return;
+        }
+
+        const detected = detectMimeFromMagicBytes(req.file.buffer);
+
+        if (!detected) {
+            res.status(415).json({ error: 'Type de fichier non reconnu ou non autorisé.' });
+            return;
+        }
+
+        // Normalise MIME aliases before comparing (image/jpg ↔ image/jpeg)
+        const normalise = (m: string) => (m === 'image/jpg' ? 'image/jpeg' : m);
+        if (normalise(detected) !== normalise(req.file.mimetype)) {
+            res.status(415).json({ error: 'Le contenu du fichier ne correspond pas au type déclaré.' });
+            return;
+        }
+
+        next();
     };
 
 // ─── Memory storage (images go through Sharp before hitting disk) ─────────────
@@ -239,12 +338,10 @@ export const optimizeAndSave =
                     (req as any).optimizedSrcSet = variants;            // srcset + lqip data
                     console.log(`[UPLOAD] Generated 3-size variants for uid=${uid}`);
                 } catch (sharpErr) {
-                    console.error('[UPLOAD] Sharp multi-size failed, falling back to single raw file:', sharpErr);
-                    const ext = path.extname(req.file.originalname) || '.jpg';
-                    const fallbackFilename = `${folder}-${uid}${ext}`;
-                    const fileUrl = await uploadFileToStorage(req.file.buffer, folder, fallbackFilename, req.file.mimetype);
-                    (req as any).optimizedPath = fileUrl;
-                    (req as any).optimizedSrcSet = null;
+                    // Do NOT fall back to saving raw bytes — an unprocessed file could
+                    // contain malicious content (e.g. SVG scripts). Surface as 500 instead.
+                    console.error('[UPLOAD] Sharp multi-size processing failed:', sharpErr);
+                    throw sharpErr;
                 }
             } else {
                 // ── Single-size blog/other images ──────────────────────────────
@@ -263,13 +360,10 @@ export const optimizeAndSave =
                     (req as any).optimizedSrcSet = null;
                     console.log(`[UPLOAD] Successfully optimized and saved single: ${filename} to ${fileUrl}`);
                 } catch (sharpErr) {
-                    console.error('[UPLOAD] Sharp failed, saving raw file as fallback:', sharpErr);
-                    const ext = path.extname(req.file.originalname) || '.jpg';
-                    const fallbackFilename = `${folder}-${uid}${ext}`;
-                    const fileUrl = await uploadFileToStorage(req.file.buffer, folder, fallbackFilename, req.file.mimetype);
-                    (req as any).optimizedPath = fileUrl;
-                    (req as any).optimizedSrcSet = null;
-                    console.log(`[UPLOAD] Successfully saved raw fallback: ${fallbackFilename} to ${fileUrl}`);
+                    // Do NOT fall back to saving raw bytes — an unprocessed file could
+                    // contain malicious content (e.g. SVG scripts). Surface as 500 instead.
+                    console.error('[UPLOAD] Sharp single-size processing failed:', sharpErr);
+                    throw sharpErr;
                 }
             }
 

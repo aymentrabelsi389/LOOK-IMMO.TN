@@ -180,12 +180,6 @@ export const createProperty = async (req: AuthRequest, res: Response): Promise<v
             return;
         }
 
-        // Get max displayOrder to assign new property to end
-        const maxOrder = await prisma.property.findFirst({
-            orderBy: { displayOrder: 'desc' },
-            select: { displayOrder: true }
-        });
-
         const property = await prisma.property.create({
             data: {
                 title,
@@ -202,7 +196,6 @@ export const createProperty = async (req: AuthRequest, res: Response): Promise<v
                 isFeatured: isFeatured || false,
                 isNew: isNew || false,
                 isHotDeal: isHotDeal || false,
-                displayOrder: (maxOrder?.displayOrder || 0) + 1,
                 ownerId,
                 // Handle lat/lng if provided in location object or directly
                 latitude: location?.lat || req.body.latitude,
@@ -251,9 +244,7 @@ export const updateProperty = async (req: AuthRequest, res: Response): Promise<v
         const userId = req.user?.id;
         const userRole = req.user?.role;
 
-        console.log('Update Property Request Body:', req.body);
-        console.log('isFeatured Type:', typeof req.body.isFeatured);
-        console.log('isFeatured Value:', req.body.isFeatured);
+
 
         const existingProperty = await prisma.property.findUnique({
             where: { id },

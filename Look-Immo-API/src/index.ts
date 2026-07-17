@@ -122,10 +122,12 @@ app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Test error route for Sentry verification
-app.get('/api/test-error', (req, res) => {
-    throw new Error('Test Sentry Backend Error Spike');
-});
+// Test error route for Sentry verification (non-production only)
+if (!isProd) {
+    app.get('/api/test-error', (req, res) => {
+        throw new Error('Test Sentry Backend Error Spike');
+    });
+}
 
 // 404 handler
 app.use((req, res) => {

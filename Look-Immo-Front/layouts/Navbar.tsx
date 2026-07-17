@@ -360,7 +360,7 @@ const Navbar = ({
             ? "translate-x-0 opacity-100 scale-100"
             : "-translate-x-full opacity-0 scale-[0.98]"
         }`}
-        style={{ height: "100dvh" }}
+        style={{ height: "calc(100dvh - 58px)" }}
       >
         <div className="flex items-center justify-between px-5 py-5 border-b border-gray-100 bg-white shrink-0">
           <div className="flex items-center gap-3 min-w-0">

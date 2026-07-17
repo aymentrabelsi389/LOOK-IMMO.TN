@@ -35,10 +35,11 @@ interface PropertiesManagementProps {
   clientDemands?: ClientDemand[];
 }
 
-const SortablePropertyItem = ({ p, openEditModal, handleDelete, appointments, openHistoryModal }: any) => {
+const SortablePropertyItem = ({ p, openEditModal, handleDelete, openHistoryModal }: any) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: p.id });
   const [activePlanMenu, setActivePlanMenu] = useState(false);
   const [activePaperMenu, setActivePaperMenu] = useState(false);
+  const { appointments } = useData();
 
   const propertyAppointments = useMemo(() => {
     return appointments?.filter((a: any) => a.propertyId === p.id) || [];
@@ -726,7 +727,7 @@ const PropertiesManagement = ({
       });
       
       try {
-        const results = [];
+        const results: any[] = [];
         
         for (let idx = 0; idx < filesArray.length; idx++) {
           let file = filesArray[idx];
@@ -821,6 +822,15 @@ const PropertiesManagement = ({
   const paginatedProperties = isAdminShowAll ? sortedProperties : sortedProperties.slice((propertyCurrentPage - 1) * propertiesPerPage, propertyCurrentPage * propertiesPerPage);
   const totalPages = Math.ceil(sortedProperties.length / propertiesPerPage);
 
+  // Drag-reorder is only safe when the full unfiltered list is visible.
+  // If any filter is active, sortedProperties is a subset; renumbering it
+  // 1..N would overwrite displayOrder for those properties and collide with
+  // values held by properties outside the filter (which stay untouched).
+  const isDragReorderEnabled =
+    propertyCityFilter === 'all' &&
+    propertyTypeFilter === 'all' &&
+    propertySearchQuery.trim() === '';
+
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
@@ -840,6 +850,10 @@ const PropertiesManagement = ({
     const { active, over } = event;
     // Guard: over is null when dropping outside a droppable container (common on mobile touch)
     if (!over || active.id === over.id) return;
+    // Guard: never reorder while a filter is active — the sorted list is a
+    // subset of all properties, so assigning 1..N would collide with the
+    // displayOrder values held by properties outside the current filter.
+    if (!isDragReorderEnabled) return;
     const oldIndex = sortedProperties.findIndex(p => p.id === active.id);
     const newIndex = sortedProperties.findIndex(p => p.id === over.id);
     const newOrder = arrayMove(sortedProperties, oldIndex, newIndex);
@@ -899,6 +913,15 @@ const PropertiesManagement = ({
         />
       </div>
 
+      {!isDragReorderEnabled && (
+        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm">
+          <span className="mt-0.5 text-amber-500 flex-shrink-0">⚠️</span>
+          <span>
+            <strong>Réorganisation désactivée.</strong> Effacez les filtres et la recherche pour pouvoir glisser-déposer les propriétés et modifier leur ordre d'affichage.
+          </span>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
           <div className="flex flex-col">
@@ -925,7 +948,6 @@ const PropertiesManagement = ({
                     p={p}
                     openEditModal={openEditModal}
                     handleDelete={handleDelete}
-                    appointments={appointments}
                     openHistoryModal={setHistoryProperty}
                   />
                 ))

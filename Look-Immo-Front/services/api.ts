@@ -61,34 +61,37 @@ const handleApiError = (url: string, errorMsg: string) => {
   }
 };
 
-// Core fetch helper — auto-refreshes on 401 once
 const apiFetch = async (url: string, options: RequestInit = {}): Promise<Response> => {
+    const headers = new Headers(options.headers);
+    if (!headers.has('Content-Type')) {
+        headers.set('Content-Type', 'application/json');
+    }
     const storedToken = getStoredToken();
-    const authHeader = storedToken ? { Authorization: `Bearer ${storedToken}` } : {};
+    if (storedToken) {
+        headers.set('Authorization', `Bearer ${storedToken}`);
+    }
 
     const res = await fetch(`${API_BASE_URL}${url}`, {
         ...defaultOptions,
         ...options,
-        headers: {
-            'Content-Type': 'application/json',
-            ...authHeader,
-            ...(options.headers || {}),
-        },
+        headers,
     });
 
     if (res.status === 401) {
         const refreshed = await tryRefreshToken();
         if (refreshed) {
             const newToken = getStoredToken();
-            const retryAuthHeader = newToken ? { Authorization: `Bearer ${newToken}` } : {};
+            const retryHeaders = new Headers(options.headers);
+            if (!retryHeaders.has('Content-Type')) {
+                retryHeaders.set('Content-Type', 'application/json');
+            }
+            if (newToken) {
+                retryHeaders.set('Authorization', `Bearer ${newToken}`);
+            }
             const retryRes = await fetch(`${API_BASE_URL}${url}`, {
                 ...defaultOptions,
                 ...options,
-                headers: {
-                    'Content-Type': 'application/json',
-                    ...retryAuthHeader,
-                    ...(options.headers || {}),
-                },
+                headers: retryHeaders,
             });
             if (!retryRes.ok) {
                 // Refresh succeeded but retry still fails — treat as session expired (silent)

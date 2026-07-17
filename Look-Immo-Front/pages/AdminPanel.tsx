@@ -215,7 +215,7 @@ const AdminPanel = () => {
       case 'ratings':
         return <RatingsManagement ratings={ratings} setRatings={setRatings} showNotification={showNotification} onViewUser={(userId) => { setTargetUserId(userId); setActiveTab('users'); }} />;
       case 'settings':
-        return <EditableSettings settings={siteSettings} setSettings={setSiteSettings} availableLocations={availableLocations} />;
+        return siteSettings ? <EditableSettings settings={siteSettings} setSettings={setSiteSettings} availableLocations={availableLocations} /> : <div className="p-6 text-center text-gray-500 font-medium">Chargement des paramètres...</div>;
       case 'blog':
         return <BlogManagement blogPosts={blogPosts} setBlogPosts={setBlogPosts} showNotification={showNotification} />;
 

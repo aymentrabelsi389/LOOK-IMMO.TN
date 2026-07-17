@@ -10,6 +10,10 @@ import { useUI } from '../context/UIContext';
 import { useAuthStore } from '../stores/useAuthStore';
 import { useData } from '../context/DataContext';
 
+import hero1 from '../photo-1613490493576-7fde63acd811.avif';
+import hero2 from '../photo-1512917774080-9991f1c4c750.avif';
+import hero3 from '../photo-1600585154340-be6161a56a0c.avif';
+
 const HomePage = () => {
   useSEO({
     title: "L'adresse de vos rêves",
@@ -30,18 +34,12 @@ const HomePage = () => {
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
 
   const heroImages = [
-    "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&w=1600&q=70",
-    "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=1600&q=70",
-    "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1600&q=70",
+    hero1,
+    hero2,
+    hero3,
   ];
 
   useEffect(() => {
-    // Programmatically preload all hero images to guarantee smooth fade transitions on VPS/Production
-    heroImages.forEach((src) => {
-      const img = new Image();
-      img.src = src;
-    });
-
     const interval = setInterval(() => {
       setCurrentHeroIndex((prev) => (prev + 1) % heroImages.length);
     }, 5000);
@@ -80,15 +78,17 @@ const HomePage = () => {
                 key={src}
                 src={src}
                 alt={`Hero property ${index + 1}`}
+                loading={index === 0 ? 'eager' : 'lazy'}
+                fetchPriority={index === 0 ? 'high' : 'low'}
                 className={`absolute inset-0 w-full h-full object-cover object-[25%_center] md:object-[85%_center] transition-opacity duration-1000 ease-in-out ${
-                  isActive ? 'opacity-80' : 'opacity-0'
+                  isActive ? 'opacity-85' : 'opacity-0'
                 }`}
               />
             );
           })}
           {/* Balanced Dark Overlay for Readability */}
-          <div className="absolute inset-0 bg-black/35"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/80 via-brand-dark/20 to-transparent"></div>
+          <div className="absolute inset-0 bg-black/20"></div>
+          <div className="absolute inset-0 bg-gradient-to-t from-brand-dark/60 via-brand-dark/10 to-transparent"></div>
         </div>
 
         <div className="relative max-w-[1440px] mx-auto px-4 h-full flex flex-col justify-center items-center">

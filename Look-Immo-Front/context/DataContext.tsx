@@ -213,7 +213,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   // Sync messages
   useEffect(() => {
     if (qMessages) {
-      setMessages(qMessages);
+      setMessages(qMessages as any);
     }
   }, [qMessages]);
 

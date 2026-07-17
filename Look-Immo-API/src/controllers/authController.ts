@@ -6,8 +6,20 @@ import { prisma } from '../utils/prisma';
 import { sendResetCodeEmail } from '../services/emailService';
 import { createNotification } from '../services/notificationService';
 
-const getAccessTokenSecret = () => process.env.JWT_SECRET || 'fallback-access-secret';
-const getRefreshTokenSecret = () => process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret';
+const getAccessTokenSecret = () => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        throw new Error('JWT_SECRET environment variable is not set');
+    }
+    return secret;
+};
+const getRefreshTokenSecret = () => {
+    const secret = process.env.JWT_REFRESH_SECRET;
+    if (!secret) {
+        throw new Error('JWT_REFRESH_SECRET environment variable is not set');
+    }
+    return secret;
+};
 const ACCESS_TOKEN_EXPIRY = process.env.NODE_ENV === 'production' ? '15m' : '2h';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
@@ -441,6 +453,11 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
                 resetCodeExpiresAt: null,
                 resetAttempts: 0
             }
+        });
+
+        // Revoke all active sessions (refresh tokens) for the user
+        await prisma.refreshToken.deleteMany({
+            where: { userId: user.id }
         });
 
         console.log(`[AUDIT] Password reset successfully for user: ${user.email}`);

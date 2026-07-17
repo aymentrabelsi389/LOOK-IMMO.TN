@@ -89,10 +89,17 @@ interface MetaData {
     ogType: 'website' | 'article';
 }
 
-const buildSeoMetaTags = (meta: MetaData): string => {
+const buildSeoMetaTags = (meta: MetaData, jsonLd?: any): string => {
     const t  = escAttr(meta.title);
     const d  = escAttr(meta.description);
     const ht = escHtml(meta.title);
+
+    let scriptTag = '';
+    if (jsonLd) {
+        // Safe serialization of JSON-LD: escape '<' to prevent XSS script injection
+        const jsonString = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
+        scriptTag = `\n  <script type="application/ld+json">\n  ${jsonString}\n  </script>`;
+    }
 
     return `
   <!-- Primary Meta Tags -->
@@ -116,7 +123,7 @@ const buildSeoMetaTags = (meta: MetaData): string => {
   <meta name="twitter:url" content="${escAttr(meta.pageUrl)}">
   <meta name="twitter:title" content="${t}">
   <meta name="twitter:description" content="${d}">
-  <meta name="twitter:image" content="${escAttr(meta.imageUrl)}">
+  <meta name="twitter:image" content="${escAttr(meta.imageUrl)}">${scriptTag}
 `;
 };
 
@@ -232,6 +239,9 @@ export const seoInjector = async (
             ogType:      'website',
         };
 
+        let jsonLd: any = null;
+        let bodySnapshot = '';
+
         // ── Property metadata ──────────────────────────────────────────────────
         if (isProperty && entityId) {
             const property = await prisma.property.findUnique({
@@ -270,6 +280,52 @@ export const seoInjector = async (
                     pageUrl,
                     ogType:      'website',
                 };
+
+                // Generate structured data
+                jsonLd = {
+                    '@context': 'https://schema.org',
+                    '@type': 'RealEstateListing',
+                    'name': property.title,
+                    'description': description,
+                    'url': pageUrl,
+                    'image': property.images?.map(img => resolveImageUrl(img)) || [],
+                    'about': {
+                        '@type': property.category === 'apartment' ? 'Apartment' : (['house', 'villa'].includes(property.category || '') ? 'House' : 'Accommodation'),
+                        'name': property.title,
+                        'description': property.description || undefined,
+                        'address': {
+                            '@type': 'PostalAddress',
+                            'addressLocality': property.city,
+                            'addressRegion': property.zone || undefined,
+                            'addressCountry': 'TN',
+                        },
+                        'offers': {
+                            '@type': 'Offer',
+                            'price': property.price,
+                            'priceCurrency': 'TND',
+                            'businessFunction': property.type === 'sale' ? 'https://schema.org/sell' : 'https://schema.org/rent',
+                        }
+                    }
+                };
+
+                // Generate body snapshot for bots/crawlers that do not run JavaScript
+                bodySnapshot = `
+<article style="padding: 20px; max-width: 800px; margin: 0 auto;">
+  <h1>${escHtml(property.title)}</h1>
+  <p><strong>Type:</strong> ${escHtml(categoryLabel)} ${escHtml(typeLabel)}</p>
+  <p><strong>Localisation:</strong> ${escHtml(property.city)}${property.zone ? `, ${escHtml(property.zone)}` : ''}</p>
+  <p><strong>Prix:</strong> ${property.price.toLocaleString('fr-FR')} TND</p>
+  <div style="margin-top: 20px;">
+    <h2>Description</h2>
+    <p>${escHtml(property.description || '').replace(/\n/g, '<br>')}</p>
+  </div>
+  ${property.images?.length ? `
+  <div style="margin-top: 20px;">
+    <h2>Images</h2>
+    ${property.images.map((img: string) => `<img src="${escAttr(resolveImageUrl(img))}" alt="${escAttr(property.title)}" style="max-width: 100%; margin-bottom: 10px; border-radius: 4px;" />`).join('\n')}
+  </div>
+  ` : ''}
+</article>`;
             }
         }
 
@@ -293,16 +349,50 @@ export const seoInjector = async (
                     pageUrl,
                     ogType:      'article',
                 };
+
+                // Generate structured data
+                jsonLd = {
+                    '@context': 'https://schema.org',
+                    '@type': 'BlogPosting',
+                    'headline': blog.title,
+                    'description': description,
+                    'image': resolveImageUrl(blog.image),
+                    'url': pageUrl,
+                    'publisher': {
+                        '@type': 'Organization',
+                        'name': 'Look Immo',
+                        'logo': {
+                            '@type': 'ImageObject',
+                            'url': 'https://look-immo.tn/look-immo-icon-gold.png',
+                        }
+                    }
+                };
+
+                // Generate body snapshot for bots/crawlers that do not run JavaScript
+                bodySnapshot = `
+<article style="padding: 20px; max-width: 800px; margin: 0 auto;">
+  <h1>${escHtml(blog.title)}</h1>
+  ${blog.excerpt ? `<p><strong>Extrait:</strong> ${escHtml(blog.excerpt)}</p>` : ''}
+  <div style="margin-top: 20px;">
+    ${escHtml(blog.content || '').replace(/\n/g, '<br>')}
+  </div>
+  ${blog.image ? `<img src="${escAttr(resolveImageUrl(blog.image))}" alt="${escAttr(blog.title)}" style="max-width: 100%; margin-top: 20px; border-radius: 4px;" />` : ''}
+</article>`;
             }
         }
 
         // ── Inject into HTML ───────────────────────────────────────────────────
         // 1. Strip any existing <title> tag (the template has the generic one)
         // 2. Insert the dynamic SEO block just before </head>
-        const seoBlock = buildSeoMetaTags(meta);
+        // 3. Inject the body snapshot inside <div id="root"></div>
+        const seoBlock = buildSeoMetaTags(meta, jsonLd);
         let html = template
             .replace(/<title>.*?<\/title>/gi, '')
             .replace('</head>', `${seoBlock}\n</head>`);
+
+        if (bodySnapshot) {
+            html = html.replace('<div id="root"></div>', `<div id="root">\n${bodySnapshot}\n</div>`);
+        }
 
         // Store in cache
         seoCache.set(cacheKey, { html, expiresAt: Date.now() + CACHE_TTL_MS });

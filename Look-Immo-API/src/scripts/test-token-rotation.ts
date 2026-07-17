@@ -1,7 +1,13 @@
 import http from 'http';
 import jwt from 'jsonwebtoken';
 
-const getRefreshTokenSecret = () => process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret';
+const getRefreshTokenSecret = () => {
+    const secret = process.env.JWT_REFRESH_SECRET;
+    if (!secret) {
+        throw new Error('JWT_REFRESH_SECRET environment variable is not set');
+    }
+    return secret;
+};
 
 const makeRequest = (path: string, method: string, headers: Record<string, string>, body?: any): Promise<{ status: number; headers: any; body: string }> => {
     return new Promise((resolve) => {

@@ -410,7 +410,7 @@ const FinancesManagement = ({ properties, showNotification }: FinancesManagement
 
   // Data for visual SVG Chart (Monthly Revenue Trend - past 6 months)
   const chartData = useMemo(() => {
-    const months = [];
+    const months: { label: string; monthNum: number; year: number; vente: number; location: number; total: number }[] = [];
     const now = new Date();
     for (let i = 5; i >= 0; i--) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);

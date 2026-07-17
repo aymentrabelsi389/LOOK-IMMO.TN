@@ -557,26 +557,49 @@ const DashboardPage = () => {
                       </div>
                     )}
                     {/* Primary property row */}
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0">
-                        <HomeIcon size={12} />
-                      </div>
-                      <span className="text-gray-600 truncate font-medium">{apt.propertyTitle || 'Aucune'}</span>
-                    </div>
+                    {(() => {
+                      const p = properties.find(pr => pr.id === apt.propertyId);
+                      const title = p?.title || apt.propertyTitle || 'Aucune';
+                      const details = p
+                        ? `${p.location.city}${p.price ? ` • ${p.price.toLocaleString('fr-TN')} DT` : ''}`
+                        : '';
+                      return (
+                        <div className="flex items-start gap-2.5">
+                          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0 mt-0.5">
+                            <HomeIcon size={12} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="block text-gray-800 font-semibold truncate" title={title}>{title}</span>
+                            {details && (
+                              <span className="block text-xs text-gray-400 font-medium truncate mt-0.5">
+                                {details}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })()}
                     {/* Additional properties — same style as primary */}
                     {(() => {
                       const { propertyIds } = parseNotes((apt as any).notes || apt.message || '');
                       if (propertyIds.length === 0) return null;
                       return propertyIds.map(pid => {
                         const p = properties.find(pr => pr.id === pid);
-                        return p ? (
-                          <div key={pid} className="flex items-center gap-2.5">
-                            <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0">
+                        if (!p) return null;
+                        const details = `${p.location.city}${p.price ? ` • ${p.price.toLocaleString('fr-TN')} DT` : ''}`;
+                        return (
+                          <div key={pid} className="flex items-start gap-2.5">
+                            <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0 mt-0.5">
                               <HomeIcon size={12} />
                             </div>
-                            <span className="text-gray-600 truncate font-medium">{p.title}</span>
+                            <div className="min-w-0 flex-1">
+                              <span className="block text-gray-800 font-semibold truncate" title={p.title}>{p.title}</span>
+                              <span className="block text-xs text-gray-400 font-medium truncate mt-0.5">
+                                {details}
+                              </span>
+                            </div>
                           </div>
-                        ) : null;
+                        );
                       });
                     })()}
                   </div>
@@ -1063,18 +1086,50 @@ const DashboardPage = () => {
                 {/* Selected pills */}
                 {(aptForm.propertyId || addAdditionalProps.some(Boolean)) && (
                   <div className="flex flex-wrap gap-2 mb-2">
-                    {aptForm.propertyId && (
-                      <span className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 bg-brand-teal/10 text-brand-teal text-xs font-bold rounded-full border border-brand-teal/20">
-                        🏠 {properties.find(p => p.id === aptForm.propertyId)?.title || 'Propriété'}
-                        <button type="button" onClick={() => setAptForm({ ...aptForm, propertyId: '' })} className="ml-0.5 hover:bg-brand-teal/20 rounded-full p-0.5 transition"><X size={11} /></button>
-                      </span>
-                    )}
-                    {addAdditionalProps.filter(Boolean).map((pid, i) => (
-                      <span key={i} className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-full border border-gray-200">
-                        {properties.find(p => p.id === pid)?.title || 'Propriété'}
-                        <button type="button" onClick={() => setAddAdditionalProps(prev => prev.filter((_, idx) => idx !== i))} className="ml-0.5 hover:bg-gray-200 rounded-full p-0.5 transition"><X size={11} /></button>
-                      </span>
-                    ))}
+                    {aptForm.propertyId && (() => {
+                      const prop = properties.find(p => p.id === aptForm.propertyId);
+                      const priceStr = prop?.price ? prop.price.toLocaleString('fr-TN') + ' DT' : null;
+                      return (
+                        <span className="inline-flex items-center gap-2 pl-1.5 pr-2 py-1 bg-brand-teal/10 text-brand-teal text-xs font-bold rounded-full border border-brand-teal/20">
+                          {prop?.images?.[0] ? (
+                            <img
+                              src={getImageSrc(prop.images[0], 'thumb')}
+                              alt=""
+                              className="w-7 h-7 rounded-full object-cover flex-shrink-0 border-2 border-brand-teal/30"
+                            />
+                          ) : (
+                            <span className="w-7 h-7 rounded-full bg-brand-teal/20 flex items-center justify-center text-sm flex-shrink-0">🏠</span>
+                          )}
+                          <span className="flex flex-col leading-tight">
+                            <span>{prop?.title || 'Propriété'}</span>
+                            {priceStr && <span className="text-[10px] font-semibold text-brand-teal/70">{priceStr}</span>}
+                          </span>
+                          <button type="button" onClick={() => setAptForm({ ...aptForm, propertyId: '' })} className="ml-0.5 hover:bg-brand-teal/20 rounded-full p-0.5 transition"><X size={11} /></button>
+                        </span>
+                      );
+                    })()}
+                    {addAdditionalProps.filter(Boolean).map((pid, i) => {
+                      const prop = properties.find(p => p.id === pid);
+                      const priceStr = prop?.price ? prop.price.toLocaleString('fr-TN') + ' DT' : null;
+                      return (
+                        <span key={i} className="inline-flex items-center gap-2 pl-1.5 pr-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full border border-gray-200">
+                          {prop?.images?.[0] ? (
+                            <img
+                              src={getImageSrc(prop.images[0], 'thumb')}
+                              alt=""
+                              className="w-7 h-7 rounded-full object-cover flex-shrink-0 border-2 border-gray-300"
+                            />
+                          ) : (
+                            <span className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-sm flex-shrink-0">🏠</span>
+                          )}
+                          <span className="flex flex-col leading-tight">
+                            <span>{prop?.title || 'Propriété'}</span>
+                            {priceStr && <span className="text-[10px] font-semibold text-gray-400">{priceStr}</span>}
+                          </span>
+                          <button type="button" onClick={() => setAddAdditionalProps(prev => prev.filter((_, idx) => idx !== i))} className="ml-0.5 hover:bg-gray-200 rounded-full p-0.5 transition"><X size={11} /></button>
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
                 {/* Scrollable property list */}
@@ -1325,18 +1380,50 @@ const DashboardPage = () => {
                 {/* Selected pills */}
                 {(editForm.propertyId || editAdditionalProps.some(Boolean)) && (
                   <div className="flex flex-wrap gap-2 mb-2">
-                    {editForm.propertyId && (
-                      <span className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 bg-brand-teal/10 text-brand-teal text-xs font-bold rounded-full border border-brand-teal/20">
-                        🏠 {properties.find(p => p.id === editForm.propertyId)?.title || 'Propriété'}
-                        <button type="button" onClick={() => setEditForm({ ...editForm, propertyId: '' })} className="ml-0.5 hover:bg-brand-teal/20 rounded-full p-0.5 transition"><X size={11} /></button>
-                      </span>
-                    )}
-                    {editAdditionalProps.filter(Boolean).map((pid, i) => (
-                      <span key={i} className="inline-flex items-center gap-1.5 pl-3 pr-2 py-1.5 bg-gray-100 text-gray-600 text-xs font-bold rounded-full border border-gray-200">
-                        {properties.find(p => p.id === pid)?.title || 'Propriété'}
-                        <button type="button" onClick={() => setEditAdditionalProps(prev => prev.filter((_, idx) => idx !== i))} className="ml-0.5 hover:bg-gray-200 rounded-full p-0.5 transition"><X size={11} /></button>
-                      </span>
-                    ))}
+                    {editForm.propertyId && (() => {
+                      const prop = properties.find(p => p.id === editForm.propertyId);
+                      const priceStr = prop?.price ? prop.price.toLocaleString('fr-TN') + ' DT' : null;
+                      return (
+                        <span className="inline-flex items-center gap-2 pl-1.5 pr-2 py-1 bg-brand-teal/10 text-brand-teal text-xs font-bold rounded-full border border-brand-teal/20">
+                          {prop?.images?.[0] ? (
+                            <img
+                              src={getImageSrc(prop.images[0], 'thumb')}
+                              alt=""
+                              className="w-7 h-7 rounded-full object-cover flex-shrink-0 border-2 border-brand-teal/30"
+                            />
+                          ) : (
+                            <span className="w-7 h-7 rounded-full bg-brand-teal/20 flex items-center justify-center text-sm flex-shrink-0">🏠</span>
+                          )}
+                          <span className="flex flex-col leading-tight">
+                            <span>{prop?.title || 'Propriété'}</span>
+                            {priceStr && <span className="text-[10px] font-semibold text-brand-teal/70">{priceStr}</span>}
+                          </span>
+                          <button type="button" onClick={() => setEditForm({ ...editForm, propertyId: '' })} className="ml-0.5 hover:bg-brand-teal/20 rounded-full p-0.5 transition"><X size={11} /></button>
+                        </span>
+                      );
+                    })()}
+                    {editAdditionalProps.filter(Boolean).map((pid, i) => {
+                      const prop = properties.find(p => p.id === pid);
+                      const priceStr = prop?.price ? prop.price.toLocaleString('fr-TN') + ' DT' : null;
+                      return (
+                        <span key={i} className="inline-flex items-center gap-2 pl-1.5 pr-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full border border-gray-200">
+                          {prop?.images?.[0] ? (
+                            <img
+                              src={getImageSrc(prop.images[0], 'thumb')}
+                              alt=""
+                              className="w-7 h-7 rounded-full object-cover flex-shrink-0 border-2 border-gray-300"
+                            />
+                          ) : (
+                            <span className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-sm flex-shrink-0">🏠</span>
+                          )}
+                          <span className="flex flex-col leading-tight">
+                            <span>{prop?.title || 'Propriété'}</span>
+                            {priceStr && <span className="text-[10px] font-semibold text-gray-400">{priceStr}</span>}
+                          </span>
+                          <button type="button" onClick={() => setEditAdditionalProps(prev => prev.filter((_, idx) => idx !== i))} className="ml-0.5 hover:bg-gray-200 rounded-full p-0.5 transition"><X size={11} /></button>
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
                 <div className="border border-gray-200 rounded-2xl overflow-hidden bg-gray-50/50">

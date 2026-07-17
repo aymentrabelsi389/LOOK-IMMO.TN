@@ -125,7 +125,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onSelect, isFavor
             {(property.averageRating || 0) > 0 && (
               <div className="flex items-center mb-4">
                 <div className="flex text-yellow-400"><Star size={14} fill="currentColor" /></div>
-                <span className="text-xs font-bold ml-1 text-gray-700">{property.averageRating.toFixed(1)}</span>
+                <span className="text-xs font-bold ml-1 text-gray-700">{property.averageRating?.toFixed(1)}</span>
                 <span className="text-xs text-gray-400 ml-1">({property.ratingsCount} avis)</span>
               </div>
             )}

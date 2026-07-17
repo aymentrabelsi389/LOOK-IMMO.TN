@@ -414,7 +414,7 @@ const ListingsPage = () => {
           <SlidersHorizontal size={16} className="text-brand-teal" />
           <span className="font-bold text-sm tracking-wide">Filtres</span>
           {/* Active filter count badge */}
-          {(filters.listingType !== 'all' || filters.propertyType !== 'all' || filters.city !== 'all' || filters.maxPrice < maxPriceLimit || filters.minBedrooms > 0 || (filters.propertyType === 'land' && (filters.minArea || 0) > (filters.isHotDeal ? 1000 : 0))) && (
+          {(filters.listingType !== 'all' || filters.propertyType !== 'all' || filters.city !== 'all' || filters.maxPrice < maxPriceLimit || filters.minBedrooms > 0 || ((filters.propertyType as any) === 'land' && (filters.minArea || 0) > (filters.isHotDeal ? 1000 : 0))) && (
             <span className="w-5 h-5 bg-brand-teal text-white text-[10px] font-extrabold rounded-full flex items-center justify-center animate-in zoom-in">
               {[
                 filters.listingType !== 'all',
@@ -422,7 +422,7 @@ const ListingsPage = () => {
                 filters.city !== 'all',
                 filters.maxPrice < maxPriceLimit,
                 filters.minBedrooms > 0,
-                filters.propertyType === 'land' && (filters.minArea || 0) > (filters.isHotDeal ? 1000 : 0),
+                (filters.propertyType as any) === 'land' && (filters.minArea || 0) > (filters.isHotDeal ? 1000 : 0),
               ].filter(Boolean).length}
             </span>
           )}
@@ -443,7 +443,7 @@ const ListingsPage = () => {
           />
           {/* Drawer */}
           <div
-            className={`absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[88vh] flex flex-col transition-transform duration-300 ease-in-out ${
+            className={`absolute bottom-[58px] left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col transition-transform duration-300 ease-in-out ${
               isFilterAnimating ? 'translate-y-0' : 'translate-y-full'
             }`}
             onClick={(e) => e.stopPropagation()}
@@ -471,7 +471,7 @@ const ListingsPage = () => {
               {filterContent}
             </div>
             {/* Apply button */}
-            <div className="flex-shrink-0 px-6 pb-8 pt-4 border-t border-gray-100">
+            <div className="flex-shrink-0 px-6 pb-6 pt-4 border-t border-gray-100">
               <button
                 onClick={closeFilter}
                 className="w-full py-4 bg-gradient-to-r from-brand-teal to-cyan-500 text-white font-bold rounded-2xl text-base shadow-lg shadow-brand-teal/20 hover:from-cyan-500 hover:to-brand-teal transition-all duration-300"
@@ -529,7 +529,6 @@ const ListingsPage = () => {
                     isFavorite={user?.favorites.includes(property.id) || false}
                     userRole={userRole}
                     onToggleFavorite={onToggleFavorite}
-                    user={user}
                   />
                 ))}
               </div>

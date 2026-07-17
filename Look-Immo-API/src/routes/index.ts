@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authMiddleware, optionalAuth } from '../middleware/auth';
 import { adminOnly, agentOrAdmin, authenticated } from '../middleware/roleGuard';
-import { uploadContract, uploadImage, optimizeAndSave } from '../utils/upload'; // uploadContract still used for property-document upload
+import { uploadContract, uploadImage, optimizeAndSave, assertMagicBytes } from '../utils/upload'; // uploadContract still used for property-document upload
 
 // Controllers
 import * as authController from '../controllers/authController';
@@ -139,6 +139,7 @@ router.post(
     authMiddleware,
     agentOrAdmin,
     uploadImage.single('image'),
+    assertMagicBytes(),
     optimizeAndSave({ folder: 'properties', quality: 82, multiSize: true }),
     uploadController.handleImageUpload
 );
@@ -149,6 +150,7 @@ router.post(
     authMiddleware,
     agentOrAdmin,
     uploadContract.single('file'),
+    assertMagicBytes(),
     uploadController.handleDocumentUpload
 );
 
@@ -161,6 +163,7 @@ router.post(
     authMiddleware,
     adminOnly,
     uploadImage.single('image'),
+    assertMagicBytes(),
     optimizeAndSave({ folder: 'blog', width: 900, quality: 80 }),
     uploadController.handleImageUpload
 );

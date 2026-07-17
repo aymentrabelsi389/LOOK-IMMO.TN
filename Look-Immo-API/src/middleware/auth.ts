@@ -9,7 +9,13 @@ export interface AuthRequest extends Request {
     };
 }
 
-const getAccessTokenSecret = () => process.env.JWT_SECRET || 'fallback-access-secret';
+const getAccessTokenSecret = () => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        throw new Error('JWT_SECRET environment variable is not set');
+    }
+    return secret;
+};
 
 export const authMiddleware = async (
     req: AuthRequest,

@@ -24,7 +24,7 @@ export const validate = (schema: ZodSchema) => {
                     path: err.path.join('.'),
                     message: err.message
                 }));
-                console.log("[DEBUG] Validation failed:", JSON.stringify(formattedErrors));
+
                 // Return 400 Bad Request if validation fails
                 return res.status(400).json({
                     error: 'Validation failed',

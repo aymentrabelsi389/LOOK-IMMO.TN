@@ -25,9 +25,9 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Property, PropertyType } from '../../types';
-import { uploadAPI, BACKEND_URL, resolveImage } from '../../services/api';
-import { getImageSrc } from '../../utils/imageUtils';
+import { Property, PropertyType } from '@/types';
+import { uploadAPI, BACKEND_URL, resolveImage } from '@/services/api';
+import { getImageSrc } from '@/utils/imageUtils';
 
 interface PropertyModalProps {
   showModal: boolean;

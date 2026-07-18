@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { Target, Search, Trash2, MapPin, Phone, User as UserIcon, Check, X, ChevronLeft, ChevronRight, List, Sparkles, AlertCircle, CheckCircle2, Edit2, ChevronDown } from 'lucide-react';
-import { ClientDemand, Property } from '../../types';
-import { clientDemandsAPI } from '../../services/api';
+import { ClientDemand, Property } from '@/types';
+import { clientDemandsAPI } from '@/services/api';
 import Price from '../Price';
 import PropertyMatchModal from './PropertyMatchModal';
-import { notify } from '../../services/notificationStore';
-import { useConfirm } from '../../context/ConfirmContext';
+import { notify } from '@/services/notificationStore';
+import { useConfirm } from '@/context/ConfirmContext';
 
 
 interface CustomDropdownProps<T extends string> {

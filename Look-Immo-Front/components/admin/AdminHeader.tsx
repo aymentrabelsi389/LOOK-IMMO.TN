@@ -1,6 +1,6 @@
 import React from 'react';
 import { Menu, Home as HomeIcon, User as UserIcon } from 'lucide-react';
-import { User } from '../../types';
+import { User } from '@/types';
 
 interface AdminHeaderProps {
   user: User | null;

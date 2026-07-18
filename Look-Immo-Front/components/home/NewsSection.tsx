@@ -1,6 +1,6 @@
 import React from 'react';
 import { Calendar, ArrowRight } from 'lucide-react';
-import { BlogPost } from '../../types';
+import { BlogPost } from '@/types';
 import InfiniteCarousel from './InfiniteCarousel';
 
 const NewsSection = ({ blogPosts, onSelectPost }: { blogPosts: BlogPost[], onSelectPost: (id: string) => void }) => {

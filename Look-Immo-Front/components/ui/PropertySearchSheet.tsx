@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search, X, Clock, TrendingUp, MapPin, Home, RefreshCw } from 'lucide-react';
-import { propertiesAPI } from '../../services/api';
-import { getImageSrc } from '../../utils/imageUtils';
-import { useData } from '../../context/DataContext';
+import { propertiesAPI } from '@/services/api';
+import { getImageSrc } from '@/utils/imageUtils';
+import { useData } from '@/context/DataContext';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface PropertySearchSheetProps {
@@ -193,7 +193,15 @@ const PropertySearchSheet: React.FC<PropertySearchSheetProps> = ({ isOpen, onClo
       }
 
       const { data } = await propertiesAPI.getAll(params);
-      setResults(data as SearchResult[]);
+      setResults(data.map((p) => ({
+        id: p.id,
+        title: p.title,
+        city: p.location?.city || 'Tunis',
+        price: p.price,
+        type: p.type,
+        listingType: p.listingType,
+        images: p.images,
+      })));
     } catch {
       setResults([]);
     } finally {

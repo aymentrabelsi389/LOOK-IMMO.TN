@@ -5,8 +5,8 @@ import {
   X, Check, Phone,
   ChevronLeft, ChevronRight, List, Calendar, Clock, ChevronDown
 } from 'lucide-react';
-import { Message } from '../../types';
-import { messagesAPI } from '../../services/api';
+import { Message } from '@/types';
+import { messagesAPI } from '@/services/api';
 
 interface CustomDropdownProps<T extends string> {
   value: T;

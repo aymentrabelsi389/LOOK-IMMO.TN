@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Image as ImageIcon } from 'lucide-react';
-import { getImageSrc, buildSrcSet, getLQIP, buildPropertyImageAlt, PropertyAltContext } from '../utils/imageUtils';
+import { getImageSrc, buildSrcSet, getLQIP, buildPropertyImageAlt, PropertyAltContext } from '@/utils/imageUtils';
 
 interface PropertyGalleryProps {
   images: string[];

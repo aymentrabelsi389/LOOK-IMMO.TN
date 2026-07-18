@@ -3,10 +3,10 @@ import { MapPin, Phone, Mail, Facebook, Instagram, MessageSquare, Check, Chevron
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
-import { useSEO } from '../hooks/useSEO';
-import { useAuthStore } from '../stores/useAuthStore';
-import { useData } from '../context/DataContext';
-import { notify } from '../services/notificationStore';
+import { useSEO } from '@/hooks/useSEO';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useData } from '@/context/DataContext';
+import { notify } from '@/services/notificationStore';
 
 // Helper component to fix Leaflet resize issues
 const MapUpdater = () => {

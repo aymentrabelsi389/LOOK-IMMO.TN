@@ -5,17 +5,17 @@ import {
   ChevronRight, ChevronLeft, MessageSquare, Calendar, User as UserIcon, Send
 } from 'lucide-react';
 import { MapContainer, TileLayer, Circle, useMap } from 'react-leaflet';
-import { Property } from '../types';
-import { PropertyGallery } from '../components/PropertyGallery';
-import Price from '../components/Price';
-import { CustomDatePicker, CustomTimePicker } from '../components/ui/DateTimePicker';
-import { propertiesAPI } from '../services/api';
+import { Property } from '@/types';
+import { PropertyGallery } from '@/components/PropertyGallery';
+import Price from '@/components/Price';
+import { CustomDatePicker, CustomTimePicker } from '@/components/ui/DateTimePicker';
+import { propertiesAPI } from '@/services/api';
 import { useParams } from 'react-router-dom';
-import { useSEO } from '../hooks/useSEO';
-import { useUI } from '../context/UIContext';
-import { useAuthStore } from '../stores/useAuthStore';
-import { useData } from '../context/DataContext';
-import { getImageSrc, buildSrcSet, buildPropertyImageAlt } from '../utils/imageUtils';
+import { useSEO } from '@/hooks/useSEO';
+import { useUI } from '@/context/UIContext';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useData } from '@/context/DataContext';
+import { getImageSrc, buildSrcSet, buildPropertyImageAlt } from '@/utils/imageUtils';
 
 const PropertyDetailsPage = () => {
   const { id } = useParams<{ id: string }>();

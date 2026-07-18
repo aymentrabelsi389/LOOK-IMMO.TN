@@ -1,9 +1,9 @@
 
 import React from 'react';
 import { X, ExternalLink, Copy, MapPin, Building2, Maximize2, BedDouble, Trash2 } from 'lucide-react';
-import { Property, ClientDemand } from '../../types';
+import { Property, ClientDemand } from '@/types';
 import Price from '../Price';
-import { getImageSrc, getLQIP } from '../../utils/imageUtils';
+import { getImageSrc, getLQIP } from '@/utils/imageUtils';
 
 interface PropertyMatchModalProps {
   isOpen: boolean;

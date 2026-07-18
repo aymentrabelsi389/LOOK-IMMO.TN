@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { Bath, BedDouble, Crown, Flame, Heart, MapPin, Sparkles, Square, Star } from 'lucide-react';
-import { Property } from '../types';
+import { Property } from '@/types';
 import Price from './Price';
-import { getImageSrc, buildSrcSet, getLQIP, buildPropertyImageAlt } from '../utils/imageUtils';
+import { getImageSrc, buildSrcSet, getLQIP, buildPropertyImageAlt } from '@/utils/imageUtils';
 
 interface PropertyCardProps {
   property: Property;

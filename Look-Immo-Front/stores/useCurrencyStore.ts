@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { CurrencyCode, ExchangeRates } from '../types';
-import { exchangeRatesAPI } from '../services/api';
+import { CurrencyCode, ExchangeRates } from '@/types';
+import { exchangeRatesAPI } from '@/services/api';
 
 // ── Last-resort in-browser defaults ──────────────────────────────────────────
 // These are only used if the backend /api/exchange-rates endpoint is unreachable.

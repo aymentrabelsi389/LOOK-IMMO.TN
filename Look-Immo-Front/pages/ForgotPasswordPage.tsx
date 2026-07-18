@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Key, ShieldCheck, ArrowLeft, RefreshCw, Lock, Eye, EyeOff, Check, X } from 'lucide-react';
-import { authAPI } from '../services/api';
-import { useSEO } from '../hooks/useSEO';
-import { useUI } from '../context/UIContext';
-import { notify } from '../services/notificationStore';
+import { authAPI } from '@/services/api';
+import { useSEO } from '@/hooks/useSEO';
+import { useUI } from '@/context/UIContext';
+import { notify } from '@/services/notificationStore';
 
 const ForgotPasswordPage = () => {
   const { handleNavigate } = useUI();

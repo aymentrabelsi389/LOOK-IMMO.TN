@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FilterState } from '../types';
+import { FilterState } from '@/types';
 
 export const INITIAL_FILTERS: FilterState = {
   query: '',

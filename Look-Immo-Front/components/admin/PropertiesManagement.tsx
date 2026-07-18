@@ -6,20 +6,20 @@ import {
   FileText, Shield, Eye, Download, Calendar, Mail, Phone, Clock, Check, MessageSquare
 } from 'lucide-react';
 import {
-  DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors
+  DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, DragEndEvent
 } from '@dnd-kit/core';
 import {
   arrayMove, SortableContext, verticalListSortingStrategy, useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Property, PropertyType, User, Appointment, ClientDemand } from '../../types';
-import { propertiesAPI, uploadAPI, appointmentsAPI, BACKEND_URL } from '../../services/api';
-import { useData } from '../../context/DataContext';
+import { Property, PropertyType, User, Appointment, ClientDemand } from '@/types';
+import { propertiesAPI, uploadAPI, appointmentsAPI, BACKEND_URL } from '@/services/api';
+import { useData } from '@/context/DataContext';
 import Price from '../Price';
 import PropertyModal from './PropertyModal';
-import { notify } from '../../services/notificationStore';
-import { useConfirm } from '../../context/ConfirmContext';
-import { getImageSrc } from '../../utils/imageUtils';
+import { notify } from '@/services/notificationStore';
+import { useConfirm } from '@/context/ConfirmContext';
+import { getImageSrc } from '@/utils/imageUtils';
 const getDownloadUrl = (url: string) => {
   if (!url) return '';
   const cleanUrl = url.replace(BACKEND_URL, '');
@@ -846,7 +846,7 @@ const PropertiesManagement = ({
     useSensor(KeyboardSensor)
   );
 
-  const handleDragEnd = async (event: any) => {
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     // Guard: over is null when dropping outside a droppable container (common on mobile touch)
     if (!over || active.id === over.id) return;

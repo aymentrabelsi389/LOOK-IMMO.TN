@@ -3,9 +3,9 @@ import { Calendar, Clock, ChevronRight } from 'lucide-react';
 import DOMPurify from 'dompurify';
 
 import { useParams } from 'react-router-dom';
-import { useSEO } from '../hooks/useSEO';
-import { useUI } from '../context/UIContext';
-import { useData } from '../context/DataContext';
+import { useSEO } from '@/hooks/useSEO';
+import { useUI } from '@/context/UIContext';
+import { useData } from '@/context/DataContext';
 
 // Safely sanitize and process HTML content on the client side
 const getSafeBlogContent = (content: string): string => {

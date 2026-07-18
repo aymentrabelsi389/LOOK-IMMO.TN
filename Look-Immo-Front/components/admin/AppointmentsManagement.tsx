@@ -5,11 +5,11 @@ import {
   Check, X, Trash2, ChevronLeft, ChevronRight, List, Phone, Mail, Building2, Clock, MessageSquare,
   History, ChevronDown
 } from 'lucide-react';
-import { Appointment, User, Property } from '../../types';
-import { appointmentsAPI } from '../../services/api';
+import { Appointment, User, Property } from '@/types';
+import { appointmentsAPI } from '@/services/api';
 import AppointmentsCalendarModal from './AppointmentsCalendarModal';
 import ClientAppointmentsHistoryModal from './ClientAppointmentsHistoryModal';
-import { useConfirm } from '../../context/ConfirmContext';
+import { useConfirm } from '@/context/ConfirmContext';
 
 
 interface CustomDropdownProps<T extends string> {

@@ -1,6 +1,6 @@
 import React from 'react';
 import { LayoutDashboard, Home as HomeIcon, Users, MessageSquare, CalendarDays, Star, MapPin, Globe, Settings, Target, TrendingUp } from 'lucide-react';
-import { User } from '../../types';
+import { User } from '@/types';
 
 interface AdminSidebarProps {
   activeTab: string;

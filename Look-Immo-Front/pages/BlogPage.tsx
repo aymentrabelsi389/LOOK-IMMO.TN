@@ -1,8 +1,8 @@
 import React from 'react';
 import { Calendar, ArrowRight, FileText } from 'lucide-react';
 
-import { useSEO } from '../hooks/useSEO';
-import { useData } from '../context/DataContext';
+import { useSEO } from '@/hooks/useSEO';
+import { useData } from '@/context/DataContext';
 
 const BlogPage = () => {
   useSEO({

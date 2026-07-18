@@ -6,10 +6,10 @@ import {
   Check, Clock, Star, MapPin, AlertCircle, MessageCircle, CalendarDays,
   ChevronLeft, ChevronRight, List, ChevronDown
 } from 'lucide-react';
-import { User, Property, Rating, Message, Appointment } from '../../types';
-import { usersAPI } from '../../services/api';
+import { User, Property, Rating, Message, Appointment } from '@/types';
+import { usersAPI } from '@/services/api';
 import Price from '../Price';
-import { getImageSrc, getLQIP } from '../../utils/imageUtils';
+import { getImageSrc, getLQIP } from '@/utils/imageUtils';
 
 interface CustomDropdownProps<T extends string> {
   value: T;

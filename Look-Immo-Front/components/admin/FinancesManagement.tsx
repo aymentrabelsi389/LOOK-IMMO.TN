@@ -5,9 +5,9 @@ import {
   BarChart3, RefreshCw, X,
   MapPin, Check, ArrowUpRight, ChevronDown
 } from 'lucide-react';
-import { Property, FinanceTransaction } from '../../types';
-import { transactionsAPI } from '../../services/api';
-import { useConfirm } from '../../context/ConfirmContext';
+import { Property, FinanceTransaction } from '@/types';
+import { transactionsAPI } from '@/services/api';
+import { useConfirm } from '@/context/ConfirmContext';
 import { CustomDatePicker } from '../ui/DateTimePicker';
 
 

@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   X, Calendar, Clock, Building2, MessageSquare, Phone, Mail, Trash2, Check, History
 } from 'lucide-react';
-import { Appointment, User, Property } from '../../types';
+import { Appointment, User, Property } from '@/types';
 
 interface ClientAppointmentsHistoryModalProps {
   onClose: () => void;

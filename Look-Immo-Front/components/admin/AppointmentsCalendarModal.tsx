@@ -4,7 +4,7 @@ import {
   MapPin, Phone, User as UserIcon, CheckCircle2, XCircle, 
   Clock, TrendingUp, AlertCircle, Trash2, Check, MessageSquare
 } from 'lucide-react';
-import { Appointment, Property, User } from '../../types';
+import { Appointment, Property, User } from '@/types';
 
 interface AppointmentsCalendarModalProps {
   onClose: () => void;

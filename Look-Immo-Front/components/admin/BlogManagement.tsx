@@ -6,9 +6,9 @@ import {
   ChevronLeft, ChevronRight, List, Calendar,
   ChevronDown, Check
 } from 'lucide-react';
-import { BlogPost } from '../../types';
-import { blogAPI } from '../../services/api';
-import { useConfirm } from '../../context/ConfirmContext';
+import { BlogPost } from '@/types';
+import { blogAPI } from '@/services/api';
+import { useConfirm } from '@/context/ConfirmContext';
 
 
 interface CustomDropdownProps<T extends string> {

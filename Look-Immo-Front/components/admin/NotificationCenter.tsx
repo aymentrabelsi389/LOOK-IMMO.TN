@@ -5,8 +5,8 @@ import {
   UserPlus, MessageSquare, Calendar, Heart,
   Star, Home, Sparkles, RefreshCw, Filter
 } from 'lucide-react';
-import { notificationsAPI } from '../../services/api';
-import { socketService } from '../../services/socket';
+import { notificationsAPI } from '@/services/api';
+import { socketService } from '@/services/socket';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface AppNotification {

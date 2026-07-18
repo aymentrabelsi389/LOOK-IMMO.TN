@@ -201,3 +201,27 @@ export interface FinanceTransaction {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Location {
+  id: string;
+  name: string;
+  centerLat: number;
+  centerLng: number;
+  radius: number;
+  displayOrder: number;
+  createdAt?: string | number;
+}
+
+export interface SiteNotification {
+  id: string;
+  userId?: string | null;
+  title?: string | null;
+  message: string;
+  icon?: string | null;
+  link?: string | null;
+  entityId?: string | null;
+  read: boolean;
+  metadata?: any;
+  createdAt: string | number;
+}
+

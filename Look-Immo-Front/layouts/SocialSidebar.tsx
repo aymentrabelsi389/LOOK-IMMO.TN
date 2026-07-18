@@ -1,6 +1,6 @@
 import React from 'react';
-import { SiteSettings } from '../types';
-import { useAuthStore } from '../stores/useAuthStore';
+import { SiteSettings } from '@/types';
+import { useAuthStore } from '@/stores/useAuthStore';
 
 const SocialSidebar = ({ settings }: { settings: SiteSettings | null }) => {
   const { user } = useAuthStore();

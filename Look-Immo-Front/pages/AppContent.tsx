@@ -2,23 +2,23 @@ import React, { useEffect } from 'react';
 import { useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import LuxuryLoader from '../components/ui/LuxuryLoader';
+import LuxuryLoader from '@/components/ui/LuxuryLoader';
 import { Suspense, lazy } from 'react';
 
 // Context Hooks
-import { useUI } from '../context/UIContext';
-import { useAuthStore } from '../stores/useAuthStore';
-import { useData } from '../context/DataContext';
+import { useUI } from '@/context/UIContext';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useData } from '@/context/DataContext';
 
 // Layout Components
-import Navbar from '../layouts/Navbar';
-import Footer from '../layouts/Footer';
-import SocialSidebar from '../layouts/SocialSidebar';
-import ToastContainer from '../components/ui/ToastContainer';
-import AuthRequiredModal from '../components/ui/AuthRequiredModal';
-import { PrivacyModal, TermsModal } from '../components/ui/LegalModals';
-import MobileBottomNavigation from '../components/admin/MobileBottomNavigation';
-import ClientMobileBottomNavigation from '../components/admin/ClientMobileBottomNavigation';
+import Navbar from '@/layouts/Navbar';
+import Footer from '@/layouts/Footer';
+import SocialSidebar from '@/layouts/SocialSidebar';
+import ToastContainer from '@/components/ui/ToastContainer';
+import AuthRequiredModal from '@/components/ui/AuthRequiredModal';
+import { PrivacyModal, TermsModal } from '@/components/ui/LegalModals';
+import MobileBottomNavigation from '@/components/admin/MobileBottomNavigation';
+import ClientMobileBottomNavigation from '@/components/admin/ClientMobileBottomNavigation';
 
 // Page Components (Lazy Loaded)
 const HomePage = lazy(() => import('./HomePage'));

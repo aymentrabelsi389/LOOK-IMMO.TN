@@ -1,9 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { Star, Trash2, ChevronLeft, ChevronRight, List, Building2, Calendar, ChevronDown, Check } from 'lucide-react';
-import { Rating } from '../../types';
-import { ratingsAPI } from '../../services/api';
-import { useConfirm } from '../../context/ConfirmContext';
+import { Rating } from '@/types';
+import { ratingsAPI } from '@/services/api';
+import { useConfirm } from '@/context/ConfirmContext';
 
 
 interface CustomDropdownProps<T extends string> {

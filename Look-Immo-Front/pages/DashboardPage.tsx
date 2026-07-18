@@ -6,18 +6,18 @@ import {
   Search, Trash2, Edit, ChevronRight, Phone, Home as HomeIcon,
   Check
 } from 'lucide-react';
-import { Appointment, SiteSettings, ClientDemand } from '../types';
-import Price from '../components/Price';
-import { clientDemandsAPI, appointmentsAPI } from '../services/api';
+import { Appointment, SiteSettings, ClientDemand } from '@/types';
+import Price from '@/components/Price';
+import { clientDemandsAPI, appointmentsAPI } from '@/services/api';
 import { Target, Activity, CheckCircle } from 'lucide-react';
-import { CustomDatePicker, CustomTimePicker } from '../components/ui/DateTimePicker';
-import { useSEO } from '../hooks/useSEO';
-import { useUI } from '../context/UIContext';
-import { useAuthStore } from '../stores/useAuthStore';
-import { useData } from '../context/DataContext';
-import { notify } from '../services/notificationStore';
-import { useConfirm } from '../context/ConfirmContext';
-import { getImageSrc, getLQIP } from '../utils/imageUtils';
+import { CustomDatePicker, CustomTimePicker } from '@/components/ui/DateTimePicker';
+import { useSEO } from '@/hooks/useSEO';
+import { useUI } from '@/context/UIContext';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useData } from '@/context/DataContext';
+import { notify } from '@/services/notificationStore';
+import { useConfirm } from '@/context/ConfirmContext';
+import { getImageSrc, getLQIP } from '@/utils/imageUtils';
 
 const DashboardPage = () => {
   useSEO({

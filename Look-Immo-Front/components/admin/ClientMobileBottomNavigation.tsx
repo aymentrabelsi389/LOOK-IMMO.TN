@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Search, User, Building, Coins } from 'lucide-react';
-import { useUI } from '../../context/UIContext';
-import { useAuthStore } from '../../stores/useAuthStore';
+import { useUI } from '@/context/UIContext';
+import { useAuthStore } from '@/stores/useAuthStore';
 import PropertySearchSheet from '../ui/PropertySearchSheet';
 
 const ClientMobileBottomNavigation = () => {

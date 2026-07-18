@@ -1,5 +1,5 @@
 import React from 'react';
-import { Property, User } from '../../types';
+import { Property, User } from '@/types';
 import PropertyCarousel from './PropertyCarousel';
 import { SkeletonPropertyCard } from '../ui/SkeletonCard';
 

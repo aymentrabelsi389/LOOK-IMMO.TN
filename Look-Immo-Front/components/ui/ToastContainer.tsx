@@ -9,7 +9,7 @@ import {
   Volume2,
   VolumeX
 } from 'lucide-react';
-import { notificationStore, Toast } from '../../services/notificationStore';
+import { notificationStore, Toast } from '@/services/notificationStore';
 
 const ToastContainer = () => {
   const [toasts, setToasts] = useState<Toast[]>([]);

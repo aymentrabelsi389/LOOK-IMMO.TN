@@ -2,14 +2,14 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Property, User, SiteSettings, Message, Appointment, BlogPost, Rating
-} from '../types';
+} from '@/types';
 import {
   propertiesAPI, locationsAPI, blogAPI, settingsAPI, ratingsAPI,
   messagesAPI, appointmentsAPI, statsAPI, usersAPI, adaptAppointment
-} from '../services/api';
-import { socketService } from '../services/socket';
-import { notify } from '../services/notificationStore';
-import { useAuthStore } from '../stores/useAuthStore';
+} from '@/services/api';
+import { socketService } from '@/services/socket';
+import { notify } from '@/services/notificationStore';
+import { useAuthStore } from '@/stores/useAuthStore';
 import { useUI } from './UIContext';
 
 interface DataContextType {

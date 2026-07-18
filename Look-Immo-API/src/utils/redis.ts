@@ -80,7 +80,7 @@ export const clearCachePattern = async (pattern: string): Promise<void> => {
       MATCH: pattern,
       COUNT: 100
     })) {
-      keys.push(key);
+      keys.push(String(key));
     }
 
     if (keys.length > 0) {

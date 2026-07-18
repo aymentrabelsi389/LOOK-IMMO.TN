@@ -6,6 +6,7 @@ import {
   Trees, Waves, Wind, Flame, Check, GripVertical,
   Trash2, FileText, Eye, Download, ChevronDown
 } from 'lucide-react';
+import '@/utils/leafletSetup';
 import { MapContainer, TileLayer, Circle, useMap, useMapEvents } from 'react-leaflet';
 import {
   DndContext,

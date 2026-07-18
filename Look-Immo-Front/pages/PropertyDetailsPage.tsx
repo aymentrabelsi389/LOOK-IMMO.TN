@@ -4,6 +4,7 @@ import {
   Flame, Wind, Waves, Trees, Car as CarIcon, Shield, Check, X,
   ChevronRight, ChevronLeft, MessageSquare, Calendar, User as UserIcon, Send
 } from 'lucide-react';
+import '@/utils/leafletSetup';
 import { MapContainer, TileLayer, Circle, useMap } from 'react-leaflet';
 import { Property } from '@/types';
 import { PropertyGallery } from '@/components/PropertyGallery';

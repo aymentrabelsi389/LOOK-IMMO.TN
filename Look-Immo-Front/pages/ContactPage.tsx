@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, Phone, Mail, Facebook, Instagram, MessageSquare, Check, ChevronDown } from 'lucide-react';
+import '@/utils/leafletSetup';
 import { MapContainer, TileLayer, Marker, useMap } from 'react-leaflet';
 import L from 'leaflet';
 

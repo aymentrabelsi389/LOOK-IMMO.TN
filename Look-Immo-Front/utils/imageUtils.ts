@@ -103,19 +103,10 @@ export interface PropertyAltContext {
   parking?: boolean;
 }
 
+import { PROPERTY_TYPE_LABELS } from './propertyUtils';
+
 /** Map internal type keys to French labels for alt text. */
-const TYPE_LABELS: Record<string, string> = {
-  apartment:  'Appartement',
-  villa:      'Villa',
-  studio:     'Studio',
-  duplex:     'Duplex',
-  triplex:    'Triplex',
-  penthouse:  'Penthouse',
-  land:       'Terrain',
-  depot:      'Dépôt',
-  commercial: 'Local commercial',
-  commerce:   'Commerce',
-};
+const TYPE_LABELS = PROPERTY_TYPE_LABELS;
 
 /**
  * Generate a descriptive, SEO-rich alt text for a property image.

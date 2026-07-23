@@ -17,6 +17,7 @@ import {
 } from "../types";
 import { useCurrencyStore } from "../stores/useCurrencyStore";
 import logo from "./../look-immo-icon-gold.png";
+import { useAdmin } from "@/hooks/useAdmin";
 
 const FlagIcon = ({ code }: { code: string }) => {
   const flagUrls: Record<string, string> = {
@@ -51,6 +52,7 @@ const Navbar = ({
   filters: FilterState;
   appointments?: Appointment[];
 }) => {
+  const { isAdmin } = useAdmin();
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -292,7 +294,7 @@ const Navbar = ({
                     </div>
                     <span>{user.name}</span>
                   </button>
-                  {user.role === "admin" && (
+                  {isAdmin && (
                     <button
                       onClick={() => onNavigate("admin")}
                       className="p-2 text-brand-grey hover:text-brand-teal bg-gray-50 rounded-full"
@@ -345,23 +347,34 @@ const Navbar = ({
         </div>
       </nav>
 
-      <div
-        className={`fixed inset-0 bg-black/10 backdrop-blur-[2px] z-[9998] md:hidden transition-all duration-300 ease-out ${
-          isOpen
-            ? "opacity-100 pointer-events-auto"
-            : "opacity-0 pointer-events-none"
-        }`}
-        onClick={() => setIsOpen(false)}
-      />
-      <div
-        ref={mobileMenuRef}
-        className={`fixed top-0 left-0 w-[280px] sm:w-[320px] bg-white z-[9999] shadow-[0_0_50px_-12px_rgba(0,0,0,0.25)] md:hidden transform transition-all duration-300 ease-out flex flex-col border-b border-gray-100 ${
-          isOpen
-            ? "translate-x-0 opacity-100 scale-100"
-            : "-translate-x-full opacity-0 scale-[0.98]"
-        }`}
-        style={{ height: "calc(100dvh - 58px)" }}
-      >
+      {/*
+        Clipping wrapper — overflow-hidden on a fixed+inset-0 container clips
+        its children to the viewport box. Without this, the off-screen drawer
+        panel (translated -280 px to the left during close) is still painted
+        and some browsers include it in the document's scroll width, triggering
+        horizontal scrollbars. The wrapper itself never contributes layout space.
+        pointer-events-none ensures the invisible portion never swallows taps.
+      */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none md:hidden z-[9997]">
+        {/* Backdrop — re-enable pointer events only when menu is open */}
+        <div
+          className={`absolute inset-0 bg-black/10 backdrop-blur-[2px] z-[9998] transition-all duration-300 ease-out ${
+            isOpen
+              ? "opacity-100 pointer-events-auto"
+              : "opacity-0 pointer-events-none"
+          }`}
+          onClick={() => setIsOpen(false)}
+        />
+        {/* Off-canvas drawer — pointer events restored on the panel itself */}
+        <div
+          ref={mobileMenuRef}
+          className={`absolute top-0 left-0 w-[280px] sm:w-[320px] bg-white z-[9999] shadow-[0_0_50px_-12px_rgba(0,0,0,0.25)] transform transition-all duration-300 ease-out flex flex-col border-b border-gray-100 pointer-events-auto ${
+            isOpen
+              ? "translate-x-0 opacity-100 scale-100"
+              : "-translate-x-full opacity-0 scale-[0.98]"
+          }`}
+          style={{ height: "calc(100dvh - 58px)" }}
+        >
         <div className="flex items-center justify-between px-5 py-5 border-b border-gray-100 bg-white shrink-0">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-9 h-9 shrink-0 rounded-full bg-[#0B1C2D] border border-[#C6A75E]/30 p-[2px] flex items-center justify-center shadow-sm">
@@ -476,7 +489,7 @@ const Navbar = ({
                   >
                     Mon compte
                   </button>
-                  {user.role === "admin" && (
+                  {isAdmin && (
                     <button
                       onClick={() => {
                         onNavigate("admin");
@@ -495,7 +508,7 @@ const Navbar = ({
                     }}
                     className={`group block w-full text-left px-5 py-3.5 rounded-r-xl transition-all duration-300 transform border-l-[3px] border-transparent text-red-400/80 hover:text-red-500 hover:translate-x-1 ${isOpen ? "translate-x-0 opacity-100" : "-translate-x-4 opacity-0"}`}
                     style={{
-                      transitionDelay: `${(user.role === "admin" ? 10 : 9) * 40}ms`,
+                      transitionDelay: `${(isAdmin ? 10 : 9) * 40}ms`,
                     }}
                   >
                     Logout
@@ -510,6 +523,7 @@ const Navbar = ({
           <p className="text-[10px] text-gray-300 uppercase tracking-[0.3em] font-bold text-center">
             Look Immo Excellence
           </p>
+        </div>
         </div>
       </div>
     </>

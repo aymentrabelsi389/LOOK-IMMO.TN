@@ -1,6 +1,19 @@
-import { BlogPost, Property, User, Appointment, ClientDemand, FinanceTransaction, SiteSettings, Message, Location, SiteNotification } from '@/types';
+import { BlogPost, Property, User, Appointment, ClientDemand, FinanceTransaction, SiteSettings, Message, Location, SiteNotification, Rating } from '@/types';
 
 import { notify } from './notificationStore';
+
+export interface BackendRating {
+    id: string;
+    stars: number;
+    value?: number;
+    userId?: string;
+    userName?: string;
+    userEmail?: string;
+    comment?: string;
+    createdAt?: string | number;
+    property?: { id?: string; title?: string };
+    [key: string]: unknown;
+}
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -402,6 +415,35 @@ export const adaptAppointment = (backendApt: any): Appointment => {
         createdAt: backendApt.createdAt ? new Date(backendApt.createdAt).getTime() : Date.now(),
     };
 };
+
+// Shape/adapter helpers for context/store
+export function shapeProperties(list: Property[]): Property[] {
+    return list.map((p) => ({
+        ...p,
+        isNew:
+            p.isNew !== undefined
+                ? p.isNew
+                : !!p.createdAt && p.createdAt > Date.now() - 7 * 24 * 60 * 60 * 1000,
+        isFeatured: p.isFeatured !== undefined ? p.isFeatured : false,
+        isHotDeal: p.isHotDeal || false,
+        ratings: p.ratings || [],
+        averageRating: p.averageRating || 0,
+        ratingsCount: p.ratingsCount || 0,
+    }));
+}
+
+export function shapeRatings(list: BackendRating[]): Rating[] {
+    return list.map((r) => ({
+        ...r,
+        value: r.stars,
+        timestamp: r.createdAt ? new Date(r.createdAt).getTime() : Date.now(),
+        propertyId: r.property?.id || 'unknown',
+        propertyTitle: r.property?.title || 'Propriété inconnue',
+        userId: r.userId || r.userName || 'unknown',
+        userName: r.userName || 'Utilisateur',
+        userEmail: r.userEmail || '',
+    }));
+}
 
 // ==================== PROPERTIES API ====================
 export const propertiesAPI = {

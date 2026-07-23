@@ -1,4 +1,5 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, memo } from 'react';
+import { Link } from 'react-router-dom';
 import { Bath, BedDouble, Crown, Flame, Heart, MapPin, Sparkles, Square, Star } from 'lucide-react';
 import { Property } from '@/types';
 import Price from './Price';
@@ -12,7 +13,7 @@ interface PropertyCardProps {
   onToggleFavorite?: (propertyId: string) => void;
 }
 
-const PropertyCard: React.FC<PropertyCardProps> = ({ property, onSelect, isFavorite, userRole, onToggleFavorite }) => {
+const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, isFavorite, userRole, onToggleFavorite }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const isAdmin = userRole === 'admin';
 
@@ -116,7 +117,24 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onSelect, isFavor
         <div className="p-3 md:p-5 flex-1 flex flex-col">
           <div className="flex-1">
             <div className="flex justify-between items-start mb-1.5 md:mb-2">
-              <h3 className="text-sm md:text-lg font-bold text-brand-dark line-clamp-1 md:group-hover:text-brand-teal transition">{property.title}</h3>
+              <h3 className="text-sm md:text-lg font-bold text-brand-dark line-clamp-1 md:group-hover:text-brand-teal transition">
+                <Link
+                  to={`/property/${property.id}`}
+                  onClick={(e) => {
+                    // Modifier/middle clicks keep native browser behavior (open in
+                    // new tab, etc); a plain click defers to the existing selection
+                    // flow (onSelect), which also updates app-level state. Stop
+                    // propagation so the parent card's own onClick doesn't also fire.
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSelect(property.id);
+                  }}
+                  className="hover:text-brand-teal transition"
+                >
+                  {property.title}
+                </Link>
+              </h3>
             </div>
             <div className="flex items-center text-brand-grey text-xs md:text-sm mb-2 md:mb-4">
               <MapPin size={12} className="mr-1 text-brand-teal flex-shrink-0" />
@@ -149,6 +167,6 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onSelect, isFavor
       </div>
     </div>
   );
-};
+});
 
 export default PropertyCard;

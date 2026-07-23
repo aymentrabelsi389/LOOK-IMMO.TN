@@ -4,6 +4,7 @@ import { Search, X, Clock, TrendingUp, MapPin, Home, RefreshCw } from 'lucide-re
 import { propertiesAPI } from '@/services/api';
 import { getImageSrc } from '@/utils/imageUtils';
 import { useData } from '@/context/DataContext';
+import { PROPERTY_TYPE_LABELS } from '@/utils/propertyUtils';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface PropertySearchSheetProps {
@@ -66,18 +67,7 @@ const KEYWORD_CATEGORY_MAP: Record<string, string> = {
   depot: 'depot',
 };
 
-const TYPE_LABELS: Record<string, string> = {
-  apartment: 'Appartement',
-  villa: 'Villa',
-  studio: 'Studio',
-  duplex: 'Duplex',
-  triplex: 'Triplex',
-  penthouse: 'Penthouse',
-  land: 'Terrain',
-  depot: 'Dépôt',
-  commercial: 'Bureau',
-  commerce: 'Commerce',
-};
+const TYPE_LABELS = PROPERTY_TYPE_LABELS;
 
 const LISTING_LABELS: Record<string, string> = {
   sale: 'Vente',

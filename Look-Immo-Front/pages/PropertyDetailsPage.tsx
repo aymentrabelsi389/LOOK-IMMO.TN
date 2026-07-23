@@ -11,12 +11,15 @@ import { PropertyGallery } from '@/components/PropertyGallery';
 import Price from '@/components/Price';
 import { CustomDatePicker, CustomTimePicker } from '@/components/ui/DateTimePicker';
 import { propertiesAPI } from '@/services/api';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { useSEO } from '@/hooks/useSEO';
+import { useBreadcrumbSchema } from '@/hooks/useBreadcrumbSchema';
 import { useUI } from '@/context/UIContext';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useData } from '@/context/DataContext';
 import { getImageSrc, buildSrcSet, buildPropertyImageAlt } from '@/utils/imageUtils';
+import { formatPropertyType } from '@/utils/propertyUtils';
+import Breadcrumb from '@/components/ui/Breadcrumb';
 
 const PropertyDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -37,21 +40,7 @@ const PropertyDetailsPage = () => {
   const [fullProperty, setFullProperty] = useState<Property | null>(null);
   const property = fullProperty || baseProperty;
 
-  const formatPropertyType = (type: string): string => {
-    const types: Record<string, string> = {
-      apartment: 'Appartement',
-      villa: 'Villa',
-      depot: 'Dépôt',
-      commercial: 'Bureau / Local',
-      land: 'Terrain',
-      studio: 'Studio',
-      duplex: 'Duplex',
-      triplex: 'Triplex',
-      penthouse: 'Penthouse',
-      commerce: 'Commerce'
-    };
-    return types[type] || 'Bien';
-  };
+
 
   useSEO({
     title: property ? `${property.title} - ${formatPropertyType(property.type)} à ${property.listingType === 'sale' ? 'Vente' : 'Location'} à ${property.location.city}` : "Détails de la propriété",
@@ -68,7 +57,7 @@ const PropertyDetailsPage = () => {
     description: property.description || `${formatPropertyType(property.type)} à ${property.location.city}`,
     url: window.location.href,
     image: property.images,
-    datePosted: property.createdAt,
+    datePosted: property.createdAt ? new Date(property.createdAt).toISOString() : undefined,
     offers: {
       '@type': 'Offer',
       price: property.price,
@@ -95,6 +84,21 @@ const PropertyDetailsPage = () => {
       worstRating: 1,
     } : undefined,
   } : null;
+
+  // Breadcrumb trail for UI + JSON-LD BreadcrumbList schema
+  const breadcrumbItems = [
+    { label: 'Accueil',      href: '/' },
+    { label: 'Propriétés',  href: '/listings' },
+    { label: property?.title || 'Propriété' },
+  ];
+
+  const breadcrumbSchemaItems = [
+    { name: 'Accueil',     item: `${window.location.origin}/` },
+    { name: 'Propriétés', item: `${window.location.origin}/listings` },
+    { name: property?.title || 'Propriété' },
+  ];
+
+  useBreadcrumbSchema(breadcrumbSchemaItems);
 
   const [userRating, setUserRating] = useState(0);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -247,16 +251,27 @@ const PropertyDetailsPage = () => {
       {jsonLd && (
         <script
           type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
         />
       )}
       <div className="bg-gray-50 min-h-screen">
-        {/* Back Button Header */}
+        {/* Breadcrumb Header */}
         <div className="bg-white shadow-sm border-b z-[60] px-4 py-3">
-          <div className="max-w-7xl mx-auto flex items-center">
-            <button onClick={onBack} className="flex items-center text-gray-600 hover:text-brand-dark transition mr-4">
-              <ChevronRight className="rotate-180 mr-1" size={20} /> Retour
+          <div className="max-w-7xl mx-auto flex items-center gap-3">
+            {/* Back icon button — compact on all sizes */}
+            <button
+              onClick={onBack}
+              aria-label="Retour aux propriétés"
+              className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 text-brand-grey hover:text-brand-teal hover:border-brand-teal transition-colors duration-150"
+            >
+              <ChevronRight className="rotate-180" size={16} />
             </button>
+
+            {/* Divider */}
+            <span className="h-4 w-px bg-gray-200 flex-shrink-0" aria-hidden="true" />
+
+            {/* Breadcrumb trail */}
+            <Breadcrumb items={breadcrumbItems} className="min-w-0 flex-1" />
           </div>
         </div>
 
@@ -711,10 +726,15 @@ const PropertyDetailsPage = () => {
                   <h2 className="text-xl font-bold text-gray-900 mb-4">Propriétés Similaires</h2>
                   <div className="flex flex-col gap-6">
                     {similarProperties.slice(0, 3).map(prop => (
-                      <div
+                      <Link
                         key={prop.id}
-                        className="relative group"
-                        onClick={() => onSelectProperty(prop.id)}
+                        to={`/property/${prop.id}`}
+                        onClick={(e) => {
+                          if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+                          e.preventDefault();
+                          onSelectProperty(prop.id);
+                        }}
+                        className="relative group block"
                       >
                         {/* Blue Glow Shadow Effect */}
                         <div className="absolute -inset-1 bg-gradient-to-r from-brand-teal to-blue-600 rounded-2xl blur opacity-10 group-hover:opacity-30 transition duration-500"></div>
@@ -786,7 +806,7 @@ const PropertyDetailsPage = () => {
                             </div>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     ))}
                   </div>
                 </div>

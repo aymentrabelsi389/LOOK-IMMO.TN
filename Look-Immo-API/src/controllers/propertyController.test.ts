@@ -107,6 +107,7 @@ describe('propertyController createProperty', () => {
                 isNew: true,
                 isHotDeal: true,
                 ownerId: 'owner-123',
+                ownerPhone: null,
                 latitude: 36.8,
                 longitude: 10.2,
             },

@@ -275,9 +275,9 @@ const MessagesManagement = ({
                       </td>
                       <td className="px-6 py-5">
                         <div className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
-                          msg.status === 'new' ? 'bg-brand-teal/10 text-brand-teal border-brand-teal/20' : 'bg-gray-50 text-gray-500 border-gray-100'
+                          msg.status === 'new' ? 'bg-teal-50 text-teal-800 border-teal-200' : 'bg-gray-50 text-gray-700 border-gray-200'
                         }`}>
-                          <span className={`w-1.5 h-1.5 rounded-full mr-2 ${msg.status === 'new' ? 'bg-brand-teal' : 'bg-gray-400'}`}></span>
+                          <span className={`w-1.5 h-1.5 rounded-full mr-2 ${msg.status === 'new' ? 'bg-teal-500' : 'bg-gray-400'}`}></span>
                           {msg.status === 'new' ? 'Nouveau' : 'Lu'}
                         </div>
                       </td>
@@ -432,8 +432,8 @@ const MessagesManagement = ({
                     {formatTime(selectedMessage.sentDate)}
                   </div>
                 </div>
-                <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                  selectedMessage.status === 'new' ? 'bg-brand-teal text-white' : 'bg-gray-100 text-gray-500'
+                <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${
+                  selectedMessage.status === 'new' ? 'bg-teal-50 text-teal-800 border-teal-200' : 'bg-gray-50 text-gray-700 border-gray-200'
                 }`}>
                   {selectedMessage.status === 'new' ? 'Nouveau Message' : 'Déjà Lu'}
                 </div>

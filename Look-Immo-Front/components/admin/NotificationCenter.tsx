@@ -7,20 +7,10 @@ import {
 } from 'lucide-react';
 import { notificationsAPI } from '@/services/api';
 import { socketService } from '@/services/socket';
+import { SiteNotification } from '@/types';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-export interface AppNotification {
-  id: string;
-  type: string;
-  title?: string;
-  message: string;
-  icon?: string;
-  link?: string;
-  read: boolean;
-  metadata?: any;
-  createdAt: string;
-  user?: { id: string; name: string } | null;
-}
+export type AppNotification = SiteNotification;
 
 type FilterType = 'today' | 'week' | 'all';
 

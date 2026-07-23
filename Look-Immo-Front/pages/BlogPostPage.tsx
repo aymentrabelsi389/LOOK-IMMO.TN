@@ -42,6 +42,33 @@ const BlogPostPage = () => {
     description: post ? `${post.excerpt || post.content.substring(0, 150)}...` : "Découvrez cet article sur le blog Look Immo."
   });
 
+  // JSON-LD Structured Data for Google Rich Results
+  const jsonLd = post ? {
+    '@context': 'https://schema.org',
+    '@type': 'BlogPosting',
+    headline: post.title,
+    description: post.excerpt || post.content.replace(/<[^>]+>/g, '').substring(0, 150),
+    image: post.image,
+    datePublished: post.createdAt ? new Date(post.createdAt).toISOString() : undefined,
+    dateModified: post.updatedAt ? new Date(post.updatedAt).toISOString() : (post.createdAt ? new Date(post.createdAt).toISOString() : undefined),
+    author: {
+      '@type': 'Organization',
+      name: 'Look Immo',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Look Immo',
+      logo: {
+        '@type': 'ImageObject',
+        url: `${window.location.origin}/look-immo-icon-gold.png`,
+      },
+    },
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id': window.location.href,
+    },
+  } : null;
+
   if (!post) return <div className="text-center py-20">Article non trouvé</div>;
 
   const formatDate = (timestamp: number) => {
@@ -55,32 +82,40 @@ const BlogPostPage = () => {
   const readingTime = Math.max(1, Math.ceil(wordCount / 200));
 
   return (
-    <div className="min-h-screen bg-[#F7F8FA]">
-      <div className="relative h-[380px] overflow-hidden">
-        <img src={post.image} alt={post.title} className="w-full h-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/10" />
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 pb-20">
-          <span className="inline-block text-white text-sm font-bold px-5 py-1.5 rounded-full mb-6 bg-[#06B6D4]">{post.category}</span>
-          <h1 className="text-4xl md:text-5xl font-bold text-white max-w-4xl leading-tight mb-6">{post.title}</h1>
-          <div className="flex items-center text-white/90 text-sm space-x-4">
-            <span className="flex items-center"><Calendar size={16} className="mr-2" />{formatDate(post.createdAt)}</span>
-            <span className="text-white/50">•</span>
-            <span className="flex items-center"><Clock size={16} className="mr-2" />{readingTime} min de lecture</span>
+    <>
+      {jsonLd && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
+        />
+      )}
+      <div className="min-h-screen bg-[#F7F8FA]">
+        <div className="relative h-[380px] overflow-hidden">
+          <img src={post.image} alt={post.title} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/10" />
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 pb-20">
+            <span className="inline-block text-white text-sm font-bold px-5 py-1.5 rounded-full mb-6 bg-[#06B6D4]">{post.category}</span>
+            <h1 className="text-4xl md:text-5xl font-bold text-white max-w-4xl leading-tight mb-6">{post.title}</h1>
+            <div className="flex items-center text-white/90 text-sm space-x-4">
+              <span className="flex items-center"><Calendar size={16} className="mr-2" />{formatDate(post.createdAt)}</span>
+              <span className="text-white/50">•</span>
+              <span className="flex items-center"><Clock size={16} className="mr-2" />{readingTime} min de lecture</span>
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-[850px] mx-auto px-4 relative -mt-10">
-        <button onClick={onBack} className="flex items-center text-gray-500 hover:text-[#06B6D4] transition mb-6 text-sm">
-          <ChevronRight size={18} className="rotate-180 mr-1" /> Retour au blog
-        </button>
+        <div className="max-w-[850px] mx-auto px-4 relative -mt-10">
+          <button onClick={onBack} className="flex items-center text-gray-500 hover:text-[#06B6D4] transition mb-6 text-sm">
+            <ChevronRight size={18} className="rotate-180 mr-1" /> Retour au blog
+          </button>
 
-        <article 
-          className="bg-white rounded-2xl shadow-lg overflow-hidden p-10 prose prose-lg max-w-none"
-          dangerouslySetInnerHTML={{ __html: getSafeBlogContent(post.content) }}
-        />
+          <article 
+            className="bg-white rounded-2xl shadow-lg overflow-hidden p-10 prose prose-lg max-w-none"
+            dangerouslySetInnerHTML={{ __html: getSafeBlogContent(post.content) }}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

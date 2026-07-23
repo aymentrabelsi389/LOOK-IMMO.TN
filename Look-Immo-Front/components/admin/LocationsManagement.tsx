@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { 
   Plus, Edit, Trash2, MapPin, GripVertical, ChevronLeft, ChevronRight, List, X
 } from 'lucide-react';
@@ -30,7 +30,7 @@ interface SortableLocationRowProps {
   confirmDelete: (index: number) => void;
 }
 
-const SortableLocationRow: React.FC<SortableLocationRowProps> = ({ loc, index, openEditModal, confirmDelete }) => {
+const SortableLocationRow: React.FC<SortableLocationRowProps> = memo(({ loc, index, openEditModal, confirmDelete }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: loc.id });
   const style = { 
     transform: CSS.Transform.toString(transform), 
@@ -78,10 +78,10 @@ const SortableLocationRow: React.FC<SortableLocationRowProps> = ({ loc, index, o
       </td>
     </tr>
   );
-};
+});
 
 // --- Mobile Card Component ---
-const SortableLocationCard = ({ loc, index, openEditModal, confirmDelete }: any) => {
+const SortableLocationCard = memo(({ loc, index, openEditModal, confirmDelete }: any) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: loc.id });
   const style = { 
     transform: CSS.Transform.toString(transform), 
@@ -116,7 +116,7 @@ const SortableLocationCard = ({ loc, index, openEditModal, confirmDelete }: any)
       </div>
     </div>
   );
-};
+});
 
 interface LocationsManagementProps {
   availableLocations: string[];

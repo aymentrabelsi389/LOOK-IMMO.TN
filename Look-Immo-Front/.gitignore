@@ -18,6 +18,9 @@ build/
 out/
 .next/
 
+# Generated at build time by scripts/generate-sitemap.mjs — don't commit a stale one
+public/sitemap.xml
+
 # Environment variables
 .env
 .env.local
@@ -61,3 +64,6 @@ coverage/
 .eslintcache
 
 testsprite_tests\tmp\config.json
+
+# Ad-hoc dev scripts — not part of the shipped tree
+scratch/

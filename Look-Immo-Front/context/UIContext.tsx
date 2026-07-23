@@ -15,8 +15,6 @@ export const INITIAL_FILTERS: FilterState = {
 };
 
 interface UIContextType {
-  currentPage: string;
-  setCurrentPage: (page: string) => void;
   handleNavigate: (page: string, id?: string) => void;
   selectedPropertyId: string | null;
   setSelectedPropertyId: (id: string | null) => void;
@@ -46,7 +44,6 @@ export const useUI = () => {
 };
 
 export const UIProvider = ({ children }: { children: React.ReactNode }) => {
-  const [currentPage, setCurrentPage] = useState('home');
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
   const [selectedBlogPostId, setSelectedBlogPostId] = useState<string | null>(null);
   const [filters, setFilters] = useState<FilterState>(INITIAL_FILTERS);
@@ -61,33 +58,18 @@ export const UIProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Keep the selected property/blog-post id in sync with the URL — everything
+  // else that used to be derived here (a `currentPage` mirror of the route)
+  // is gone; consumers read the route directly via useLocation()/useParams().
   useEffect(() => {
     const path = location.pathname;
-    let page = 'home';
-    if (path === '/') page = 'home';
-    else if (path.startsWith('/listings')) page = 'listings';
-    else if (path.startsWith('/property')) {
-      page = 'property-details';
-      if (path.startsWith('/property/')) {
-        const id = path.substring('/property/'.length);
-        if (id) setSelectedPropertyId(id);
-      }
+    if (path.startsWith('/property/')) {
+      const id = path.substring('/property/'.length);
+      if (id) setSelectedPropertyId(id);
+    } else if (path.startsWith('/blog-post/')) {
+      const id = path.substring('/blog-post/'.length);
+      if (id) setSelectedBlogPostId(id);
     }
-    else if (path.startsWith('/dashboard')) page = 'dashboard';
-    else if (path.startsWith('/admin')) page = 'admin';
-    else if (path.startsWith('/auth')) page = 'auth';
-    else if (path.startsWith('/forgot-password')) page = 'forgot-password';
-    else if (path.startsWith('/contact')) page = 'contact';
-    else if (path.startsWith('/blog-post')) {
-      page = 'blog-post';
-      if (path.startsWith('/blog-post/')) {
-        const id = path.substring('/blog-post/'.length);
-        if (id) setSelectedBlogPostId(id);
-      }
-    }
-    else if (path.startsWith('/blog')) page = 'blog';
-    
-    setCurrentPage(page);
   }, [location.pathname]);
 
   const handleNavigate = (page: string, id?: string) => {
@@ -125,8 +107,6 @@ export const UIProvider = ({ children }: { children: React.ReactNode }) => {
   return (
     <UIContext.Provider
       value={{
-        currentPage,
-        setCurrentPage,
         handleNavigate,
         selectedPropertyId,
         setSelectedPropertyId,

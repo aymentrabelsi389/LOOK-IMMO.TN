@@ -2,8 +2,12 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-export default defineConfig(() => {
+export default defineConfig(({ mode }) => {
+  const isProduction = mode === 'production';
   return {
+    esbuild: {
+      drop: isProduction ? ['console', 'debugger'] : [],
+    },
     server: {
       port: 3000,
       host: '0.0.0.0',
@@ -65,11 +69,6 @@ export default defineConfig(() => {
             // per-route chunks don't duplicate icon code
             if (id.includes('lucide-react')) {
               return 'vendor-icons';
-            }
-
-            // zod — validation, only used in forms
-            if (id.includes('zod')) {
-              return 'vendor-zod';
             }
 
             // date-fns — if present

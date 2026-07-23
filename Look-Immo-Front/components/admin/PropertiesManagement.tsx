@@ -1,25 +1,23 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useState, useMemo, useEffect, memo } from 'react';
 import {
   GripVertical, MapPin, Star, Edit, Trash2, Search, Plus,
   ChevronLeft, ChevronRight, X, Image as ImageIcon, List, ChevronDown,
   FileText, Shield, Eye, Download, Calendar, Mail, Phone, Clock, Check, MessageSquare
 } from 'lucide-react';
 import {
-  DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, DragEndEvent
+  DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors
 } from '@dnd-kit/core';
 import {
-  arrayMove, SortableContext, verticalListSortingStrategy, useSortable
+  SortableContext, verticalListSortingStrategy, useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Property, PropertyType, User, Appointment, ClientDemand } from '@/types';
-import { propertiesAPI, uploadAPI, appointmentsAPI, BACKEND_URL } from '@/services/api';
+import { BACKEND_URL } from '@/services/api';
 import { useData } from '@/context/DataContext';
 import Price from '../Price';
 import PropertyModal from './PropertyModal';
-import { notify } from '@/services/notificationStore';
-import { useConfirm } from '@/context/ConfirmContext';
 import { getImageSrc } from '@/utils/imageUtils';
+import { usePropertiesManagement } from './properties/hooks/usePropertiesManagement';
 const getDownloadUrl = (url: string) => {
   if (!url) return '';
   const cleanUrl = url.replace(BACKEND_URL, '');
@@ -35,14 +33,21 @@ interface PropertiesManagementProps {
   clientDemands?: ClientDemand[];
 }
 
-const SortablePropertyItem = ({ p, openEditModal, handleDelete, openHistoryModal }: any) => {
+interface SortablePropertyItemProps {
+  p: Property;
+  openEditModal: (p: Property) => Promise<void>;
+  handleDelete: (id: string) => void;
+  openHistoryModal: React.Dispatch<React.SetStateAction<Property | null>>;
+}
+
+const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, openHistoryModal }: SortablePropertyItemProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: p.id });
   const [activePlanMenu, setActivePlanMenu] = useState(false);
   const [activePaperMenu, setActivePaperMenu] = useState(false);
   const { appointments } = useData();
 
   const propertyAppointments = useMemo(() => {
-    return appointments?.filter((a: any) => a.propertyId === p.id) || [];
+    return appointments?.filter((a: Appointment) => a.propertyId === p.id) || [];
   }, [appointments, p.id]);
   const appointmentsCount = propertyAppointments.length;
 
@@ -57,7 +62,7 @@ const SortablePropertyItem = ({ p, openEditModal, handleDelete, openHistoryModal
     <div 
       ref={setNodeRef} 
       style={style} 
-      className="group bg-white border-b border-gray-100 last:border-0 hover:bg-blue-50/20 transition-all p-4 md:p-0 md:flex md:items-center"
+      className="group bg-white border-b border-gray-100 last:border-0 hover:bg-blue-50/20 transition-all p-4 md:p-0 md:flex md:items-center md:min-w-[1000px] w-full overflow-hidden"
     >
       {/* Mobile Card Layout */}
       <div className="flex flex-col w-full md:hidden gap-3">
@@ -76,10 +81,16 @@ const SortablePropertyItem = ({ p, openEditModal, handleDelete, openHistoryModal
           {/* Details (Title, Location, Price) */}
           <div className="flex-1 min-w-0">
             <h4 className="font-extrabold text-gray-900 leading-tight truncate text-sm">{p.title}</h4>
-            <div className="flex items-center text-[10px] text-gray-400 mt-1">
+            <div className="flex items-center text-[10px] text-gray-400 mt-0.5">
               <MapPin size={10} className="mr-1 shrink-0" />
-              <span className="truncate">{p.location?.city || (p as any).city || 'N/A'}</span>
+              <span className="truncate">{p.location?.city || (p as unknown as { city?: string }).city || 'N/A'}</span>
             </div>
+            {p.ownerPhone && (
+              <a href={`tel:${p.ownerPhone}`} className="flex items-center gap-1 text-[10px] text-blue-600 font-bold mt-0.5 hover:underline truncate max-w-[130px]">
+                <span>📞</span>
+                <span className="truncate">{p.ownerPhone}</span>
+              </a>
+            )}
             
             {/* Price badge right below details */}
             <div className="mt-1">
@@ -93,14 +104,19 @@ const SortablePropertyItem = ({ p, openEditModal, handleDelete, openHistoryModal
 
         {/* Metadata Badge Bar */}
         <div className="flex flex-wrap items-center gap-1.5 bg-gray-50/60 p-2 rounded-xl border border-gray-100/50">
-          {/* Status Badge */}
+          {/* Status Badge - only show when not available */}
           {p.status === 'sold' && <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold bg-red-100 text-red-800 uppercase tracking-wider">Vendu</span>}
           {p.status === 'rented' && <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold bg-orange-100 text-orange-800 uppercase tracking-wider">Loué</span>}
-          {(!p.status || p.status === 'available') && <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold bg-emerald-100 text-emerald-800 uppercase tracking-wider">Dispo</span>}
 
           {/* Listing Type Badge */}
           <span className={`px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider ${p.listingType === 'sale' ? 'bg-blue-100 text-blue-800' : 'bg-teal-100 text-teal-800'}`}>
-            {p.listingType === 'sale' ? 'Achat' : 'Location'}
+            {p.listingType === 'sale' ? 'Vente' : 'Location'}
+          </span>
+
+          {/* Rating Badge */}
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-extrabold bg-yellow-50 text-yellow-750 border border-yellow-100 shadow-sm">
+            <Star size={9} fill="currentColor" className="text-yellow-500" />
+            {p.averageRating || 0}
           </span>
 
           {/* Document Plan Badge */}
@@ -190,16 +206,16 @@ const SortablePropertyItem = ({ p, openEditModal, handleDelete, openHistoryModal
               </span>
             </div>
             <div className="flex items-center gap-2">
-              {propertyAppointments.filter((a: any) => a.status === 'pending').length > 0 && (
+              {propertyAppointments.filter((a: Appointment) => a.status === 'pending').length > 0 && (
                 <span className="flex items-center gap-1 text-[9px] font-bold text-yellow-600 group-hover/btn:text-yellow-200">
                   <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
-                  {propertyAppointments.filter((a: any) => a.status === 'pending').length} en attente
+                  {propertyAppointments.filter((a: Appointment) => a.status === 'pending').length} en attente
                 </span>
               )}
-              {propertyAppointments.filter((a: any) => a.status === 'accepted').length > 0 && (
+              {propertyAppointments.filter((a: Appointment) => a.status === 'accepted').length > 0 && (
                 <span className="flex items-center gap-1 text-[9px] font-bold text-green-600 group-hover/btn:text-green-200">
                   <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
-                  {propertyAppointments.filter((a: any) => a.status === 'accepted').length} confirmés
+                  {propertyAppointments.filter((a: Appointment) => a.status === 'accepted').length} confirmés
                 </span>
               )}
               <ChevronRight size={13} className="text-emerald-400 group-hover/btn:text-white transition-colors" />
@@ -230,25 +246,40 @@ const SortablePropertyItem = ({ p, openEditModal, handleDelete, openHistoryModal
       </div>
 
       {/* Desktop Handle & Image Row */}
-      <div className="hidden md:flex md:items-center md:justify-between md:flex-1 md:px-6 md:py-4">
-        <div className="flex items-center flex-1 min-w-0">
+      <div className="hidden md:flex md:items-center md:flex-1 md:px-6 md:py-4 min-w-0 overflow-hidden">
+        <div className="flex items-center flex-1 min-w-0 overflow-hidden">
           <button {...attributes} {...listeners} className="p-2 mr-1 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing focus:outline-none shrink-0 touch-none">
             <GripVertical size={18} />
           </button>
           <div className="w-16 h-12 rounded-lg overflow-hidden border border-gray-200 mr-3 shrink-0 relative">
             <img src={getImageSrc(p.images?.[0], 'medium')} className="w-full h-full object-cover" alt="" loading="lazy" />
           </div>
-          <div className="min-w-0">
-            <h4 className="font-bold text-gray-900 group-hover:text-blue-600 transition truncate text-sm md:text-base">{p.title}</h4>
-            <div className="flex items-center text-[10px] md:text-xs text-gray-400 mt-0.5 whitespace-nowrap">
-              <MapPin size={10} className="mr-1" /> {p.location?.city || (p as any).city || 'N/A'}
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <h4 className="font-bold text-gray-900 group-hover:text-blue-600 transition text-sm md:text-base truncate block" title={p.title}>{p.title}</h4>
+            <div className="flex items-center text-[10px] md:text-xs text-gray-400 mt-0.5">
+              <MapPin size={10} className="mr-1 shrink-0" />
+              <span className="truncate">{p.location?.city || (p as unknown as { city?: string }).city || 'N/A'}</span>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Desktop Owner Phone Column */}
+      <div className="hidden md:flex md:w-44 md:px-4 md:py-4 md:items-center shrink-0">
+        {p.ownerPhone ? (
+          <a 
+            href={`tel:${p.ownerPhone}`} 
+            className="text-xs font-bold text-gray-600 hover:text-blue-600 bg-gray-100 hover:bg-blue-50 border border-gray-200 hover:border-blue-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap"
+          >
+            <span className="text-[10px]">📞</span> {p.ownerPhone}
+          </a>
+        ) : (
+          <span className="text-gray-300 text-xs font-bold">—</span>
+        )}
+      </div>
+
       {/* Desktop Documents Column */}
-      <div className="hidden md:flex md:w-32 md:px-6 md:py-4 md:items-center md:justify-center md:gap-3">
+      <div className="hidden md:flex md:w-32 md:px-4 md:py-4 md:items-center md:justify-center md:gap-3 shrink-0">
         {p.features?.propertyPlan ? (
           <div className="relative">
             <button
@@ -327,7 +358,7 @@ const SortablePropertyItem = ({ p, openEditModal, handleDelete, openHistoryModal
       </div>
 
       {/* Desktop Price Column */}
-      <div className="hidden md:block md:w-48 md:px-6 md:py-4">
+      <div className="hidden md:block md:w-44 md:px-4 md:py-4 shrink-0">
         <span className="font-bold text-gray-900 bg-gray-100 px-3 py-1 rounded-lg border border-gray-200 text-sm whitespace-nowrap">
           <Price amount={p.price} priceType={p.priceType} />
           {p.listingType === 'rent' && <span className="text-[10px] text-gray-400 ml-0.5"> / Mois</span>}
@@ -335,29 +366,25 @@ const SortablePropertyItem = ({ p, openEditModal, handleDelete, openHistoryModal
       </div>
 
       {/* Desktop Status & Type Row */}
-      <div className="hidden md:flex md:items-center md:justify-start md:gap-4 md:w-64 md:px-6 md:py-4">
+      <div className="hidden md:flex md:items-center md:justify-start md:gap-4 md:w-48 md:px-4 md:py-4 shrink-0">
         <div className="flex gap-2 items-center">
-          <div className="whitespace-nowrap">
-            {p.status === 'sold' && <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-800">Vendu</span>}
-            {p.status === 'rented' && <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800">Loué</span>}
-            {(!p.status || p.status === 'available') && <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-green-100 text-green-800">Dispo</span>}
-          </div>
+          {/* Only show status badge when not 'available' */}
+          {p.status === 'sold' && <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-800">Vendu</span>}
+          {p.status === 'rented' && <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800">Loué</span>}
           <span className={`text-[10px] font-extrabold uppercase tracking-wider whitespace-nowrap ${p.listingType === 'sale' ? 'text-blue-600' : 'text-green-600'}`}>
-            {p.listingType === 'sale' ? 'Achat' : 'Location'}
+            {p.listingType === 'sale' ? 'Vente' : 'Location'}
           </span>
         </div>
-        
-        {/* Rating */}
         <div className="hidden lg:flex items-center whitespace-nowrap">
-          <div className="flex text-yellow-400 mr-2">
-            <Star size={12} fill="currentColor" />
+          <div className="flex text-yellow-400 mr-1.5">
+            <Star size={11} fill="currentColor" />
           </div>
           <span className="text-[10px] text-gray-400 font-bold">{p.averageRating || 0}</span>
         </div>
       </div>
 
       {/* Desktop Rendez-vous Column */}
-      <div className="hidden md:flex md:w-40 md:px-6 md:py-4 md:items-center md:justify-center">
+      <div className="hidden md:flex md:w-36 md:px-4 md:py-4 md:items-center md:justify-center shrink-0">
         {appointmentsCount > 0 ? (
           <button
             onClick={() => openHistoryModal(p)}
@@ -368,14 +395,14 @@ const SortablePropertyItem = ({ p, openEditModal, handleDelete, openHistoryModal
               <Calendar size={12} className="text-emerald-500 group-hover/btn:text-white transition-colors" />
               <span className="text-sm font-black text-emerald-700 group-hover/btn:text-white transition-colors">{appointmentsCount}</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              {propertyAppointments.filter((a: any) => a.status === 'pending').length > 0 && (
+            <div className="flex items-center gap-1">
+              {propertyAppointments.filter((a: Appointment) => a.status === 'pending').length > 0 && (
                 <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
               )}
-              {propertyAppointments.filter((a: any) => a.status === 'accepted').length > 0 && (
+              {propertyAppointments.filter((a: Appointment) => a.status === 'accepted').length > 0 && (
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
               )}
-              {propertyAppointments.filter((a: any) => a.status === 'rejected').length > 0 && (
+              {propertyAppointments.filter((a: Appointment) => a.status === 'rejected').length > 0 && (
                 <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
               )}
             </div>
@@ -386,27 +413,27 @@ const SortablePropertyItem = ({ p, openEditModal, handleDelete, openHistoryModal
       </div>
 
       {/* Desktop Actions */}
-      <div className="hidden md:flex md:items-center md:justify-end md:gap-2.5 md:w-40 md:px-6 md:py-4">
+      <div className="hidden md:flex md:items-center md:justify-end md:gap-2.5 md:w-32 md:px-4 md:py-4 shrink-0">
         <button 
           onClick={() => openEditModal(p)} 
-          className="w-9 h-9 flex items-center justify-center bg-blue-50 border border-blue-100 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm font-bold active:scale-95"
+          className="w-9 h-9 flex items-center justify-center bg-blue-50 border border-blue-100 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm font-bold active:scale-95 shrink-0"
         >
           <Edit size={14} />
         </button>
         <button 
           onClick={() => handleDelete(p.id)} 
-          className="w-9 h-9 flex items-center justify-center bg-gray-50 border border-gray-100 text-gray-400 rounded-lg hover:border-red-500 hover:text-red-500 transition-all shadow-sm font-bold active:scale-95"
+          className="w-9 h-9 flex items-center justify-center bg-gray-50 border border-gray-100 text-gray-400 rounded-lg hover:border-red-500 hover:text-red-500 transition-all shadow-sm font-bold active:scale-95 shrink-0"
         >
           <Trash2 size={14} />
         </button>
       </div>
     </div>
   );
-};
+});
 
 interface DropdownProps {
   value: string;
-  onChange: (value: any) => void;
+  onChange: (value: string) => void;
   options: { value: string; label: string }[];
   placeholder?: string;
 }
@@ -475,361 +502,42 @@ const PropertiesManagement = ({
   user,
   clientDemands = []
 }: PropertiesManagementProps) => {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { appointments, setAppointments } = useData();
-  const { confirm } = useConfirm();
-  const [showModal, setShowModal] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [historyProperty, setHistoryProperty] = useState<Property | null>(null);
-  const [historyStatusFilter, setHistoryStatusFilter] = useState<'all' | 'pending' | 'accepted' | 'rejected'>('all');
-
-  const handleUpdateStatus = async (id: string, newStatus: Appointment['status']) => {
-    try {
-      await appointmentsAPI.update(id, { status: newStatus });
-      setAppointments(prev => prev.map(apt =>
-        apt.id === id ? { ...apt, status: newStatus } : apt
-      ));
-      showNotification('success', 'Statut du rendez-vous mis à jour');
-    } catch (error) {
-      console.error("Failed to update appointment status:", error);
-      showNotification('error', 'Erreur de mise à jour');
-    }
-  };
-
-  const handleDeleteAppointment = async (id: string) => {
-    const confirmed = await confirm({
-      title: 'Supprimer le rendez-vous ?',
-      message: 'Êtes-vous sûr de vouloir supprimer définitivement ce rendez-vous ? Cette action est irréversible.',
-      confirmText: 'Supprimer',
-      cancelText: 'Annuler',
-      variant: 'danger'
-    });
-    if (confirmed) {
-      try {
-        await appointmentsAPI.delete(id);
-        setAppointments(prev => prev.filter(apt => apt.id !== id));
-        showNotification('success', 'Rendez-vous supprimé');
-      } catch (error) {
-        console.error("Failed to delete appointment:", error);
-        showNotification('error', 'Erreur de suppression');
-      }
-    }
-  };
-
-  const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
-    const day = d.getUTCDate();
-    const monthNames = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
-    const month = monthNames[d.getUTCMonth()];
-    const year = d.getUTCFullYear();
-    return `${day} ${month} ${year}`;
-  };
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [propertyCityFilter, setPropertyCityFilter] = useState<string | 'all'>('all');
-  const [propertySearchQuery, setPropertySearchQuery] = useState('');
-  const [propertyTypeFilter, setPropertyTypeFilter] = useState<PropertyType | 'all'>('all');
-  const [propertyCurrentPage, setPropertyCurrentPage] = useState(1);
-  const [isAdminShowAll, setIsAdminShowAll] = useState(false);
-  const propertiesPerPage = 10;
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-
-  // Dynamic robust fallback: Extract cities from properties if DB is empty or missing cities
-  const computedCities = useMemo(() => {
-    const list = [...availableLocations];
-    properties.forEach(p => {
-      const city = p.location?.city || (p as any).city;
-      if (city && !list.includes(city)) {
-        list.push(city);
-      }
-    });
-    return list.sort();
-  }, [availableLocations, properties]);
-
-  const cityOptions = useMemo(() => {
-    return [
-      { value: 'all', label: 'Toutes les villes' },
-      ...computedCities.map(city => ({ value: city, label: city }))
-    ];
-  }, [computedCities]);
-
-  const typeOptions = [
-    { value: 'all', label: 'Tous les types' },
-    { value: 'apartment', label: 'Appartement' },
-    { value: 'villa', label: 'Villa' },
-    { value: 'land', label: 'Terrain' },
-    { value: 'duplex', label: 'Duplex' },
-    { value: 'triplex', label: 'Triplex' },
-    { value: 'penthouse', label: 'Penthouse' },
-    { value: 'studio', label: 'Studio' },
-    { value: 'depot', label: 'Dépôt' },
-    { value: 'commercial', label: 'Local Commercial' }
-  ];
-
-  const initialPropertyState: Partial<Property> = {
-    title: '', price: 0, priceType: 'total', type: 'villa', listingType: 'sale', description: '',
-    isNew: false, isFeatured: false, isHotDeal: false, status: 'available',
-    location: { city: '', address: '', lat: 36.8065, lng: 10.1815 },
-    features: { bedrooms: 0, bathrooms: 0, area: 0, parking: false, pool: false, garden: false, heating: false, airConditioning: false, security: false },
-    images: []
-  };
-  const [formData, setFormData] = useState<Partial<Property>>(initialPropertyState);
-  const [gpsInput, setGpsInput] = useState('');
-
-  const openAddModal = () => { setIsEditing(false); setEditingId(null); setFormData(initialPropertyState); setShowModal(true); };
-
-  useEffect(() => {
-    if (location.state && (location.state as any).action === 'new-property') {
-      openAddModal();
-      // Clear the action so it doesn't trigger again on subsequent updates
-      navigate(location.pathname, { replace: true, state: { ...location.state, action: undefined } });
-    }
-  }, [location.state, location.pathname, navigate]);
-  const openEditModal = useCallback(async (p: Property) => {
-    setIsEditing(true);
-    setEditingId(p.id);
-    // First set partial data so modal opens immediately
-    setFormData({ ...p, isFeatured: p.isFeatured === true, isNew: p.isNew === true });
-    setShowModal(true);
-    try {
-      // Fetch FULL property data (with all images, features, documents)
-      const fullProperty = await propertiesAPI.getById(p.id);
-      setFormData({
-        ...fullProperty,
-        isFeatured: fullProperty.isFeatured === true,
-        isNew: fullProperty.isNew === true,
-        features: fullProperty.features || { bedrooms: 0, bathrooms: 0, area: 0, parking: false, pool: false, garden: false, heating: false, airConditioning: false, security: false },
-        images: fullProperty.images || [],
-      });
-    } catch (err) {
-      console.error('Failed to load full property for edit:', err);
-      // Keep the partial data already set
-    }
-  }, []);
-
-  const handleDelete = (id: string) => { setDeleteConfirmId(id); };
-
-  const confirmDelete = async () => {
-    if (!deleteConfirmId) return;
-    try {
-      await propertiesAPI.delete(deleteConfirmId);
-      setProperties(prev => prev.filter(p => p.id !== deleteConfirmId));
-      showNotification('success', 'Propriété supprimée');
-    } catch (error) {
-      showNotification('error', 'Erreur de suppression');
-    }
-    setDeleteConfirmId(null);
-  };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.title || !formData.price || !formData.location?.city) {
-      showNotification('error', 'Veuillez remplir les champs obligatoires');
-      return;
-    }
-
-    const payload = {
-      ...formData,
-      latitude: formData.location?.lat,
-      longitude: formData.location?.lng,
-      city: formData.location?.city,
-      zone: formData.location?.address,
-      category: formData.type,
-      type: formData.listingType
-    };
-
-    try {
-      if (isEditing && editingId) {
-        const updated = await propertiesAPI.update(editingId, payload);
-        setProperties(prev => prev.map(p => p.id === editingId ? updated : p));
-        showNotification('success', 'Propriété mise à jour');
-      } else {
-        const newProperty = await propertiesAPI.create(payload);
-        setProperties(prev => [newProperty, ...prev]);
-        showNotification('success', 'Propriété ajoutée');
-
-        if (clientDemands && clientDemands.length > 0) {
-          const activeDemands = clientDemands.filter(d => d.status === 'searching' || d.status === 'contacted');
-          const matchingDemands = activeDemands.filter(demand => {
-            const typeMapping: Record<string, string[]> = {
-              'appartement': ['apartment', 'studio', 'duplex', 'triplex', 'penthouse'],
-              'villa': ['villa'],
-              'terrain': ['land'],
-              'bureau': ['commercial', 'depot'],
-              'commerce': ['commerce', 'commercial']
-            };
-
-            const allowedTypes = typeMapping[demand.type] || [];
-            const demandLoc = demand.location.toLowerCase();
-            const areaMatch = demand.description.match(/(\d+)\s*m[2²]/);
-            const requestedArea = areaMatch ? parseInt(areaMatch[1]) : null;
-
-            let score = 0;
-            if (allowedTypes.includes(newProperty.type)) {
-              score += 40;
-            } else {
-              if (demand.type === 'appartement' && newProperty.type === 'villa') score += 5;
-              if (demand.type === 'villa' && newProperty.type === 'apartment') score += 5;
-            }
-
-            if (demand.budget && demand.budget > 0) {
-              const priceDiff = (newProperty.price - demand.budget) / demand.budget;
-              if (priceDiff <= 0) score += 30;
-              else if (priceDiff <= 0.1) score += 20;
-              else if (priceDiff <= 0.2) score += 10;
-            } else {
-              score += 15;
-            }
-
-            const propCity = (newProperty.location?.city || '').toLowerCase();
-            const propAddr = (newProperty.location?.address || '').toLowerCase();
-            if (propCity && (propCity.includes(demandLoc) || demandLoc.includes(propCity))) {
-              score += 20;
-            } else if (propAddr && (propAddr.includes(demandLoc) || demandLoc.includes(propAddr))) {
-              score += 12;
-            }
-
-            if (requestedArea && newProperty.features?.area) {
-              const areaDiff = Math.abs(newProperty.features.area - requestedArea) / requestedArea;
-              if (areaDiff <= 0.2) score += 10;
-              else if (areaDiff <= 0.4) score += 5;
-            }
-
-            if (demand.priority === 'high') score += 5;
-
-            return score >= 45;
-          });
-
-          if (matchingDemands.length > 0) {
-            notify.success(
-              `Opportunité : Ce nouveau bien correspond aux critères de ${matchingDemands.length} client(s) (${matchingDemands.map(d => d.clientName).join(', ')}).`,
-              { duration: 8000 }
-            );
-          }
-        }
-      }
-      setShowModal(false);
-    } catch (error) {
-      showNotification('error', 'Erreur d\'enregistrement');
-    }
-  };
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (files && files.length > 0) {
-      const filesArray = Array.from(files) as File[];
-      const total = filesArray.length;
-      
-      const toastId = notify.loading(`Préparation de ${total} image(s)...`, {
-        progress: 0,
-        filesCount: 0,
-        totalFiles: total
-      });
-      
-      try {
-        const results: any[] = [];
-        
-        for (let idx = 0; idx < filesArray.length; idx++) {
-          let file = filesArray[idx];
-          
-          // Convert HEIC to JPEG if needed
-          if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
-            notify.update(toastId, { 
-              message: `Conversion de ${file.name}...`,
-              progress: Math.round((idx / total) * 100)
-            });
-            try {
-              const heic2anyModule = await import('heic2any');
-              const heic2anyFn = (heic2anyModule.default || heic2anyModule) as any;
-              const convertedBlob = await heic2anyFn({
-                blob: file,
-                toType: 'image/jpeg',
-                quality: 0.85
-              }) as Blob | Blob[];
-              
-              const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
-              
-              file = new File([blob], file.name.replace(/\.(heic|heif)$/i, '.jpg'), {
-                type: 'image/jpeg'
-              });
-            } catch (convError) {
-              console.error('HEIC Conversion error:', convError);
-            }
-          }
-
-          notify.update(toastId, { 
-            message: `Téléchargement: ${idx + 1}/${total} image(s)...`,
-            progress: Math.round(((idx + 0.5) / total) * 100),
-            filesCount: idx
-          });
-          
-          const result = await uploadAPI.uploadPropertyImage(file);
-          results.push(result);
-          
-          notify.update(toastId, { 
-            progress: Math.round(((idx + 1) / total) * 100),
-            filesCount: idx + 1
-          });
-        }
-        
-        setFormData(prev => ({ ...prev, images: [...(prev.images || []), ...results.map(r => r.srcset ? JSON.stringify(r.srcset) : r.url)] }));
-        notify.update(toastId, { 
-          type: 'success', 
-          message: `${results.length} image(s) ajoutée(s) avec succès`,
-          progress: undefined,
-          filesCount: undefined,
-          totalFiles: undefined
-        });
-      } catch (error: any) {
-        notify.update(toastId, { 
-          type: 'error', 
-          message: error.message || 'Erreur lors du téléchargement des images',
-          progress: undefined,
-          filesCount: undefined,
-          totalFiles: undefined
-        });
-      }
-    }
-  };
-
-  const handleImagesReorder = (newImages: string[]) => {
-    setFormData(prev => ({ ...prev, images: newImages }));
-  };
-
-  const removeImage = (index: number) => {
-    setFormData(prev => ({
-      ...prev,
-      images: prev.images?.filter((_, i) => i !== index)
-    }));
-  };
-
-  const handleLocationChange = (lat: number, lng: number) => {
-    setFormData(prev => ({
-      ...prev,
-      location: { ...prev.location!, lat: parseFloat(lat.toFixed(6)), lng: parseFloat(lng.toFixed(6)) }
-    }));
-  };
-
-  const filteredProperties = properties.filter(p => {
-    const city = p.location?.city || (p as any).city || '';
-    const matchesSearch = p.title.toLowerCase().includes(propertySearchQuery.toLowerCase()) || city.toLowerCase().includes(propertySearchQuery.toLowerCase());
-    const matchesType = propertyTypeFilter === 'all' || p.type === propertyTypeFilter;
-    const matchesCity = propertyCityFilter === 'all' || city === propertyCityFilter;
-    return matchesSearch && matchesType && matchesCity;
-  });
-
-  const sortedProperties = [...filteredProperties].sort((a, b) => (a.displayOrder || 999) - (b.displayOrder || 999));
-  const paginatedProperties = isAdminShowAll ? sortedProperties : sortedProperties.slice((propertyCurrentPage - 1) * propertiesPerPage, propertyCurrentPage * propertiesPerPage);
-  const totalPages = Math.ceil(sortedProperties.length / propertiesPerPage);
-
-  // Drag-reorder is only safe when the full unfiltered list is visible.
-  // If any filter is active, sortedProperties is a subset; renumbering it
-  // 1..N would overwrite displayOrder for those properties and collide with
-  // values held by properties outside the filter (which stay untouched).
-  const isDragReorderEnabled =
-    propertyCityFilter === 'all' &&
-    propertyTypeFilter === 'all' &&
-    propertySearchQuery.trim() === '';
+  const mgmt = usePropertiesManagement({ properties, setProperties, availableLocations, showNotification, clientDemands });
+  const {
+    appointments,
+    showModal, setShowModal,
+    isEditing,
+    historyProperty, setHistoryProperty,
+    historyStatusFilter, setHistoryStatusFilter,
+    handleUpdateStatus,
+    handleDeleteAppointment,
+    formatDate,
+    propertyCityFilter, setPropertyCityFilter,
+    propertySearchQuery, setPropertySearchQuery,
+    propertyTypeFilter, setPropertyTypeFilter,
+    propertyCurrentPage, setPropertyCurrentPage,
+    isAdminShowAll, setIsAdminShowAll,
+    propertiesPerPage,
+    deleteConfirmId, setDeleteConfirmId,
+    cityOptions,
+    typeOptions,
+    formData, setFormData,
+    gpsInput, setGpsInput,
+    openAddModal,
+    openEditModal,
+    handleDelete,
+    confirmDelete,
+    handleSave,
+    handleImageUpload,
+    handleImagesReorder,
+    removeImage,
+    handleLocationChange,
+    sortedProperties,
+    paginatedProperties,
+    totalPages,
+    isDragReorderEnabled,
+    handleDragEnd
+  } = mgmt;
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -846,25 +554,6 @@ const PropertiesManagement = ({
     useSensor(KeyboardSensor)
   );
 
-  const handleDragEnd = async (event: DragEndEvent) => {
-    const { active, over } = event;
-    // Guard: over is null when dropping outside a droppable container (common on mobile touch)
-    if (!over || active.id === over.id) return;
-    // Guard: never reorder while a filter is active — the sorted list is a
-    // subset of all properties, so assigning 1..N would collide with the
-    // displayOrder values held by properties outside the current filter.
-    if (!isDragReorderEnabled) return;
-    const oldIndex = sortedProperties.findIndex(p => p.id === active.id);
-    const newIndex = sortedProperties.findIndex(p => p.id === over.id);
-    const newOrder = arrayMove(sortedProperties, oldIndex, newIndex);
-    const updates = newOrder.map((p, i) => ({ id: p.id, displayOrder: i + 1 }));
-    setProperties(prev => prev.map(p => {
-      const up = updates.find(u => u.id === p.id);
-      return up ? { ...p, displayOrder: up.displayOrder } : p;
-    }));
-    await propertiesAPI.updateOrder(updates);
-  };
-
   return (
     <div className="animate-fade-in-up space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -872,9 +561,9 @@ const PropertiesManagement = ({
           <h2 className="text-2xl font-bold text-gray-900">Gestion des Propriétés</h2>
           <p className="text-sm text-gray-500 mt-1">Gérez et suivez votre portefeuille immobilier</p>
         </div>
-        <div className="flex flex-wrap gap-2 w-full md:w-auto">
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full md:w-auto">
           {/* Location Filter */}
-          <div className="relative flex-1 md:w-48">
+          <div className="relative w-full sm:w-44">
             <CustomDropdown
               value={propertyCityFilter}
               onChange={setPropertyCityFilter}
@@ -884,10 +573,10 @@ const PropertiesManagement = ({
           </div>
 
           {/* Type Filter */}
-          <div className="relative flex-1 md:w-48">
+          <div className="relative w-full sm:w-44">
             <CustomDropdown
               value={propertyTypeFilter}
-              onChange={setPropertyTypeFilter}
+              onChange={(v) => setPropertyTypeFilter(v as PropertyType | 'all')}
               options={typeOptions}
               placeholder="Tous les types"
             />
@@ -895,7 +584,7 @@ const PropertiesManagement = ({
 
           <button 
             onClick={openAddModal} 
-            className="flex-1 md:flex-none bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold flex items-center justify-center shadow-lg shadow-blue-600/20 active:scale-95 transition-all"
+            className="w-full sm:w-auto bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center shadow-lg shadow-blue-600/20 active:scale-95 transition-all shrink-0"
           >
             <Plus size={18} className="mr-2" /> Ajouter
           </button>
@@ -922,17 +611,18 @@ const PropertiesManagement = ({
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden w-full">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <div className="flex flex-col">
+          <div className="flex flex-col overflow-x-auto custom-scrollbar w-full">
             {/* Table Header - Visible only on Desktop */}
-            <div className="hidden md:flex bg-gray-50 border-b border-gray-100 py-3 text-xs uppercase font-bold text-gray-500">
-              <div className="flex-1 px-6">Propriété</div>
-              <div className="w-32 px-6 text-center">Documents</div>
-              <div className="w-48 px-6">Prix</div>
-              <div className="w-64 px-6">Infos</div>
-              <div className="w-40 px-6 text-center">Rendez-vous</div>
-              <div className="w-40 px-6 text-right">Actions</div>
+            <div className="hidden md:flex bg-gray-50 border-b border-gray-100 py-3 text-xs uppercase font-bold text-gray-500 md:min-w-[1000px] w-full">
+              <div className="flex-1 px-6 min-w-0">Propriété</div>
+              <div className="w-44 px-4 shrink-0">Propriétaire</div>
+              <div className="w-32 px-4 text-center shrink-0">Documents</div>
+              <div className="w-44 px-4 shrink-0">Prix</div>
+              <div className="w-48 px-4 shrink-0">Infos</div>
+              <div className="w-36 px-4 text-center shrink-0">Rendez-vous</div>
+              <div className="w-32 px-4 text-right shrink-0">Actions</div>
             </div>
             
             <SortableContext items={paginatedProperties.map(p => p.id)} strategy={verticalListSortingStrategy}>
@@ -1185,9 +875,9 @@ const PropertiesManagement = ({
                           
                           {/* Styled Status Badge */}
                           <div className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider whitespace-nowrap border shrink-0 ${
-                            apt.status === 'accepted' ? 'bg-green-50 text-green-600 border-green-150' :
-                            apt.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-150' :
-                            'bg-yellow-50 text-yellow-600 border-yellow-150'
+                            apt.status === 'accepted' ? 'bg-green-50 text-green-700 border-green-200' :
+                            apt.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                            'bg-amber-50 text-amber-800 border-amber-200'
                           }`}>
                             {apt.status === 'accepted' ? 'Confirmé' : apt.status === 'rejected' ? 'Annulé' : 'En attente'}
                           </div>

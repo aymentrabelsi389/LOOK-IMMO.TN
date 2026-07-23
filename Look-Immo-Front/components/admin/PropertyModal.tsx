@@ -19,7 +19,6 @@ import {
   DragEndEvent
 } from '@dnd-kit/core';
 import {
-  arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
@@ -27,8 +26,9 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Property, PropertyType } from '@/types';
-import { uploadAPI, BACKEND_URL, resolveImage } from '@/services/api';
+import { BACKEND_URL, resolveImage } from '@/services/api';
 import { getImageSrc } from '@/utils/imageUtils';
+import { usePropertyModal } from './properties/hooks/usePropertyModal';
 
 interface PropertyModalProps {
   showModal: boolean;
@@ -137,6 +137,18 @@ const PropertyModal = ({
   onImagesReorder,
   onLocationChange
 }: PropertyModalProps) => {
+  const mgmt = usePropertyModal({ formData, setFormData, onImagesReorder });
+  const {
+    isVilleOpen,
+    setIsVilleOpen,
+    isTypeOpen,
+    setIsTypeOpen,
+    isStatusOpen,
+    setIsStatusOpen,
+    handleDragEnd,
+    handleDocUpload
+  } = mgmt;
+
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
@@ -154,44 +166,10 @@ const PropertyModal = ({
     })
   );
 
-  const [isVilleOpen, setIsVilleOpen] = React.useState(false);
-  const [isTypeOpen, setIsTypeOpen] = React.useState(false);
-  const [isStatusOpen, setIsStatusOpen] = React.useState(false);
-
   if (!showModal) return null;
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    if (active.id !== over?.id) {
-      const oldIndex = formData.images?.indexOf(active.id as string) ?? -1;
-      const newIndex = formData.images?.indexOf(over?.id as string) ?? -1;
-      if (oldIndex !== -1 && newIndex !== -1) {
-        onImagesReorder(arrayMove(formData.images!, oldIndex, newIndex));
-      }
-    }
-  };
-
-  const handleDocUpload = async (e: React.ChangeEvent<HTMLInputElement>, fieldName: 'propertyPlan' | 'ownerPaper') => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    try {
-      const res = await uploadAPI.uploadPropertyDocument(file);
-      setFormData({
-        ...formData,
-        features: {
-          ...formData.features!,
-          [fieldName]: res.url
-        }
-      });
-    } catch (err) {
-      console.error("Failed to upload document:", err);
-      alert("Erreur lors de l'upload du document. Veuillez réessayer.");
-    }
-  };
-
   const renderDocBox = (label: string, fieldName: 'propertyPlan' | 'ownerPaper', description: string) => {
-    const docUrl = (formData.features as any)?.[fieldName];
+    const docUrl = formData.features?.[fieldName];
 
     return (
       <div className="border border-gray-150 rounded-xl p-4 bg-gray-50/50 hover:bg-gray-50 transition-all">
@@ -204,9 +182,9 @@ const PropertyModal = ({
             <button
               type="button"
               onClick={() => {
-                const newFeatures = { ...formData.features };
-                delete (newFeatures as any)[fieldName];
-                setFormData({ ...formData, features: newFeatures as any });
+                if (!formData.features) return;
+                const { [fieldName]: _removed, ...newFeatures } = formData.features;
+                setFormData({ ...formData, features: newFeatures });
               }}
               className="text-red-500 hover:text-red-600 transition-colors p-1"
             >
@@ -272,7 +250,8 @@ const PropertyModal = ({
     { value: 'commerce', label: 'Commerce', icon: '🏪' },
   ];
 
-  const features = [
+  type AmenityKey = 'heating' | 'airConditioning' | 'pool' | 'garden' | 'parking' | 'security';
+  const features: { id: AmenityKey; label: string; icon: React.ReactNode }[] = [
     { id: 'heating', label: 'Chauffage Central', icon: <Flame size={18} /> },
     { id: 'airConditioning', label: 'Climatisation Central', icon: <Wind size={18} /> },
     { id: 'pool', label: 'Piscine', icon: <Waves size={18} /> },
@@ -327,6 +306,19 @@ const PropertyModal = ({
                     onChange={e => setFormData({ ...formData, title: e.target.value })}
                     className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all shadow-sm placeholder-gray-400 font-medium"
                     placeholder="Ex: Villa moderne S+4 suites"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-bold text-gray-700 mb-2 flex items-center">
+                    <span className="mr-2 text-lg">📞</span> Téléphone du propriétaire
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.ownerPhone || ''}
+                    onChange={e => setFormData({ ...formData, ownerPhone: e.target.value })}
+                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all shadow-sm placeholder-gray-400 font-medium"
+                    placeholder="Ex: +216 99 999 999"
                   />
                 </div>
 
@@ -477,17 +469,17 @@ const PropertyModal = ({
                     {isStatusOpen && (
                       <div className="absolute z-30 mt-2 w-full bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         <div className="p-1.5">
-                          {[
+                          {([
                             { value: 'available', label: 'Disponible', colorClass: 'bg-green-100 text-green-700' },
                             { value: 'pending', label: 'En attente', colorClass: 'bg-amber-100 text-amber-700' },
                             { value: 'sold', label: 'Vendu', colorClass: 'bg-red-100 text-red-700' },
                             { value: 'rented', label: 'Loué', colorClass: 'bg-orange-100 text-orange-700' },
-                          ].map(status => (
+                          ] as const).map(status => (
                             <button
                               key={status.value}
                               type="button"
                               onClick={() => {
-                                setFormData({ ...formData, status: status.value as any });
+                                setFormData({ ...formData, status: status.value });
                                 setIsStatusOpen(false);
                               }}
                               className={`w-full px-4 py-2.5 rounded-lg text-left text-sm transition-all duration-200 flex items-center justify-between group ${
@@ -600,20 +592,20 @@ const PropertyModal = ({
                       type="button"
                       onClick={() => setFormData({
                         ...formData,
-                        features: { ...formData.features!, [f.id]: !(formData.features as any)[f.id] }
+                        features: { ...formData.features!, [f.id]: !formData.features![f.id] }
                       })}
-                      className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${(formData.features as any)[f.id]
+                      className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all ${formData.features![f.id]
                           ? 'border-green-500 bg-green-50 text-green-700'
                           : 'border-gray-100 bg-gray-50 text-gray-400 hover:border-gray-200 hover:bg-gray-100'
                         }`}
                     >
                       <div className="flex items-center gap-3">
-                        <span className={(formData.features as any)[f.id] ? 'text-green-600' : 'text-gray-400'}>
+                        <span className={formData.features![f.id] ? 'text-green-600' : 'text-gray-400'}>
                           {f.icon}
                         </span>
                         <span className="text-sm font-bold">{f.label}</span>
                       </div>
-                      {(formData.features as any)[f.id] && <Check size={18} />}
+                      {formData.features![f.id] && <Check size={18} />}
                     </button>
                   ))}
                 </div>

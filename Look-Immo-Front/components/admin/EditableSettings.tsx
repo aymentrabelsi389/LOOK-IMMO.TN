@@ -6,11 +6,12 @@ import {
   Trash2, AlertCircle, Eye, Check, RefreshCw,
   ChevronDown
 } from 'lucide-react';
+import '@/utils/leafletSetup';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import { SiteSettings } from '../../types';
-import { settingsAPI } from '../../services/api';
-import { notify } from '../../services/notificationStore';
+import { SiteSettings } from '@/types';
+import { settingsAPI } from '@/services/api';
+import { notify } from '@/services/notificationStore';
 
 interface EditableSettingsProps {
   settings: SiteSettings;

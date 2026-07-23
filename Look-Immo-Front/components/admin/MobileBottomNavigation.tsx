@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, LayoutDashboard, Plus, Bell, User } from 'lucide-react';
-import { useAuthStore } from '../../stores/useAuthStore';
+import { useAuthStore } from '@/stores/useAuthStore';
 import QuickCreateSheet from './QuickCreateSheet';
 import NotificationCenter from './NotificationCenter';
-import { notificationsAPI } from '../../services/api';
-import { socketService } from '../../services/socket';
+import { notificationsAPI } from '@/services/api';
+import { socketService } from '@/services/socket';
 
 const MobileBottomNavigation = () => {
   const location = useLocation();

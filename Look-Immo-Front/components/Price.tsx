@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useCurrencyStore } from '../stores/useCurrencyStore';
+import { useCurrencyStore } from '@/stores/useCurrencyStore';
 
 const Price = ({ amount, priceType, className = '' }: { amount: number; priceType?: 'total' | 'per_m2'; className?: string }) => {
   const { currency, rates } = useCurrencyStore();

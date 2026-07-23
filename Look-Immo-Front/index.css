@@ -119,21 +119,70 @@
   outline-offset: 2px;
 }
 
-/* Accessibility: Respect user motion preferences */
+/* ── Accessibility: prefers-reduced-motion ───────────────────────────────
+ *
+ * Strategy:
+ *   1. Collapse ALL durations to 0.01ms so animations complete in one frame
+ *      (preserves JS animationend / transitionend callbacks).
+ *   2. Set iteration-count to 1 so nothing loops decoratively.
+ *   3. Re-allow animate-spin: it is a *functional* indicator (loading state),
+ *      not decoration — stopping it would remove meaning.
+ *   4. Hard-stop looping Tailwind utilities (pulse, bounce, ping) and custom
+ *      entrance classes that serve no functional purpose at rest.
+ *   5. Disable scroll-behavior so anchor jumps are instant.
+ * ─────────────────────────────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
 
-  .animate-toast-in-desktop,
-  .animate-toast-in-mobile,
-  .toast-progress-bar {
-    animation: none !important;
-    transition: none !important;
+  /* 1 & 2 — Global collapse ------------------------------------------------- */
+  *,
+  *::before,
+  *::after {
+    animation-duration:        0.01ms !important;
+    animation-iteration-count: 1      !important;
+    transition-duration:       0.01ms !important;
+    transition-delay:          0ms    !important;
+    scroll-behavior:           auto   !important;
   }
 
+  /* 3 — Restore loading spinners (functional, not decorative) --------------- */
+  .animate-spin {
+    animation-duration:        0.8s     !important;
+    animation-iteration-count: infinite !important;
+  }
+
+  /* 4a — Stop Tailwind looping utilities ------------------------------------ */
+  .animate-pulse,
+  .animate-bounce,
+  .animate-ping {
+    animation: none !important;
+  }
+
+  /* 4b — Stop custom entrance / decorative classes -------------------------- */
+  .animate-fade-in,
+  .animate-fade-in-up,
+  .animate-zoom-in,
+  .animate-scale-in,
+  .animate-toast-in-desktop,
+  .animate-toast-in-mobile {
+    animation:  none !important;
+    opacity:    1    !important; /* ensure element is visible when animation skipped */
+    transform:  none !important;
+  }
+
+  /* 4c — Toast progress bar: jump straight to 0 width, no shrink animation  */
   .toast-progress-bar {
-    width: 0% !important;
-    /* Hide progress shrinking to avoid flashing */
+    animation: none    !important;
+    width:     0%      !important;
+    transition: none   !important;
+  }
+
+  /* 5 — Range slider — remove interactive transition on thumb --------------- */
+  .range-slider-thumb::-webkit-slider-thumb,
+  .range-slider-thumb::-moz-range-thumb {
+    transition: none !important;
   }
 }
+
 
 /* Fix header stacking issue when modals/popups are active in admin panel */
 body:has(.fixed.inset-0[class*="bg-black"]) header {

@@ -86,6 +86,11 @@ jobs:
           cd Look-Immo-Front
           npm run typecheck
 
+      - name: Check Circular Imports
+        run: |
+          cd Look-Immo-Front
+          npm run check:circular
+
       - name: Run Tests
         run: |
           cd Look-Immo-Front

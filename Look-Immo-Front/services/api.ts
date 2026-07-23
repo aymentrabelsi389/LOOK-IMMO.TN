@@ -1,6 +1,19 @@
-import { BlogPost } from '../types';
+import { BlogPost, Property, User, Appointment, ClientDemand, FinanceTransaction, SiteSettings, Message, Location, SiteNotification, Rating } from '@/types';
 
 import { notify } from './notificationStore';
+
+export interface BackendRating {
+    id: string;
+    stars: number;
+    value?: number;
+    userId?: string;
+    userName?: string;
+    userEmail?: string;
+    comment?: string;
+    createdAt?: string | number;
+    property?: { id?: string; title?: string };
+    [key: string]: unknown;
+}
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -231,10 +244,10 @@ export const authAPI = {
 
 // ==================== USERS API ====================
 export const usersAPI = {
-    getAll: async (params?: { role?: string; search?: string }) => {
+    getAll: async (params?: { role?: string; search?: string }): Promise<User[]> => {
         const query = new URLSearchParams(params as Record<string, string>).toString();
         const res = await apiFetch(`/users${query ? `?${query}` : ''}`);
-        const users = await res.json();
+        const users = await res.json() as any[];
 
         return users.map((user: any) => ({
             ...user,
@@ -253,7 +266,7 @@ export const usersAPI = {
         }));
     },
 
-    getById: async (id: string) => {
+    getById: async (id: string): Promise<User> => {
         const res = await apiFetch(`/users/${id}`);
         const user = await res.json();
 
@@ -274,17 +287,17 @@ export const usersAPI = {
         };
     },
 
-    create: async (data: any) => {
+    create: async (data: Partial<User>): Promise<User> => {
         const res = await apiFetch('/users', { method: 'POST', body: JSON.stringify(data) });
         return res.json();
     },
 
-    update: async (id: string, data: any) => {
+    update: async (id: string, data: Partial<User>): Promise<User> => {
         const res = await apiFetch(`/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
         return res.json();
     },
 
-    delete: async (id: string) => {
+    delete: async (id: string): Promise<any> => {
         const res = await apiFetch(`/users/${id}`, { method: 'DELETE' });
         return res.json();
     },
@@ -296,7 +309,7 @@ export const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || (API_BASE_URL.sta
 export const resolveImage = (img: string) => (img && img.startsWith('/') && !img.startsWith('http')) ? `${BACKEND_URL}${img}` : img;
 
 // Helper to adapt Backend Property to Frontend Property
-const adaptProperty = (backendProp: any): any => {
+const adaptProperty = (backendProp: any): Property => {
     let realType = (backendProp.category || 'apartment').toLowerCase();
     let featuresRaw = backendProp.features;
     let features = {
@@ -343,7 +356,7 @@ const adaptProperty = (backendProp: any): any => {
 
     if (backendProp.location && !backendProp.city) return backendProp;
 
-    const adapted = {
+    const adapted: Property = {
         ...backendProp,
         images: (backendProp.images || []).map(resolveImage),
         description: cleanDescription,
@@ -358,11 +371,11 @@ const adaptProperty = (backendProp: any): any => {
             userId: r.userId || r.userName || 'unknown',
         })) : [],
         get ratingsCount() { 
-            return backendProp.ratingsCount !== undefined ? backendProp.ratingsCount : this.ratings.length; 
+            return backendProp.ratingsCount !== undefined ? backendProp.ratingsCount : (this.ratings ? this.ratings.length : 0); 
         },
         get averageRating() {
             if (backendProp.averageRating !== undefined) return backendProp.averageRating;
-            return this.ratings.length > 0
+            return (this.ratings && this.ratings.length > 0)
                 ? this.ratings.reduce((acc: number, r: any) => acc + r.value, 0) / this.ratings.length
                 : 0;
         },
@@ -392,7 +405,7 @@ const adaptBlogPost = (backendPost: any): BlogPost => {
 };
 
 // Helper to adapt Backend Appointment to Frontend Appointment
-export const adaptAppointment = (backendApt: any): any => {
+export const adaptAppointment = (backendApt: any): Appointment => {
     return {
         ...backendApt,
         userName: backendApt.clientName || 'Utilisateur inconnu',
@@ -403,9 +416,38 @@ export const adaptAppointment = (backendApt: any): any => {
     };
 };
 
+// Shape/adapter helpers for context/store
+export function shapeProperties(list: Property[]): Property[] {
+    return list.map((p) => ({
+        ...p,
+        isNew:
+            p.isNew !== undefined
+                ? p.isNew
+                : !!p.createdAt && p.createdAt > Date.now() - 7 * 24 * 60 * 60 * 1000,
+        isFeatured: p.isFeatured !== undefined ? p.isFeatured : false,
+        isHotDeal: p.isHotDeal || false,
+        ratings: p.ratings || [],
+        averageRating: p.averageRating || 0,
+        ratingsCount: p.ratingsCount || 0,
+    }));
+}
+
+export function shapeRatings(list: BackendRating[]): Rating[] {
+    return list.map((r) => ({
+        ...r,
+        value: r.stars,
+        timestamp: r.createdAt ? new Date(r.createdAt).getTime() : Date.now(),
+        propertyId: r.property?.id || 'unknown',
+        propertyTitle: r.property?.title || 'Propriété inconnue',
+        userId: r.userId || r.userName || 'unknown',
+        userName: r.userName || 'Utilisateur',
+        userEmail: r.userEmail || '',
+    }));
+}
+
 // ==================== PROPERTIES API ====================
 export const propertiesAPI = {
-    getAll: async (params?: Record<string, string | number | undefined>): Promise<{ data: any[]; pagination: { total: number; page: number; limit: number; totalPages: number } }> => {
+    getAll: async (params?: Record<string, string | number | undefined>): Promise<{ data: Property[]; pagination: { total: number; page: number; limit: number; totalPages: number } }> => {
         const cleanParams: Record<string, string> = {};
         if (params) {
             Object.entries(params).forEach(([k, v]) => {
@@ -424,7 +466,7 @@ export const propertiesAPI = {
     },
 
     // Admin escape hatch — fetches all properties without pagination (for reorder, map, etc.)
-    getAllUnpaginated: async (params?: Record<string, string>): Promise<any[]> => {
+    getAllUnpaginated: async (params?: Record<string, string>): Promise<Property[]> => {
         const baseParams = { noLimit: 'true', ...(params || {}) };
         const query = new URLSearchParams(baseParams).toString();
         const res = await apiFetch(`/properties?${query}`);
@@ -433,30 +475,30 @@ export const propertiesAPI = {
         return Array.isArray(data) ? data.map(adaptProperty) : [];
     },
 
-    getById: async (id: string) => {
+    getById: async (id: string): Promise<Property> => {
         const res = await apiFetch(`/properties/${id}`);
         const data = await res.json();
         return adaptProperty(data);
     },
 
-    create: async (data: any) => {
+    create: async (data: any): Promise<Property> => {
         const res = await apiFetch('/properties', { method: 'POST', body: JSON.stringify(data) });
         const newData = await res.json();
         return adaptProperty(newData);
     },
 
-    update: async (id: string, data: any) => {
+    update: async (id: string, data: any): Promise<Property> => {
         const res = await apiFetch(`/properties/${id}`, { method: 'PUT', body: JSON.stringify(data) });
         const updatedData = await res.json();
         return adaptProperty(updatedData);
     },
 
-    delete: async (id: string) => {
+    delete: async (id: string): Promise<any> => {
         const res = await apiFetch(`/properties/${id}`, { method: 'DELETE' });
         return res.json();
     },
 
-    updateOrder: async (updates: { id: string; displayOrder: number }[]) => {
+    updateOrder: async (updates: { id: string; displayOrder: number }[]): Promise<any> => {
         const res = await apiFetch('/properties/reorder', {
             method: 'PUT',
             body: JSON.stringify({ updates }),
@@ -467,32 +509,32 @@ export const propertiesAPI = {
 
 // ==================== APPOINTMENTS API ====================
 export const appointmentsAPI = {
-    getAll: async (params?: Record<string, string>) => {
+    getAll: async (params?: Record<string, string>): Promise<Appointment[]> => {
         const query = params ? new URLSearchParams(params).toString() : '';
         const res = await apiFetch(`/appointments${query ? `?${query}` : ''}`);
         const data = await res.json();
         return Array.isArray(data) ? data.map(adaptAppointment) : [];
     },
 
-    getById: async (id: string) => {
+    getById: async (id: string): Promise<Appointment> => {
         const res = await apiFetch(`/appointments/${id}`);
         const data = await res.json();
         return adaptAppointment(data);
     },
 
-    create: async (data: any) => {
+    create: async (data: Partial<Appointment>): Promise<Appointment> => {
         const res = await apiFetch('/appointments', { method: 'POST', body: JSON.stringify(data) });
         const newData = await res.json();
         return adaptAppointment(newData);
     },
 
-    update: async (id: string, data: any) => {
+    update: async (id: string, data: Partial<Appointment>): Promise<Appointment> => {
         const res = await apiFetch(`/appointments/${id}`, { method: 'PUT', body: JSON.stringify(data) });
         const updatedData = await res.json();
         return adaptAppointment(updatedData);
     },
 
-    delete: async (id: string) => {
+    delete: async (id: string): Promise<any> => {
         const res = await apiFetch(`/appointments/${id}`, { method: 'DELETE' });
         return res.json();
     },
@@ -500,7 +542,7 @@ export const appointmentsAPI = {
 
 // ==================== MESSAGES API ====================
 export const messagesAPI = {
-    getAll: async (params?: Record<string, string>) => {
+    getAll: async (params?: Record<string, string>): Promise<Message[]> => {
         const query = params ? new URLSearchParams(params).toString() : '';
         const res = await apiFetch(`/messages${query ? `?${query}` : ''}`);
         const data = await res.json();
@@ -516,17 +558,17 @@ export const messagesAPI = {
         })) : [];
     },
 
-    create: async (data: { name?: string; fullName?: string; email: string; phone?: string; subject?: string; message: string; website?: string }) => {
+    create: async (data: { name?: string; fullName?: string; email: string; phone?: string; subject?: string; message: string; website?: string }): Promise<any> => {
         const res = await apiFetch('/messages', { method: 'POST', body: JSON.stringify(data) });
         return res.json();
     },
 
-    update: async (id: string, data: any) => {
+    update: async (id: string, data: Partial<Message>): Promise<any> => {
         const res = await apiFetch(`/messages/${id}`, { method: 'PUT', body: JSON.stringify(data) });
         return res.json();
     },
 
-    delete: async (id: string) => {
+    delete: async (id: string): Promise<any> => {
         const res = await apiFetch(`/messages/${id}`, { method: 'DELETE' });
         return res.json();
     },
@@ -536,21 +578,12 @@ export const messagesAPI = {
 
 // ==================== TRANSACTIONS API ====================
 export const transactionsAPI = {
-    getAll: async () => {
+    getAll: async (): Promise<FinanceTransaction[]> => {
         const res = await apiFetch('/transactions');
         return res.json();
     },
 
-    create: async (data: {
-        type: string;
-        propertyTitle: string;
-        clientName: string;
-        date?: string;
-        commission: number;
-        paymentReceived: boolean;
-        paymentMode: string;
-        notes?: string;
-    }) => {
+    create: async (data: Partial<FinanceTransaction>): Promise<FinanceTransaction> => {
         const res = await apiFetch('/transactions', {
             method: 'POST',
             body: JSON.stringify(data)
@@ -558,16 +591,7 @@ export const transactionsAPI = {
         return res.json();
     },
 
-    update: async (id: string, data: Partial<{
-        type: string;
-        propertyTitle: string;
-        clientName: string;
-        date: string;
-        commission: number;
-        paymentReceived: boolean;
-        paymentMode: string;
-        notes: string;
-    }>) => {
+    update: async (id: string, data: Partial<FinanceTransaction>): Promise<FinanceTransaction> => {
         const res = await apiFetch(`/transactions/${id}`, {
             method: 'PUT',
             body: JSON.stringify(data)
@@ -575,7 +599,7 @@ export const transactionsAPI = {
         return res.json();
     },
 
-    delete: async (id: string) => {
+    delete: async (id: string): Promise<any> => {
         const res = await apiFetch(`/transactions/${id}`, { method: 'DELETE' });
         return res.json();
     }
@@ -602,28 +626,28 @@ export const ratingsAPI = {
 
 // ==================== LOCATIONS API ====================
 export const locationsAPI = {
-    getAll: async (search?: string) => {
+    getAll: async (search?: string): Promise<Location[]> => {
         const query = search ? `?search=${encodeURIComponent(search)}` : '';
         const res = await apiFetch(`/locations${query}`);
         return res.json();
     },
 
-    create: async (data: any) => {
+    create: async (data: Partial<Location>): Promise<Location> => {
         const res = await apiFetch('/locations', { method: 'POST', body: JSON.stringify(data) });
         return res.json();
     },
 
-    update: async (id: string, data: any) => {
+    update: async (id: string, data: Partial<Location>): Promise<Location> => {
         const res = await apiFetch(`/locations/${id}`, { method: 'PUT', body: JSON.stringify(data) });
         return res.json();
     },
 
-    updateOrder: async (updates: { id: string; displayOrder: number }[]) => {
+    updateOrder: async (updates: { id: string; displayOrder: number }[]): Promise<any> => {
         const res = await apiFetch('/locations/reorder', { method: 'PUT', body: JSON.stringify({ updates }) });
         return res.json();
     },
 
-    delete: async (id: string) => {
+    delete: async (id: string): Promise<any> => {
         const res = await apiFetch(`/locations/${id}`, { method: 'DELETE' });
         return res.json();
     },
@@ -631,7 +655,7 @@ export const locationsAPI = {
 
 // ==================== BLOG API ====================
 export const blogAPI = {
-    getAll: async (params?: Record<string, string>) => {
+    getAll: async (params?: Record<string, string>): Promise<BlogPost[]> => {
         const query = params ? new URLSearchParams(params).toString() : '';
         const res = await apiFetch(`/blog${query ? `?${query}` : ''}`);
         const result = await res.json();
@@ -639,23 +663,23 @@ export const blogAPI = {
         return Array.isArray(data) ? data.map(adaptBlogPost) : [];
     },
 
-    getById: async (id: string) => {
+    getById: async (id: string): Promise<BlogPost> => {
         const res = await apiFetch(`/blog/${id}`);
         const data = await res.json();
         return adaptBlogPost(data);
     },
 
-    create: async (data: any) => {
+    create: async (data: Partial<BlogPost>): Promise<BlogPost> => {
         const res = await apiFetch('/blog', { method: 'POST', body: JSON.stringify(data) });
         return res.json();
     },
 
-    update: async (id: string, data: any) => {
+    update: async (id: string, data: Partial<BlogPost>): Promise<BlogPost> => {
         const res = await apiFetch(`/blog/${id}`, { method: 'PUT', body: JSON.stringify(data) });
         return res.json();
     },
 
-    delete: async (id: string) => {
+    delete: async (id: string): Promise<any> => {
         const res = await apiFetch(`/blog/${id}`, { method: 'DELETE' });
         return res.json();
     },
@@ -663,38 +687,38 @@ export const blogAPI = {
 
 // ==================== NOTIFICATIONS API ====================
 export const notificationsAPI = {
-    getAll: async (params?: { filter?: string; page?: number; limit?: number }) => {
+    getAll: async (params?: { filter?: string; page?: number; limit?: number }): Promise<any> => {
         const query = params ? '?' + new URLSearchParams(params as any).toString() : '';
         const res = await apiFetch(`/notifications${query}`);
         return res.json();
     },
 
-    getUnreadCount: async () => {
+    getUnreadCount: async (): Promise<{ count: number }> => {
         const res = await apiFetch('/notifications/unread-count');
         return res.json();
     },
 
-    markAsRead: async (id: string) => {
+    markAsRead: async (id: string): Promise<SiteNotification> => {
         const res = await apiFetch(`/notifications/${id}/read`, { method: 'PUT' });
         return res.json();
     },
 
-    markAllAsRead: async () => {
+    markAllAsRead: async (): Promise<any> => {
         const res = await apiFetch('/notifications/mark-all-read', { method: 'PUT' });
         return res.json();
     },
 
-    delete: async (id: string) => {
+    delete: async (id: string): Promise<any> => {
         const res = await apiFetch(`/notifications/${id}`, { method: 'DELETE' });
         return res.json();
     },
 
-    deleteRead: async () => {
+    deleteRead: async (): Promise<any> => {
         const res = await apiFetch('/notifications/read', { method: 'DELETE' });
         return res.json();
     },
 
-    deleteAll: async () => {
+    deleteAll: async (): Promise<any> => {
         const res = await apiFetch('/notifications/all', { method: 'DELETE' });
         return res.json();
     },
@@ -702,21 +726,21 @@ export const notificationsAPI = {
 
 // ==================== STATS API ====================
 export const statsAPI = {
-    getDashboard: async () => {
+    getDashboard: async (): Promise<any> => {
         const res = await apiFetch('/stats/dashboard');
         return res.json();
     },
 
-    getPropertyStats: async () => {
+    getPropertyStats: async (): Promise<any> => {
         const res = await apiFetch('/stats/properties');
         return res.json();
     },
 
-    getUserStats: async () => {
+    getUserStats: async (): Promise<any> => {
         const res = await apiFetch('/stats/users');
         return res.json();
     },
-    trackVisit: async (path: string = '/') => {
+    trackVisit: async (path: string = '/'): Promise<void> => {
         try {
             await apiFetch('/stats/track-visit', { 
                 method: 'POST', 
@@ -730,22 +754,22 @@ export const statsAPI = {
 
 // ==================== FAVORITES API ====================
 export const favoritesAPI = {
-    getAll: async () => {
+    getAll: async (): Promise<any> => {
         const res = await apiFetch('/favorites');
         return res.json();
     },
 
-    add: async (propertyId: string) => {
+    add: async (propertyId: string): Promise<any> => {
         const res = await apiFetch('/favorites', { method: 'POST', body: JSON.stringify({ propertyId }) });
         return res.json();
     },
 
-    remove: async (propertyId: string) => {
+    remove: async (propertyId: string): Promise<any> => {
         const res = await apiFetch(`/favorites/${propertyId}`, { method: 'DELETE' });
         return res.json();
     },
 
-    check: async (propertyId: string) => {
+    check: async (propertyId: string): Promise<{ isFavorite: boolean }> => {
         const res = await apiFetch(`/favorites/check/${propertyId}`);
         return res.json();
     },
@@ -753,18 +777,18 @@ export const favoritesAPI = {
 
 // ==================== VISITS API ====================
 export const visitsAPI = {
-    getAll: async (params?: Record<string, string>) => {
+    getAll: async (params?: Record<string, string>): Promise<any[]> => {
         const query = params ? new URLSearchParams(params).toString() : '';
         const res = await apiFetch(`/visits${query ? `?${query}` : ''}`);
         return res.json();
     },
 
-    create: async (data: any) => {
+    create: async (data: any): Promise<any> => {
         const res = await apiFetch('/visits', { method: 'POST', body: JSON.stringify(data) });
         return res.json();
     },
 
-    delete: async (id: string) => {
+    delete: async (id: string): Promise<any> => {
         const res = await apiFetch(`/visits/${id}`, { method: 'DELETE' });
         return res.json();
     },
@@ -772,23 +796,23 @@ export const visitsAPI = {
 
 // ==================== CLIENT DEMANDS API ====================
 export const clientDemandsAPI = {
-    getAll: async (params?: Record<string, string>) => {
+    getAll: async (params?: Record<string, string>): Promise<ClientDemand[]> => {
         const query = params ? new URLSearchParams(params).toString() : '';
         const res = await apiFetch(`/demands${query ? `?${query}` : ''}`);
         return res.json();
     },
 
-    create: async (data: any) => {
+    create: async (data: Partial<ClientDemand>): Promise<ClientDemand> => {
         const res = await apiFetch('/demands', { method: 'POST', body: JSON.stringify(data) });
         return res.json();
     },
 
-    update: async (id: string, data: any) => {
+    update: async (id: string, data: Partial<ClientDemand>): Promise<ClientDemand> => {
         const res = await apiFetch(`/demands/${id}`, { method: 'PUT', body: JSON.stringify(data) });
         return res.json();
     },
 
-    delete: async (id: string) => {
+    delete: async (id: string): Promise<any> => {
         const res = await apiFetch(`/demands/${id}`, { method: 'DELETE' });
         return res.json();
     },
@@ -796,12 +820,12 @@ export const clientDemandsAPI = {
 
 // ==================== SETTINGS API ====================
 export const settingsAPI = {
-    get: async () => {
+    get: async (): Promise<SiteSettings> => {
         const res = await apiFetch('/settings');
         return res.json();
     },
 
-    update: async (data: any) => {
+    update: async (data: Partial<SiteSettings>): Promise<SiteSettings> => {
         const res = await apiFetch('/settings', { method: 'PUT', body: JSON.stringify(data) });
         return res.json();
     },
@@ -809,7 +833,7 @@ export const settingsAPI = {
 
 // ==================== UPLOAD API ====================
 export const uploadAPI = {
-    uploadPropertyImage: async (file: File) => {
+    uploadPropertyImage: async (file: File): Promise<{ url: string }> => {
         const formData = new FormData();
         formData.append('image', file);
         const res = await apiFetchMultipart('/upload/property-image', {
@@ -819,7 +843,7 @@ export const uploadAPI = {
         return res.json();
     },
 
-    uploadPropertyDocument: async (file: File) => {
+    uploadPropertyDocument: async (file: File): Promise<{ url: string }> => {
         const formData = new FormData();
         formData.append('file', file);
         const res = await apiFetchMultipart('/upload/property-document', {
@@ -829,7 +853,7 @@ export const uploadAPI = {
         return res.json();
     },
 
-    uploadBlogImage: async (file: File) => {
+    uploadBlogImage: async (file: File): Promise<{ url: string }> => {
         const formData = new FormData();
         formData.append('image', file);
         const res = await apiFetchMultipart('/upload/blog-image', {

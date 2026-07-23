@@ -1,6 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Calendar, ArrowRight } from 'lucide-react';
-import { BlogPost } from '../../types';
+import { BlogPost } from '@/types';
 import InfiniteCarousel from './InfiniteCarousel';
 
 const NewsSection = ({ blogPosts, onSelectPost }: { blogPosts: BlogPost[], onSelectPost: (id: string) => void }) => {
@@ -33,10 +34,16 @@ const NewsSection = ({ blogPosts, onSelectPost }: { blogPosts: BlogPost[], onSel
               {/* Blue Glow Shadow Effect for Blog Cards */}
               <div className="absolute -inset-1 bg-gradient-to-r from-brand-teal to-blue-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
               <div className="relative h-full bg-white rounded-xl overflow-hidden">
-                <article
-                  onClick={() => onSelectPost(post.id)}
-                  className="cursor-pointer animate-fade-in h-full flex flex-col"
+                <Link
+                  to={`/blog-post/${post.id}`}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+                    e.preventDefault();
+                    onSelectPost(post.id);
+                  }}
+                  className="animate-fade-in h-full flex flex-col"
                 >
+                  <article className="h-full flex flex-col">
                   <div className="relative h-48 overflow-hidden mb-4 flex-shrink-0">
                     <img 
                       src={post.image} 
@@ -64,7 +71,8 @@ const NewsSection = ({ blogPosts, onSelectPost }: { blogPosts: BlogPost[], onSel
                       Lire la suite <ArrowRight size={14} className="ml-1" />
                     </div>
                   </div>
-                </article>
+                  </article>
+                </Link>
               </div>
             </div>
           )}

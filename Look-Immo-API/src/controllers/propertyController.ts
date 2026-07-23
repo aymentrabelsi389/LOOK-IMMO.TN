@@ -90,6 +90,7 @@ export const getProperties = async (req: Request, res: Response): Promise<void> 
                     },
                     averageRating: true,
                     ratingsCount: true,
+                    ownerPhone: true,
                 } as any,
                 orderBy: [
                     { displayOrder: 'asc' },
@@ -172,7 +173,7 @@ export const getProperty = async (req: Request, res: Response): Promise<void> =>
 // Create property
 export const createProperty = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { title, description, price, priceType, type, city, zone, status, images, features, category, isFeatured, isNew, isHotDeal, location } = req.body;
+        const { title, description, price, priceType, type, city, zone, status, images, features, category, isFeatured, isNew, isHotDeal, location, ownerPhone } = req.body;
         const ownerId = req.user?.id;
 
         if (!title || !price || !type || !city || !ownerId) {
@@ -197,6 +198,7 @@ export const createProperty = async (req: AuthRequest, res: Response): Promise<v
                 isNew: isNew || false,
                 isHotDeal: isHotDeal || false,
                 ownerId,
+                ownerPhone: ownerPhone || null,
                 // Handle lat/lng if provided in location object or directly
                 latitude: location?.lat || req.body.latitude,
                 longitude: location?.lng || req.body.longitude,
@@ -240,7 +242,7 @@ export const createProperty = async (req: AuthRequest, res: Response): Promise<v
 export const updateProperty = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const { title, description, price, priceType, type, city, zone, status, images, features, category, isFeatured, isNew, isHotDeal, location } = req.body;
+        const { title, description, price, priceType, type, city, zone, status, images, features, category, isFeatured, isNew, isHotDeal, location, ownerPhone } = req.body;
         const userId = req.user?.id;
         const userRole = req.user?.role;
 
@@ -278,6 +280,7 @@ export const updateProperty = async (req: AuthRequest, res: Response): Promise<v
                 ...(req.body.isFeatured !== undefined && { isFeatured: req.body.isFeatured }),
                 ...(req.body.isNew !== undefined && { isNew: req.body.isNew }),
                 ...(req.body.isHotDeal !== undefined && { isHotDeal: req.body.isHotDeal }),
+                ...(ownerPhone !== undefined && { ownerPhone: ownerPhone || null }),
                 // Handle lat/lng updates
                 ...((location?.lat || req.body.latitude) && { latitude: parseFloat(location?.lat || req.body.latitude) }),
                 ...((location?.lng || req.body.longitude) && { longitude: parseFloat(location?.lng || req.body.longitude) }),

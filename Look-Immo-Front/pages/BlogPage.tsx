@@ -1,8 +1,9 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Calendar, ArrowRight, FileText } from 'lucide-react';
 
-import { useSEO } from '../hooks/useSEO';
-import { useData } from '../context/DataContext';
+import { useSEO } from '@/hooks/useSEO';
+import { useData } from '@/context/DataContext';
 
 const BlogPage = () => {
   useSEO({
@@ -36,9 +37,17 @@ const BlogPage = () => {
               {/* Blue Glow Shadow Effect */}
               <div className="absolute -inset-1 bg-gradient-to-r from-brand-teal to-blue-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
               <article
-                onClick={() => onSelectPost(post.id)}
-                className="relative bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group cursor-pointer h-full flex flex-col justify-between isolate"
+                className="relative bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 group h-full flex flex-col justify-between isolate"
               >
+                <Link
+                  to={`/blog-post/${post.id}`}
+                  onClick={(e) => {
+                    if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+                    e.preventDefault();
+                    onSelectPost(post.id);
+                  }}
+                  className="cursor-pointer flex flex-col h-full"
+                >
                 <div>
                   <div className="relative h-48 overflow-hidden">
                     <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
@@ -58,6 +67,7 @@ const BlogPage = () => {
                     Lire la suite <ArrowRight size={16} className="ml-2" />
                   </div>
                 </div>
+                </Link>
               </article>
             </div>
           ))}

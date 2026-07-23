@@ -53,6 +53,8 @@ export interface Property {
     security?: boolean;
     vocation?: string; // e.g., "R+2", "Industriel"
     cos?: number | string; // e.g., 0.8
+    propertyPlan?: string; // uploaded document URL
+    ownerPaper?: string; // uploaded document URL
   };
   type: PropertyType;
   listingType: ListingType;
@@ -68,6 +70,7 @@ export interface Property {
   ratings?: UserRating[];
   createdAt?: number; // timestamp
   displayOrder?: number;
+  ownerPhone?: string;
 }
 
 export interface User {
@@ -201,3 +204,27 @@ export interface FinanceTransaction {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface Location {
+  id: string;
+  name: string;
+  centerLat: number;
+  centerLng: number;
+  radius: number;
+  displayOrder: number;
+  createdAt?: string | number;
+}
+
+export interface SiteNotification {
+  id: string;
+  type: string;
+  title?: string;
+  message: string;
+  icon?: string;
+  link?: string;
+  read: boolean;
+  metadata?: { demandId?: string; [key: string]: unknown };
+  createdAt: string;
+  user?: { id: string; name: string } | null;
+}
+

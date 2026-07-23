@@ -1,10 +1,10 @@
 import React from 'react';
-import { SiteSettings } from '../types';
-import { useAuthStore } from '../stores/useAuthStore';
+import { SiteSettings } from '@/types';
+import { useAdmin } from '@/hooks/useAdmin';
 
 const SocialSidebar = ({ settings }: { settings: SiteSettings | null }) => {
-  const { user } = useAuthStore();
-  const isAdmin = user?.role === 'admin' || user?.role === 'agent';
+  const { isAdminOrAgent } = useAdmin();
+  const isAdmin = isAdminOrAgent;
 
   if (!settings || !settings.socialMedia || isAdmin) return null;
 

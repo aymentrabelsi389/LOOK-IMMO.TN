@@ -4,7 +4,7 @@ import {
   MapPin, Phone, User as UserIcon, CheckCircle2, XCircle, 
   Clock, TrendingUp, AlertCircle, Trash2, Check, MessageSquare
 } from 'lucide-react';
-import { Appointment, Property, User } from '../../types';
+import { Appointment, Property, User } from '@/types';
 
 interface AppointmentsCalendarModalProps {
   onClose: () => void;
@@ -63,10 +63,10 @@ const AppointmentsCalendarModal = ({
   };
 
   const getBadgeBg = (count: number) => {
-    if (count === 0) return 'bg-gray-100 text-gray-500';
-    if (count <= 3) return 'bg-blue-500 text-white';
-    if (count <= 6) return 'bg-orange-500 text-white';
-    return 'bg-red-500 text-white';
+    if (count === 0) return 'bg-gray-100 text-gray-700';
+    if (count <= 3) return 'bg-blue-100 text-blue-800';
+    if (count <= 6) return 'bg-amber-100 text-amber-800';
+    return 'bg-red-100 text-red-800';
   };
 
   const monthAppointments = appointments.filter(a => {

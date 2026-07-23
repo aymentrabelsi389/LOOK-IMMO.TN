@@ -5,14 +5,15 @@ import {
   DollarSign, Square, BedDouble, RefreshCw, ChevronLeft, ChevronRight, Search, X, SlidersHorizontal
 } from 'lucide-react';
 
-import PropertyCard from '../components/PropertyCard';
-import Price from '../components/Price';
-import { SkeletonPropertyCard } from '../components/ui/SkeletonCard';
-import { useSEO } from '../hooks/useSEO';
-import { useUI } from '../context/UIContext';
-import { useAuthStore } from '../stores/useAuthStore';
-import { useData } from '../context/DataContext';
-import { propertiesAPI } from '../services/api';
+import PropertyCard from '@/components/PropertyCard';
+import Price from '@/components/Price';
+import { SkeletonPropertyCard } from '@/components/ui/SkeletonCard';
+import { useSEO } from '@/hooks/useSEO';
+import { useUI } from '@/context/UIContext';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useData } from '@/context/DataContext';
+import { propertiesAPI } from '@/services/api';
+import { formatPropertyType } from '@/utils/propertyUtils';
 
 const ListingsPage = () => {
   useSEO({
@@ -183,17 +184,7 @@ const ListingsPage = () => {
               `}
             >
               <span className="truncate">
-                {filters.propertyType === 'all' ? 'Tous les types' : (
-                  filters.propertyType === 'apartment' ? 'Appartement' :
-                    filters.propertyType === 'villa' ? 'Villa' :
-                      filters.propertyType === 'duplex' ? 'Duplex' :
-                        filters.propertyType === 'triplex' ? 'Triplex' :
-                          filters.propertyType === 'penthouse' ? 'Penthouse' :
-                            filters.propertyType === 'depot' ? 'Dépôt' :
-                              filters.propertyType === 'studio' ? 'Studio' :
-                                filters.propertyType === 'commerce' ? 'Commerce' :
-                                  'Bureau / Local'
-                )}
+                {filters.propertyType === 'all' ? 'Tous les types' : formatPropertyType(filters.propertyType, 'Bureau / Local')}
               </span>
               <ChevronDown size={16} className={`text-gray-400 transition-transform duration-300 ${isTypeOpen ? 'rotate-180' : ''}`} />
             </button>

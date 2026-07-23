@@ -5,11 +5,11 @@ import {
   Check, X, Trash2, ChevronLeft, ChevronRight, List, Phone, Mail, Building2, Clock, MessageSquare,
   History, ChevronDown
 } from 'lucide-react';
-import { Appointment, User, Property } from '../../types';
-import { appointmentsAPI } from '../../services/api';
+import { Appointment, User, Property } from '@/types';
+import { appointmentsAPI } from '@/services/api';
 import AppointmentsCalendarModal from './AppointmentsCalendarModal';
 import ClientAppointmentsHistoryModal from './ClientAppointmentsHistoryModal';
-import { useConfirm } from '../../context/ConfirmContext';
+import { useConfirm } from '@/context/ConfirmContext';
 
 
 interface CustomDropdownProps<T extends string> {
@@ -355,9 +355,9 @@ const AppointmentsManagement = ({
                         </td>
                         <td className="px-6 py-5">
                           <div className={`inline-flex items-center px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest border ${
-                            apt.status === 'accepted' ? 'bg-green-50 text-green-600 border-green-100' :
-                            apt.status === 'rejected' ? 'bg-red-50 text-red-600 border-red-100' :
-                            'bg-yellow-50 text-yellow-600 border-yellow-100'
+                            apt.status === 'accepted' ? 'bg-green-50 text-green-700 border-green-200' :
+                            apt.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                            'bg-amber-50 text-amber-800 border-amber-200'
                           }`}>
                             <span className={`w-1.5 h-1.5 rounded-full mr-2 ${
                               apt.status === 'accepted' ? 'bg-green-500' :
@@ -431,7 +431,7 @@ const AppointmentsManagement = ({
                       <div className={`px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest ${
                         apt.status === 'accepted' ? 'bg-green-100 text-green-700' :
                         apt.status === 'rejected' ? 'bg-red-100 text-red-700' :
-                        'bg-yellow-100 text-yellow-700'
+                        'bg-amber-100 text-amber-800'
                       }`}>
                         {apt.status === 'accepted' ? 'Confirmé' : apt.status === 'rejected' ? 'Annulé' : 'En attente'}
                       </div>

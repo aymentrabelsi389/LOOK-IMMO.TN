@@ -1,5 +1,5 @@
 import React from 'react';
-import { Property, User } from '../../types';
+import { Property, User } from '@/types';
 import InfiniteCarousel from './InfiniteCarousel';
 import PropertyCard from '../PropertyCard';
 

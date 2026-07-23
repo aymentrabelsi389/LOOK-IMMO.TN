@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, memo } from 'react';
 import { 
   Plus, Edit, Trash2, MapPin, GripVertical, ChevronLeft, ChevronRight, List, X
 } from 'lucide-react';
@@ -11,6 +11,7 @@ import {
   TouchSensor,
   useSensor,
   useSensors,
+  DragEndEvent,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -20,7 +21,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { locationsAPI } from '../../services/api';
+import { locationsAPI } from '@/services/api';
 
 interface SortableLocationRowProps {
   loc: any;
@@ -29,7 +30,7 @@ interface SortableLocationRowProps {
   confirmDelete: (index: number) => void;
 }
 
-const SortableLocationRow: React.FC<SortableLocationRowProps> = ({ loc, index, openEditModal, confirmDelete }) => {
+const SortableLocationRow: React.FC<SortableLocationRowProps> = memo(({ loc, index, openEditModal, confirmDelete }) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: loc.id });
   const style = { 
     transform: CSS.Transform.toString(transform), 
@@ -77,10 +78,10 @@ const SortableLocationRow: React.FC<SortableLocationRowProps> = ({ loc, index, o
       </td>
     </tr>
   );
-};
+});
 
 // --- Mobile Card Component ---
-const SortableLocationCard = ({ loc, index, openEditModal, confirmDelete }: any) => {
+const SortableLocationCard = memo(({ loc, index, openEditModal, confirmDelete }: any) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: loc.id });
   const style = { 
     transform: CSS.Transform.toString(transform), 
@@ -115,7 +116,7 @@ const SortableLocationCard = ({ loc, index, openEditModal, confirmDelete }: any)
       </div>
     </div>
   );
-};
+});
 
 interface LocationsManagementProps {
   availableLocations: string[];
@@ -229,28 +230,27 @@ const LocationsManagement = ({
     setDeleteIndex(null);
   };
 
-  const handleDragEndLocation = async (event: any) => {
+  const handleDragEndLocation = async (event: DragEndEvent) => {
     const { active, over } = event;
-    if (active.id !== over.id) {
-      const oldIndex = adminLocations.findIndex((i: any) => i.id === active.id);
-      const newIndex = adminLocations.findIndex((i: any) => i.id === over.id);
-      const newItems = arrayMove(adminLocations, oldIndex, newIndex);
+    if (!over || active.id === over.id) return;
+    const oldIndex = adminLocations.findIndex((i: any) => i.id === active.id);
+    const newIndex = adminLocations.findIndex((i: any) => i.id === over.id);
+    const newItems = arrayMove(adminLocations, oldIndex, newIndex);
 
-      setAdminLocations(newItems);
+    setAdminLocations(newItems);
 
-      const updates = newItems.map((loc: any, index: number) => ({
-        id: loc.id,
-        displayOrder: index
-      }));
+    const updates = newItems.map((loc: any, index: number) => ({
+      id: loc.id,
+      displayOrder: index
+    }));
 
-      try {
-        await locationsAPI.updateOrder(updates);
-        showNotification('success', 'Ordre mis à jour');
-        setAvailableLocations(newItems.map((l: any) => l.name));
-      } catch (err: any) {
-        console.error(err);
-        showNotification('error', 'Erreur de réorganisation');
-      }
+    try {
+      await locationsAPI.updateOrder(updates);
+      showNotification('success', 'Ordre mis à jour');
+      setAvailableLocations(newItems.map((l: any) => l.name));
+    } catch (err: any) {
+      console.error(err);
+      showNotification('error', 'Erreur de réorganisation');
     }
   };
 

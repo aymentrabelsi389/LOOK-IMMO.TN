@@ -161,6 +161,7 @@ model Property {
 
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerPhone String?
 
   appointments Appointment[]
   visits       Visit[]

@@ -1,18 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, ChevronDown } from 'lucide-react';
 
-import FeaturedPropertiesSection from '../components/home/FeaturedPropertiesSection';
-import NewPropertiesSection from '../components/home/NewPropertiesSection';
-import PromotionLandsSection from '../components/home/PromotionLandsSection';
-import NewsSection from '../components/home/NewsSection';
-import { useSEO } from '../hooks/useSEO';
-import { useUI } from '../context/UIContext';
-import { useAuthStore } from '../stores/useAuthStore';
-import { useData } from '../context/DataContext';
+import FeaturedPropertiesSection from '@/components/home/FeaturedPropertiesSection';
+import NewPropertiesSection from '@/components/home/NewPropertiesSection';
+import PromotionLandsSection from '@/components/home/PromotionLandsSection';
+import NewsSection from '@/components/home/NewsSection';
+import { useSEO } from '@/hooks/useSEO';
+import { useUI } from '@/context/UIContext';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useData } from '@/context/DataContext';
 
-import hero1 from '../photo-1613490493576-7fde63acd811.avif';
-import hero2 from '../photo-1512917774080-9991f1c4c750.avif';
-import hero3 from '../photo-1600585154340-be6161a56a0c.avif';
+import hero1 from '../photo-1613490493576-7fde63acd811.webp';
+import hero2 from '../photo-1512917774080-9991f1c4c750.webp';
+import hero3 from '../photo-1600585154340-be6161a56a0c.webp';
 
 const HomePage = () => {
   useSEO({

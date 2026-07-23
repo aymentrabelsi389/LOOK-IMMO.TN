@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Private / account-gated areas — nothing to index, don't waste crawl budget
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /auth
+Disallow: /forgot-password
+
+Sitemap: https://look-immo.tn/sitemap.xml

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { User as UserIcon, AlertCircle, RefreshCw } from 'lucide-react';
-import { User } from '../types';
-import { authAPI } from '../services/api';
-import { useSEO } from '../hooks/useSEO';
-import { useAuthStore } from '../stores/useAuthStore';
-import { useUI } from '../context/UIContext';
+import { User } from '@/types';
+import { authAPI } from '@/services/api';
+import { useSEO } from '@/hooks/useSEO';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useUI } from '@/context/UIContext';
 
 interface AuthPageProps {
   initialMode?: 'login' | 'signup';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { Menu, Home as HomeIcon, User as UserIcon } from 'lucide-react';
-import { User } from '../../types';
+import { User } from '@/types';
 
 interface AdminHeaderProps {
   user: User | null;
@@ -35,10 +35,10 @@ const AdminHeader = ({
       {/* Center - Retour au Site Button */}
       <button
         onClick={onNavigate}
-        className="flex items-center space-x-2 px-5 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg font-medium text-sm"
+        className="flex items-center space-x-1.5 px-3 py-2 md:px-5 md:py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-xl hover:from-blue-600 hover:to-blue-700 transition-all shadow-lg font-medium text-xs md:text-sm shrink-0"
       >
-        <HomeIcon size={18} />
-        <span>Retour au Site</span>
+        <HomeIcon size={16} />
+        <span className="hidden sm:inline">Retour au Site</span>
       </button>
 
       <div className="flex items-center">

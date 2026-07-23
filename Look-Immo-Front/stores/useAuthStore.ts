@@ -1,7 +1,7 @@
 import { create } from 'zustand';
-import { User } from '../types';
-import { authAPI, usersAPI, favoritesAPI } from '../services/api';
-import { notify } from '../services/notificationStore';
+import { User } from '@/types';
+import { authAPI, usersAPI, favoritesAPI } from '@/services/api';
+import { notify } from '@/services/notificationStore';
 
 interface AuthStore {
   user: User | null;

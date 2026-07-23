@@ -81,6 +81,8 @@ export const createPropertySchema = z.object({
         longitude: z.number().min(-180).max(180).optional(),
 
         location: locationSchema,
+
+        ownerPhone: z.string().max(30).optional().nullable(),
     }),
 });
 
@@ -111,6 +113,7 @@ export const updatePropertySchema = z.object({
         latitude: z.number().min(-90).max(90).optional(),
         longitude: z.number().min(-180).max(180).optional(),
         location: locationSchema,
+        ownerPhone: z.string().max(30).optional().nullable(),
     }),
 });
 

@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
 import {
   User as UserIcon, Plus, Clock, Heart, MapPin,
   BedDouble, Bath, Square, CalendarDays, Calendar, Edit2, X,
   Search, Trash2, Edit, ChevronRight, Phone, Home as HomeIcon,
   Check
 } from 'lucide-react';
-import { Appointment, SiteSettings, ClientDemand } from '../types';
-import Price from '../components/Price';
-import { clientDemandsAPI, appointmentsAPI } from '../services/api';
+import { Appointment, SiteSettings, ClientDemand } from '@/types';
+import Price from '@/components/Price';
+import { clientDemandsAPI, appointmentsAPI } from '@/services/api';
 import { Target, Activity, CheckCircle } from 'lucide-react';
-import { CustomDatePicker, CustomTimePicker } from '../components/ui/DateTimePicker';
-import { useSEO } from '../hooks/useSEO';
-import { useUI } from '../context/UIContext';
-import { useAuthStore } from '../stores/useAuthStore';
-import { useData } from '../context/DataContext';
-import { notify } from '../services/notificationStore';
-import { useConfirm } from '../context/ConfirmContext';
-import { getImageSrc, getLQIP } from '../utils/imageUtils';
+import { CustomDatePicker, CustomTimePicker } from '@/components/ui/DateTimePicker';
+import { useSEO } from '@/hooks/useSEO';
+import { useUI } from '@/context/UIContext';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useData } from '@/context/DataContext';
+import { notify } from '@/services/notificationStore';
+import { useConfirm } from '@/context/ConfirmContext';
+import { getImageSrc, getLQIP } from '@/utils/imageUtils';
+import { useAdmin } from '@/hooks/useAdmin';
 
 const DashboardPage = () => {
   useSEO({
@@ -30,6 +31,7 @@ const DashboardPage = () => {
   const navigate = useNavigate();
   const { confirm } = useConfirm();
   const { user, handleUpdateUser: onUpdateUser, handleToggleFavorite } = useAuthStore();
+  const { isAdminOrAgent } = useAdmin();
   const {
     properties,
     appointments = [],
@@ -187,7 +189,7 @@ const DashboardPage = () => {
 
   // Fetch demands
   useEffect(() => {
-    if (user.role === 'admin' || user.role === 'agent') {
+    if (isAdminOrAgent) {
       const fetchDemands = async () => {
         try {
           const data = await clientDemandsAPI.getAll();
@@ -198,7 +200,7 @@ const DashboardPage = () => {
       };
       fetchDemands();
     }
-  }, [user.role]);
+  }, [isAdminOrAgent]);
 
   // Reset form data when user prop changes
   useEffect(() => {
@@ -372,8 +374,7 @@ const DashboardPage = () => {
 
   const upcomingAppointments = appointments
     .filter(apt =>
-      user.role === 'admin' ||
-      user.role === 'agent' ||
+      isAdminOrAgent ||
       apt.userId === user.id ||
       (apt.clientEmail && apt.clientEmail === user.email) ||
       (apt.clientPhone && apt.clientPhone === user.phone)
@@ -618,7 +619,7 @@ const DashboardPage = () => {
 
                     {(apt.status === 'pending' || apt.status === 'accepted' || apt.status === 'rejected') && (
                       <div className="flex gap-1">
-                        {(user.role === 'admin' || user.role === 'agent') && (apt.status === 'pending' || apt.status === 'rejected') && (
+                        {isAdminOrAgent && (apt.status === 'pending' || apt.status === 'rejected') && (
                           <button
                             onClick={() => onUpdateAppointment(apt.id, { status: 'accepted' })}
                             className="p-2 text-green-600 hover:bg-green-50 rounded-xl transition-all duration-200"
@@ -627,7 +628,7 @@ const DashboardPage = () => {
                             <Check size={16} />
                           </button>
                         )}
-                        {(user.role === 'admin' || user.role === 'agent') && apt.status === 'pending' && (
+                        {isAdminOrAgent && apt.status === 'pending' && (
                           <button
                             onClick={() => onUpdateAppointment(apt.id, { status: 'rejected' })}
                             className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200"
@@ -849,7 +850,20 @@ const DashboardPage = () => {
 
                       {/* Property Info */}
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-serif font-bold text-gray-900 mb-1 truncate text-xs sm:text-base group-hover:text-brand-teal transition-colors">{property.title}</h3>
+                        <h3 className="font-serif font-bold text-gray-900 mb-1 truncate text-xs sm:text-base group-hover:text-brand-teal transition-colors">
+                          <Link
+                            to={`/property/${property.id}`}
+                            onClick={(e) => {
+                              if (e.metaKey || e.ctrlKey || e.shiftKey || e.button === 1) return;
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onSelectProperty(property.id);
+                            }}
+                            className="hover:text-brand-teal transition-colors"
+                          >
+                            {property.title}
+                          </Link>
+                        </h3>
                         <div className="flex items-center text-[11px] sm:text-xs text-brand-grey mb-1.5">
                           <MapPin size={12} className="mr-1 text-brand-teal flex-shrink-0" />
                           <span className="truncate">{property.location.city}</span>

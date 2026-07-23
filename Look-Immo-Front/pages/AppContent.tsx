@@ -1,24 +1,24 @@
 import React, { useEffect } from 'react';
 import { useLocation, Routes, Route, Navigate } from 'react-router-dom';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-import LuxuryLoader from '../components/ui/LuxuryLoader';
+
+import LuxuryLoader from '@/components/ui/LuxuryLoader';
 import { Suspense, lazy } from 'react';
 
 // Context Hooks
-import { useUI } from '../context/UIContext';
-import { useAuthStore } from '../stores/useAuthStore';
-import { useData } from '../context/DataContext';
+import { useUI } from '@/context/UIContext';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { useData } from '@/context/DataContext';
+import { useAdmin } from '@/hooks/useAdmin';
 
 // Layout Components
-import Navbar from '../layouts/Navbar';
-import Footer from '../layouts/Footer';
-import SocialSidebar from '../layouts/SocialSidebar';
-import ToastContainer from '../components/ui/ToastContainer';
-import AuthRequiredModal from '../components/ui/AuthRequiredModal';
-import { PrivacyModal, TermsModal } from '../components/ui/LegalModals';
-import MobileBottomNavigation from '../components/admin/MobileBottomNavigation';
-import ClientMobileBottomNavigation from '../components/admin/ClientMobileBottomNavigation';
+import Navbar from '@/layouts/Navbar';
+import Footer from '@/layouts/Footer';
+import SocialSidebar from '@/layouts/SocialSidebar';
+import ToastContainer from '@/components/ui/ToastContainer';
+import AuthRequiredModal from '@/components/ui/AuthRequiredModal';
+import { PrivacyModal, TermsModal } from '@/components/ui/LegalModals';
+import MobileBottomNavigation from '@/components/admin/MobileBottomNavigation';
+import ClientMobileBottomNavigation from '@/components/admin/ClientMobileBottomNavigation';
 
 // Page Components (Lazy Loaded)
 const HomePage = lazy(() => import('./HomePage'));
@@ -32,13 +32,7 @@ const BlogPage = lazy(() => import('./BlogPage'));
 const BlogPostPage = lazy(() => import('./BlogPostPage'));
 const ForgotPasswordPage = lazy(() => import('./ForgotPasswordPage'));
 
-// Fix for default Leaflet marker icons
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon-2x.png',
-  iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-icon.png',
-  shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png',
-});
+
 
 // --- Reusable ScrollToTop Component ---
 const ScrollToTop = () => {
@@ -56,7 +50,6 @@ const AppContent = () => {
 
 
   const {
-    currentPage,
     handleNavigate,
     handleSearch,
     filters,
@@ -67,14 +60,26 @@ const AppContent = () => {
     showPrivacyModal, setShowPrivacyModal,
   } = useUI();
 
+  const location = useLocation();
+  const { isAdminOrAgent } = useAdmin();
   const { user, handleLogout } = useAuthStore();
   const { siteSettings, isLoading, appointments } = useData();
 
-  const isAdminView = currentPage === 'admin' && (user?.role === 'admin' || user?.role === 'agent');
+  const isAdminView = location.pathname.startsWith('/admin') && isAdminOrAgent;
 
   if (!siteSettings || isLoading) {
     return <LuxuryLoader message={!siteSettings ? 'Initialisation de la plateforme...' : 'Chargement des propriétés...'} />;
   }
+
+  const getPageKey = (pathname: string): string => {
+    if (pathname === '/') return 'home';
+    if (pathname.startsWith('/listings')) return 'listings';
+    if (pathname.startsWith('/blog')) return 'blog';
+    if (pathname.startsWith('/contact')) return 'contact';
+    if (pathname.startsWith('/dashboard')) return 'dashboard';
+    return '';
+  };
+  const currentPage = getPageKey(location.pathname);
 
   return (
     <div className="flex flex-col min-h-screen bg-brand-light text-brand-dark font-sans selection:bg-brand-teal selection:text-white w-full">
@@ -82,17 +87,17 @@ const AppContent = () => {
 
       {!isAdminView && (
         <Navbar
-          currentPage={currentPage}
           onNavigate={handleNavigate}
           user={user}
           onLogout={handleLogout}
+          currentPage={currentPage}
           onSearch={handleSearch}
           filters={filters}
           appointments={appointments}
         />
       )}
 
-      <main className={`flex-1 flex flex-col ${!isAdminView ? 'pt-20 overflow-x-hidden' : ''} pb-20 lg:pb-0`}>
+      <main className={`flex-1 flex flex-col ${!isAdminView ? 'pt-20' : ''} overflow-x-hidden pb-20 lg:pb-0`}>
         <Suspense fallback={<LuxuryLoader message="Chargement de la page..." />}>
           <Routes>
             <Route path="/" element={<HomePage />} />
@@ -100,7 +105,7 @@ const AppContent = () => {
             <Route path="/property/:id" element={<PropertyDetailsPage />} />
             <Route path="/property" element={<PropertyDetailsPage />} />
             <Route path="/dashboard" element={user ? <DashboardPage /> : <Navigate to="/auth" replace />} />
-            <Route path="/admin/*" element={(user?.role === 'admin' || user?.role === 'agent') ? <AdminPanel /> : <Navigate to="/" replace />} />
+            <Route path="/admin/*" element={isAdminOrAgent ? <AdminPanel /> : <Navigate to="/" replace />} />
             <Route path="/auth" element={<AuthPage initialMode={authMode} />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/contact" element={<ContactPage />} />
@@ -130,7 +135,7 @@ const AppContent = () => {
       />
       <PrivacyModal isOpen={showPrivacyModal} onClose={() => setShowPrivacyModal(false)} />
       <TermsModal isOpen={showTermsModal} onClose={() => setShowTermsModal(false)} />
-      {user && (user.role === 'admin' || user.role === 'agent') ? (
+      {isAdminOrAgent ? (
         <MobileBottomNavigation />
       ) : (
         <ClientMobileBottomNavigation />

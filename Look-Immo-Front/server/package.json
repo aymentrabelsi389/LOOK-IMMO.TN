@@ -1,0 +1,17 @@
+{
+  "name": "look-immo-prerender-server",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Serves the built Look Immo SPA and injects real per-page meta tags / JSON-LD for social + search bots, since the app itself is client-rendered only.",
+  "main": "prerender-server.mjs",
+  "scripts": {
+    "start": "node prerender-server.mjs"
+  },
+  "dependencies": {
+    "express": "^4.21.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

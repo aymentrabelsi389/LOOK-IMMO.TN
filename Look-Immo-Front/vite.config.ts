@@ -89,11 +89,6 @@ export default defineConfig(({ mode }) => {
               return 'vendor-date';
             }
 
-            // react / react-dom — must stay in a dedicated chunk so Suspense
-            // boundaries and lazy() work before any async chunk loads
-            if (id.includes('react-dom') || id.includes('/react/')) {
-              return 'vendor-react';
-            }
 
             // Everything else (zustand, cookie utilities, etc.)
             return 'vendor';

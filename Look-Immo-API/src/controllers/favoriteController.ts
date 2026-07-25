@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../utils/prisma';
 import { createNotification } from '../services/notificationService';
+import { logger } from '../utils/logger';
 
 // Get user's favorites
 export const getFavorites = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -29,7 +30,7 @@ export const getFavorites = async (req: AuthRequest, res: Response): Promise<voi
 
         res.json(favorites.map((f) => f.property));
     } catch (error) {
-        console.error('Get favorites error:', error);
+        logger.error('Get favorites error:', error);
         res.status(500).json({ error: 'Failed to get favorites' });
     }
 };
@@ -71,7 +72,7 @@ export const addFavorite = async (req: AuthRequest, res: Response): Promise<void
                 metadata: { propertyId, userId }
             });
         } catch (notifErr) {
-            console.error('Failed to create favorite notification:', notifErr);
+            logger.error('Failed to create favorite notification:', notifErr);
         }
     } catch (error: any) {
         if (error.code === 'P2002') {
@@ -82,7 +83,7 @@ export const addFavorite = async (req: AuthRequest, res: Response): Promise<void
             res.status(404).json({ error: 'Property not found' });
             return;
         }
-        console.error('Add favorite error:', error);
+        logger.error('Add favorite error:', error);
         res.status(500).json({ error: 'Failed to add to favorites' });
     }
 };
@@ -110,7 +111,7 @@ export const removeFavorite = async (req: AuthRequest, res: Response): Promise<v
             res.status(404).json({ error: 'Favorite not found' });
             return;
         }
-        console.error('Remove favorite error:', error);
+        logger.error('Remove favorite error:', error);
         res.status(500).json({ error: 'Failed to remove from favorites' });
     }
 };
@@ -134,7 +135,7 @@ export const checkFavorite = async (req: AuthRequest, res: Response): Promise<vo
 
         res.json({ isFavorite: !!favorite });
     } catch (error) {
-        console.error('Check favorite error:', error);
+        logger.error('Check favorite error:', error);
         res.status(500).json({ error: 'Failed to check favorite status' });
     }
 };

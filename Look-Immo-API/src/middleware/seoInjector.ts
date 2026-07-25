@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../utils/prisma';
 import fs from 'fs';
 import path from 'path';
+import { logger } from '../utils/logger';
 
 // ─── Bot Detection ────────────────────────────────────────────────────────────
 // Matches all major social crawlers, search engine bots, and link-preview agents.
@@ -143,7 +144,7 @@ const getIndexHtml = async (): Promise<string | null> => {
         try {
             return fs.readFileSync(localPath, 'utf8');
         } catch (err) {
-            console.error('[SEO Injector] Failed to read local index.html:', err);
+            logger.error('[SEO Injector] Failed to read local index.html:', err);
         }
     }
 
@@ -164,7 +165,7 @@ const getIndexHtml = async (): Promise<string | null> => {
             return html;
         }
     } catch (err) {
-        console.error('[SEO Injector] Failed to fetch index.html from frontend server:', err);
+        logger.error('[SEO Injector] Failed to fetch index.html from frontend server:', err);
     }
 
     return null;
@@ -208,7 +209,7 @@ export const seoInjector = async (
     // ── Bot path: inject OG tags ───────────────────────────────────────────────
     const template = await getIndexHtml();
     if (!template) {
-        console.warn('[SEO Injector] Frontend index.html not found — skipping OG injection.');
+        logger.warn('[SEO Injector] Frontend index.html not found — skipping OG injection.');
         next();
         return;
     }
@@ -401,7 +402,7 @@ export const seoInjector = async (
         res.set('Cache-Control', 'public, max-age=300');
         res.send(html);
     } catch (err) {
-        console.error('[SEO Injector] Failed to inject metadata:', err);
+        logger.error('[SEO Injector] Failed to inject metadata:', err);
         next();
     }
 };

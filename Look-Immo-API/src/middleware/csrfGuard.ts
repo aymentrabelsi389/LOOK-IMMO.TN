@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { logger } from '../utils/logger';
 
 // Retrieve allowed origins from environment (matching CORS configuration)
 const getAllowedOrigins = (): string[] => {
@@ -49,7 +50,7 @@ export const csrfGuard = (req: Request, res: Response, next: NextFunction): void
         if (isAllowed(origin)) {
             return next();
         }
-        console.warn(`[CSRF Guard] Blocked request from unauthorized Origin: ${origin}`);
+        logger.warn(`[CSRF Guard] Blocked request from unauthorized Origin: ${origin}`);
         res.status(403).json({ error: 'CSRF protection: request origin not allowed' });
         return;
     }
@@ -59,12 +60,12 @@ export const csrfGuard = (req: Request, res: Response, next: NextFunction): void
         if (isAllowed(referer)) {
             return next();
         }
-        console.warn(`[CSRF Guard] Blocked request from unauthorized Referer: ${referer}`);
+        logger.warn(`[CSRF Guard] Blocked request from unauthorized Referer: ${referer}`);
         res.status(403).json({ error: 'CSRF protection: request referer not allowed' });
         return;
     }
 
     // 6. Block if both Origin and Referer are missing on a mutating method (typical of programmatic scripts trying to bypass browser checks)
-    console.warn(`[CSRF Guard] Blocked request: Missing both Origin and Referer headers on mutating method ${req.method} for path ${req.path}`);
+    logger.warn(`[CSRF Guard] Blocked request: Missing both Origin and Referer headers on mutating method ${req.method} for path ${req.path}`);
     res.status(403).json({ error: 'CSRF protection: missing origin/referer header' });
 };

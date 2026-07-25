@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../utils/prisma';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -59,7 +60,7 @@ ${blogPosts.map(p => `  <url>
         res.header('Cache-Control', 'public, max-age=3600'); // Cache 1 hour
         res.send(xml);
     } catch (error) {
-        console.error('Sitemap generation error:', error);
+        logger.error('Sitemap generation error:', error);
         res.status(500).send('Error generating sitemap');
     }
 });

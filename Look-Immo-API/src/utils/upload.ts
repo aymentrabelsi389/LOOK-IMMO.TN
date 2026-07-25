@@ -4,16 +4,17 @@ import fs from 'fs';
 import sharp from 'sharp';
 import { Request, Response, NextFunction } from 'express';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { logger } from './logger';
 
 // ─── Directory bootstrap ──────────────────────────────────────────────────────
 
 const uploadsRoot = path.resolve(process.cwd(), 'uploads');
-console.log(`[BOOTSTRAP] Uploads root: ${uploadsRoot}`);
+logger.info(`[BOOTSTRAP] Uploads root: ${uploadsRoot}`);
 const dirs = ['contracts', 'blog', 'properties'];
 dirs.forEach((d) => {
     const full = path.join(uploadsRoot, d);
     if (!fs.existsSync(full)) {
-        console.log(`[BOOTSTRAP] Creating directory: ${full}`);
+        logger.info(`[BOOTSTRAP] Creating directory: ${full}`);
         fs.mkdirSync(full, { recursive: true });
     }
 });
@@ -112,7 +113,7 @@ const makeFilter =
         if (allowed.includes(file.mimetype)) {
             cb(null, true);
         } else {
-            console.error(`[UPLOAD] Rejected file type: ${file.mimetype} for file: ${file.originalname}`);
+            logger.error(`[UPLOAD] Rejected file type: ${file.mimetype} for file: ${file.originalname}`);
             cb(new Error(`Type de fichier non autorisé: ${file.mimetype}`));
         }
     };
@@ -278,13 +279,13 @@ export const optimizeAndSave =
     (opts: OptimizeOptions) =>
     async (req: Request, res: Response, next: NextFunction): Promise<void> => {
         if (!req.file) {
-            console.log('[UPLOAD] No file received in req.file');
+            logger.info('[UPLOAD] No file received in req.file');
             next();
             return;
         }
 
         try {
-            console.log(`[UPLOAD] Starting optimization for: ${req.file.originalname} (${req.file.mimetype}, ${req.file.size} bytes)`);
+            logger.info(`[UPLOAD] Starting optimization for: ${req.file.originalname} (${req.file.mimetype}, ${req.file.size} bytes)`);
             const { folder, quality = 82, multiSize = false } = opts;
             const uid = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
 
@@ -328,19 +329,19 @@ export const optimizeAndSave =
                             .jpeg({ quality: 20 })
                             .toBuffer();
                         variants.lqip = `data:image/jpeg;base64,${lqipBuffer.toString('base64')}`;
-                        console.log(`[UPLOAD] LQIP generated (${lqipBuffer.length} bytes) for uid=${uid}`);
+                        logger.info(`[UPLOAD] LQIP generated (${lqipBuffer.length} bytes) for uid=${uid}`);
                     } catch (lqipErr) {
-                        console.warn('[UPLOAD] LQIP generation failed (non-fatal):', lqipErr);
+                        logger.warn('[UPLOAD] LQIP generation failed (non-fatal):', lqipErr);
                         // lqip stays undefined — frontend falls back to gray bg
                     }
 
                     (req as any).optimizedPath = variants.large;       // Backwards compat
                     (req as any).optimizedSrcSet = variants;            // srcset + lqip data
-                    console.log(`[UPLOAD] Generated 3-size variants for uid=${uid}`);
+                    logger.info(`[UPLOAD] Generated 3-size variants for uid=${uid}`);
                 } catch (sharpErr) {
                     // Do NOT fall back to saving raw bytes — an unprocessed file could
                     // contain malicious content (e.g. SVG scripts). Surface as 500 instead.
-                    console.error('[UPLOAD] Sharp multi-size processing failed:', sharpErr);
+                    logger.error('[UPLOAD] Sharp multi-size processing failed:', sharpErr);
                     throw sharpErr;
                 }
             } else {
@@ -358,18 +359,18 @@ export const optimizeAndSave =
                     const fileUrl = await uploadFileToStorage(optimizedBuffer, folder, filename, 'image/webp');
                     (req as any).optimizedPath = fileUrl;
                     (req as any).optimizedSrcSet = null;
-                    console.log(`[UPLOAD] Successfully optimized and saved single: ${filename} to ${fileUrl}`);
+                    logger.info(`[UPLOAD] Successfully optimized and saved single: ${filename} to ${fileUrl}`);
                 } catch (sharpErr) {
                     // Do NOT fall back to saving raw bytes — an unprocessed file could
                     // contain malicious content (e.g. SVG scripts). Surface as 500 instead.
-                    console.error('[UPLOAD] Sharp single-size processing failed:', sharpErr);
+                    logger.error('[UPLOAD] Sharp single-size processing failed:', sharpErr);
                     throw sharpErr;
                 }
             }
 
             next();
         } catch (err: any) {
-            console.error('[UPLOAD] Critical upload error:', err);
+            logger.error('[UPLOAD] Critical upload error:', err);
             next(err);
         }
     };

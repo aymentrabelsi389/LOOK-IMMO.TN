@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { getCache, setCache, deleteCache, clearCachePattern } from '../utils/redis';
 import { prisma } from '../utils/prisma';
 import { createNotification, checkPropertyMatchesAndNotify } from '../services/notificationService';
+import { logger } from '../utils/logger';
 
 // Get all properties
 export const getProperties = async (req: Request, res: Response): Promise<void> => {
@@ -123,7 +124,7 @@ export const getProperties = async (req: Request, res: Response): Promise<void> 
 
         res.json(responseData);
     } catch (error) {
-        console.error('Get properties error:', error);
+        logger.error('Get properties error:', error);
         res.status(500).json({ error: 'Failed to get properties' });
     }
 };
@@ -165,7 +166,7 @@ export const getProperty = async (req: Request, res: Response): Promise<void> =>
 
         res.json(property);
     } catch (error) {
-        console.error('Get property error:', error);
+        logger.error('Get property error:', error);
         res.status(500).json({ error: 'Failed to get property' });
     }
 };
@@ -234,11 +235,11 @@ export const createProperty = async (req: AuthRequest, res: Response): Promise<v
 
                 await checkPropertyMatchesAndNotify(property);
             } catch (notifErr) {
-                console.error('Failed to create property notifications:', notifErr);
+                logger.error('Failed to create property notifications:', notifErr);
             }
         })();
     } catch (error) {
-        console.error('Create property error:', error);
+        logger.error('Create property error:', error);
         res.status(500).json({ error: 'Failed to create property' });
     }
 };
@@ -313,7 +314,7 @@ export const updateProperty = async (req: AuthRequest, res: Response): Promise<v
 
         res.json(property);
     } catch (error) {
-        console.error('Update property error:', error);
+        logger.error('Update property error:', error);
         res.status(500).json({ error: 'Failed to update property' });
     }
 };
@@ -360,7 +361,7 @@ export const deleteProperty = async (req: AuthRequest, res: Response): Promise<v
 
         res.json({ message: 'Property deleted successfully' });
     } catch (error) {
-        console.error('Delete property error:', error);
+        logger.error('Delete property error:', error);
         res.status(500).json({ error: 'Failed to delete property' });
     }
 };
@@ -397,7 +398,7 @@ export const updatePropertyOrder = async (req: AuthRequest, res: Response): Prom
 
         res.json({ success: true, message: 'Property order updated successfully' });
     } catch (error) {
-        console.error('Update property order error:', error);
+        logger.error('Update property order error:', error);
         res.status(500).json({ error: 'Failed to update property order' });
     }
 };

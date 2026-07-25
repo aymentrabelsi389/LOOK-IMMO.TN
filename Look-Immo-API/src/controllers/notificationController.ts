@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/prisma';
+import { logger } from '../utils/logger';
 
 // Get all notifications (with pagination and filters)
 export const getNotifications = async (req: Request, res: Response): Promise<void> => {
@@ -44,7 +45,7 @@ export const getNotifications = async (req: Request, res: Response): Promise<voi
             totalPages: Math.ceil(total / l),
         });
     } catch (error) {
-        console.error('Get notifications error:', error);
+        logger.error('Get notifications error:', error);
         res.status(500).json({ error: 'Failed to get notifications' });
     }
 };
@@ -58,7 +59,7 @@ export const getUnreadCount = async (req: Request, res: Response): Promise<void>
 
         res.json({ count });
     } catch (error) {
-        console.error('Get unread count error:', error);
+        logger.error('Get unread count error:', error);
         res.status(500).json({ error: 'Failed to get unread count' });
     }
 };
@@ -75,7 +76,7 @@ export const markAsRead = async (req: Request, res: Response): Promise<void> => 
 
         res.json(notification);
     } catch (error) {
-        console.error('Mark as read error:', error);
+        logger.error('Mark as read error:', error);
         res.status(500).json({ error: 'Failed to mark notification as read' });
     }
 };
@@ -90,7 +91,7 @@ export const markAllAsRead = async (req: Request, res: Response): Promise<void> 
 
         res.json({ message: 'All notifications marked as read' });
     } catch (error) {
-        console.error('Mark all as read error:', error);
+        logger.error('Mark all as read error:', error);
         res.status(500).json({ error: 'Failed to mark all notifications as read' });
     }
 };
@@ -106,7 +107,7 @@ export const deleteNotification = async (req: Request, res: Response): Promise<v
 
         res.json({ message: 'Notification deleted successfully' });
     } catch (error) {
-        console.error('Delete notification error:', error);
+        logger.error('Delete notification error:', error);
         res.status(500).json({ error: 'Failed to delete notification' });
     }
 };
@@ -120,7 +121,7 @@ export const deleteReadNotifications = async (req: Request, res: Response): Prom
 
         res.json({ message: `Deleted ${result.count} notifications` });
     } catch (error) {
-        console.error('Delete read notifications error:', error);
+        logger.error('Delete read notifications error:', error);
         res.status(500).json({ error: 'Failed to delete read notifications' });
     }
 };
@@ -131,7 +132,7 @@ export const deleteAllNotifications = async (req: Request, res: Response): Promi
         await prisma.notification.deleteMany({});
         res.json({ message: 'All notifications deleted successfully' });
     } catch (error) {
-        console.error('Delete all notifications error:', error);
+        logger.error('Delete all notifications error:', error);
         res.status(500).json({ error: 'Failed to delete all notifications' });
     }
 };

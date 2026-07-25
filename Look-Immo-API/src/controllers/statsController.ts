@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../utils/prisma';
 import { getCache, setCache } from '../utils/redis';
+import { logger } from '../utils/logger';
 
 // Track a website visit
 export const trackVisit = async (req: Request, res: Response): Promise<void> => {
@@ -213,7 +214,7 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
 
         res.json(responseData);
     } catch (error) {
-        console.error('Get dashboard stats error:', error);
+        logger.error('Get dashboard stats error:', error);
         res.status(500).json({ error: 'Failed to get dashboard statistics' });
     }
 };
@@ -249,7 +250,7 @@ export const getPropertyStats = async (req: Request, res: Response): Promise<voi
             })),
         });
     } catch (error) {
-        console.error('Get property stats error:', error);
+        logger.error('Get property stats error:', error);
         res.status(500).json({ error: 'Failed to get property statistics' });
     }
 };
@@ -280,7 +281,7 @@ export const getUserStats = async (req: Request, res: Response): Promise<void> =
             activeAgents,
         });
     } catch (error) {
-        console.error('Get user stats error:', error);
+        logger.error('Get user stats error:', error);
         res.status(500).json({ error: 'Failed to get user statistics' });
     }
 };

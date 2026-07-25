@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { uploadFileToStorage } from '../utils/upload';
+import { logger } from '../utils/logger';
 
 /**
  * Build the set of trusted redirect origins from env vars at startup.
@@ -85,7 +86,7 @@ export const handleDocumentUpload = async (req: Request, res: Response): Promise
             message: 'Document mis en ligne avec succès',
         });
     } catch (error) {
-        console.error('[UPLOAD] Document upload failed:', error);
+        logger.error('[UPLOAD] Document upload failed:', error);
         res.status(500).json({ error: 'Erreur lors du téléchargement du document.' });
     }
 };
@@ -141,7 +142,7 @@ export const downloadFile = (req: Request, res: Response): void => {
         // Force browser download
         res.download(absolutePath);
     } catch (error) {
-        console.error('File download error:', error);
+        logger.error('File download error:', error);
         res.status(500).json({ error: 'Erreur lors du téléchargement.' });
     }
 };

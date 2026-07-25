@@ -8,7 +8,12 @@ if (process.env.SENTRY_DSN) {
     Sentry.init({
         dsn: process.env.SENTRY_DSN,
         environment: process.env.NODE_ENV || 'development',
-        tracesSampleRate: 1.0,
+        // 100% tracing is fine while validating the integration, but gets
+        // expensive (Sentry quota + per-request overhead) at real traffic
+        // volume. Default to 10%, override via SENTRY_TRACES_SAMPLE_RATE.
+        tracesSampleRate: process.env.SENTRY_TRACES_SAMPLE_RATE
+            ? parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE)
+            : (process.env.NODE_ENV === 'production' ? 0.1 : 1.0),
     });
 }
 
@@ -30,7 +35,7 @@ import { connectRedis } from './utils/redis';
 import { initSocket } from './utils/socket';
 import { prisma } from './utils/prisma';
 import { initExchangeRateCron } from './services/exchangeRateService';
-import { initMorningReminderCron } from './services/cronService';
+import { initMorningReminderCron, initRefreshTokenCleanupCron } from './services/cronService';
 import { logger } from './utils/logger';
 
 // ─── Startup Environment Validation ──────────────────────────────────────────
@@ -159,6 +164,7 @@ initSocket(server);
 connectRedis();
 initExchangeRateCron();
 initMorningReminderCron();
+initRefreshTokenCleanupCron();
 
 server.listen(PORT, () => {
     logger.info('Server started', {

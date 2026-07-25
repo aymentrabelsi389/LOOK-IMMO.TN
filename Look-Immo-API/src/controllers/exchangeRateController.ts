@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { getCurrentRates } from '../services/exchangeRateService';
+import { logger } from '../utils/logger';
 
 /**
  * GET /api/exchange-rates
@@ -12,7 +13,7 @@ export const getExchangeRates = async (_req: Request, res: Response): Promise<vo
         const data = await getCurrentRates();
         res.json(data);
     } catch (error) {
-        console.error('[ExchangeRates] Unexpected error in getExchangeRates:', error);
+        logger.error('[ExchangeRates] Unexpected error in getExchangeRates:', error);
         // Even on unexpected errors return hardcoded defaults so the frontend
         // never shows broken prices
         res.json({

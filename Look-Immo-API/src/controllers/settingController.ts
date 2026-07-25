@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { getCache, setCache, deleteCache } from '../utils/redis';
 import { prisma } from '../utils/prisma';
+import { logger } from '../utils/logger';
 
 export const getSettings = async (req: Request, res: Response) => {
   try {
@@ -46,7 +47,7 @@ export const getSettings = async (req: Request, res: Response) => {
 
     res.json(setting.value);
   } catch (error) {
-    console.error('Error fetching settings:', error);
+    logger.error('Error fetching settings:', error);
     res.status(500).json({ error: 'Failed to fetch settings' });
   }
 };
@@ -65,7 +66,7 @@ export const updateSettings = async (req: Request, res: Response) => {
 
     res.json(setting.value);
   } catch (error) {
-    console.error('Error updating settings:', error);
+    logger.error('Error updating settings:', error);
     res.status(500).json({ error: 'Failed to update settings' });
   }
 };

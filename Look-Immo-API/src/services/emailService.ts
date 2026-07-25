@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { logger } from '../utils/logger';
 
 // Create a transport using SMTP environment variables
 const host = process.env.SMTP_HOST || '';
@@ -145,9 +146,9 @@ L'équipe Look Immo
     `;
 
     if (!transporter) {
-        console.warn('\n⚠️  [EMAIL SERVICE] Nodemailer is not configured (missing SMTP environment variables).');
-        console.warn(`👉 [RESET CODE FOR ${email}]: ${code}`);
-        console.warn('Please add SMTP config in .env to send real emails.\n');
+        logger.warn('\n⚠️  [EMAIL SERVICE] Nodemailer is not configured (missing SMTP environment variables).');
+        logger.warn(`👉 [RESET CODE FOR ${email}]: ${code}`);
+        logger.warn('Please add SMTP config in .env to send real emails.\n');
         return;
     }
 
@@ -159,9 +160,9 @@ L'équipe Look Immo
             text,
             html,
         });
-        console.log(`✅ [EMAIL SERVICE] Reset code email sent successfully to: ${email}`);
+        logger.info(`✅ [EMAIL SERVICE] Reset code email sent successfully to: ${email}`);
     } catch (error) {
-        console.error(`❌ [EMAIL SERVICE] Failed to send email to ${email}:`, error);
+        logger.error(`❌ [EMAIL SERVICE] Failed to send email to ${email}:`, error);
         throw new Error("Impossible d'envoyer l'e-mail de réinitialisation.");
     }
 };

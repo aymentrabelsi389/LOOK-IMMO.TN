@@ -1,5 +1,6 @@
 import { prisma } from '../utils/prisma';
 import { emitToAdmin, emitToUser } from '../utils/socket';
+import { logger } from '../utils/logger';
 
 interface CreateNotificationInput {
   type: string;
@@ -41,7 +42,7 @@ export const createNotification = async (data: CreateNotificationInput) => {
 
     return notification;
   } catch (error) {
-    console.error('Failed to create notification:', error);
+    logger.error('Failed to create notification:', error);
     throw error;
   }
 };
@@ -146,6 +147,6 @@ export const checkPropertyMatchesAndNotify = async (property: any) => {
       }
     }
   } catch (err) {
-    console.error('Failed to run match matching check:', err);
+    logger.error('Failed to run match matching check:', err);
   }
 };

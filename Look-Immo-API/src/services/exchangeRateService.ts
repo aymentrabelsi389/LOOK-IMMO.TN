@@ -1,5 +1,6 @@
 import cron from 'node-cron';
 import { getCache, setCache } from '../utils/redis';
+import { logger } from '../utils/logger';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Constants
@@ -68,10 +69,10 @@ export const fetchAndCacheRates = async (): Promise<void> => {
         // 2. Update in-memory fallback
         inMemoryRates = { ...payload, source: 'memory' };
 
-        console.log(`[ExchangeRates] ✅ Fetched fresh rates — USD: ${payload.rates.USD.toFixed(4)}, EUR: ${payload.rates.EUR.toFixed(4)}`);
+        logger.info(`[ExchangeRates] ✅ Fetched fresh rates — USD: ${payload.rates.USD.toFixed(4)}, EUR: ${payload.rates.EUR.toFixed(4)}`);
     } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.warn(`[ExchangeRates] ⚠️  Failed to fetch rates: ${msg}. Serving last-known-good.`);
+        logger.warn(`[ExchangeRates] ⚠️  Failed to fetch rates: ${msg}. Serving last-known-good.`);
     }
 };
 
@@ -104,11 +105,11 @@ export const initExchangeRateCron = (): void => {
 
     // Then refresh every hour on the hour
     cron.schedule(CRON_SCHEDULE, () => {
-        console.log('[ExchangeRates] ⏰ Hourly cron triggered — refreshing rates...');
+        logger.info('[ExchangeRates] ⏰ Hourly cron triggered — refreshing rates...');
         fetchAndCacheRates().catch(() => {});
     }, {
         timezone: 'Africa/Tunis',
     });
 
-    console.log('[ExchangeRates] Cron job scheduled (every hour). Initial fetch in progress...');
+    logger.info('[ExchangeRates] Cron job scheduled (every hour). Initial fetch in progress...');
 };

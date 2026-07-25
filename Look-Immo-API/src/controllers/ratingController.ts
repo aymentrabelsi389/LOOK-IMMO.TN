@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { deleteCache, clearCachePattern } from '../utils/redis';
 import { prisma } from '../utils/prisma';
 import { createNotification } from '../services/notificationService';
+import { logger } from '../utils/logger';
 
 // Get all ratings
 export const getRatings = async (req: Request, res: Response): Promise<void> => {
@@ -24,7 +25,7 @@ export const getRatings = async (req: Request, res: Response): Promise<void> => 
 
         res.json(ratings);
     } catch (error) {
-        console.error('Get ratings error:', error);
+        logger.error('Get ratings error:', error);
         res.status(500).json({ error: 'Failed to get ratings' });
     }
 };
@@ -50,7 +51,7 @@ export const getRating = async (req: Request, res: Response): Promise<void> => {
 
         res.json(rating);
     } catch (error) {
-        console.error('Get rating error:', error);
+        logger.error('Get rating error:', error);
         res.status(500).json({ error: 'Failed to get rating' });
     }
 };
@@ -150,10 +151,10 @@ export const createRating = async (req: AuthRequest, res: Response): Promise<voi
                 metadata: { ratingId: rating.id, propertyId }
             });
         } catch (notifErr) {
-            console.error('Failed to create rating notification:', notifErr);
+            logger.error('Failed to create rating notification:', notifErr);
         }
     } catch (error) {
-        console.error('Create rating error:', error);
+        logger.error('Create rating error:', error);
         res.status(500).json({ error: 'Failed to create rating' });
     }
 };
@@ -194,13 +195,13 @@ export const deleteRating = async (req: Request, res: Response): Promise<void> =
                 },
             });
         } catch (notifError) {
-            console.error('Failed to create notification for rating deletion:', notifError);
+            logger.error('Failed to create notification for rating deletion:', notifError);
             // Non-critical, continue with deletion success
         }
 
         res.json({ message: 'Rating deleted successfully' });
     } catch (error: any) {
-        console.error('Delete rating error:', error);
+        logger.error('Delete rating error:', error);
         res.status(500).json({ error: error.message || 'Failed to delete rating' });
     }
 };

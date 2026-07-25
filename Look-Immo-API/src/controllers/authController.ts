@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import { prisma } from '../utils/prisma';
 import { sendResetCodeEmail } from '../services/emailService';
 import { createNotification } from '../services/notificationService';
+import { logger } from '../utils/logger';
 
 const getAccessTokenSecret = () => {
     const secret = process.env.JWT_SECRET;
@@ -114,12 +115,12 @@ export const register = async (req: Request, res: Response): Promise<void> => {
                 metadata: { userId: user.id }
             });
         } catch (notifErr) {
-            console.error('Failed to create signup notification:', notifErr);
+            logger.error('Failed to create signup notification:', notifErr);
         }
 
         res.status(201).json({ user: { ...user, favorites: [] }, accessToken: tokens.accessToken });
     } catch (error) {
-        console.error('Register error:', error);
+        logger.error('Register error:', error);
         res.status(500).json({ error: 'Failed to register user' });
     }
 };
@@ -167,7 +168,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
             },
         });
     } catch (error) {
-        console.error('Login error:', error);
+        logger.error('Login error:', error);
         res.status(500).json({ error: 'Failed to login' });
     }
 };
@@ -185,7 +186,7 @@ export const logout = async (req: Request, res: Response): Promise<void> => {
             }
         }
     } catch (error) {
-        console.error('Logout token revocation error:', error);
+        logger.error('Logout token revocation error:', error);
     }
 
     res.clearCookie('access_token', COOKIE_OPTIONS);
@@ -224,7 +225,7 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
 
         // 2. Reuse detection (Compromise Signal)
         if (tokenRecord?.used) {
-            console.warn(`[Security Alert] Refresh token reuse detected for family ${decoded.familyId}. Revoking family!`);
+            logger.warn(`[Security Alert] Refresh token reuse detected for family ${decoded.familyId}. Revoking family!`);
             await prisma.refreshToken.deleteMany({
                 where: { familyId: decoded.familyId },
             });
@@ -307,7 +308,7 @@ export const getMe = async (req: Request, res: Response): Promise<void> => {
             favorites: user.favorites.map((f: any) => f.propertyId),
         });
     } catch (error) {
-        console.error('Get me error:', error);
+        logger.error('Get me error:', error);
         res.status(500).json({ error: 'Failed to get user' });
     }
 };
@@ -327,7 +328,7 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
         const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
         if (!user) {
             // Log audit for security
-            console.log(`[AUDIT] Password reset requested for non-existent email: ${email}`);
+            logger.info(`[AUDIT] Password reset requested for non-existent email: ${email}`);
             res.json(genericSuccess);
             return;
         }
@@ -346,14 +347,14 @@ export const forgotPassword = async (req: Request, res: Response): Promise<void>
             }
         });
 
-        console.log(`[AUDIT] Password reset code generated and hashed for user: ${user.email}`);
+        logger.info(`[AUDIT] Password reset code generated and hashed for user: ${user.email}`);
 
         // Send email
         await sendResetCodeEmail(user.email, code);
 
         res.json(genericSuccess);
     } catch (error) {
-        console.error('Forgot password error:', error);
+        logger.error('Forgot password error:', error);
         res.status(500).json({ error: 'Failed to process forgot password request' });
     }
 };
@@ -393,14 +394,14 @@ export const verifyResetCode = async (req: Request, res: Response): Promise<void
 
         const isValid = await bcrypt.compare(code, user.resetCodeHash);
         if (!isValid) {
-            console.log(`[AUDIT] Failed reset code attempt (${user.resetAttempts + 1}/5) for user: ${user.email}`);
+            logger.info(`[AUDIT] Failed reset code attempt (${user.resetAttempts + 1}/5) for user: ${user.email}`);
             res.status(400).json({ error: 'Code de vérification incorrect' });
             return;
         }
 
         res.json({ message: 'Code vérifié avec succès' });
     } catch (error) {
-        console.error('Verify reset code error:', error);
+        logger.error('Verify reset code error:', error);
         res.status(500).json({ error: 'Failed to verify reset code' });
     }
 };
@@ -460,7 +461,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
             where: { userId: user.id }
         });
 
-        console.log(`[AUDIT] Password reset successfully for user: ${user.email}`);
+        logger.info(`[AUDIT] Password reset successfully for user: ${user.email}`);
 
         // Invalidate sessions on the client by clearing auth cookies
         res.clearCookie('access_token', COOKIE_OPTIONS);
@@ -468,7 +469,7 @@ export const resetPassword = async (req: Request, res: Response): Promise<void> 
 
         res.json({ message: 'Votre mot de passe a été réinitialisé avec succès.' });
     } catch (error) {
-        console.error('Reset password error:', error);
+        logger.error('Reset password error:', error);
         res.status(500).json({ error: 'Failed to reset password' });
     }
 };

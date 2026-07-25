@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../utils/prisma';
 import { sanitizeHTML } from '../utils/sanitize';
+import { logger } from '../utils/logger';
 
 // Get all blog posts
 export const getBlogPosts = async (req: Request, res: Response): Promise<void> => {
@@ -53,7 +54,7 @@ export const getBlogPosts = async (req: Request, res: Response): Promise<void> =
             }
         });
     } catch (error) {
-        console.error('Get blog posts error:', error);
+        logger.error('Get blog posts error:', error);
         res.status(500).json({ error: 'Failed to get blog posts' });
     }
 };
@@ -74,7 +75,7 @@ export const getBlogPost = async (req: Request, res: Response): Promise<void> =>
 
         res.json(post);
     } catch (error) {
-        console.error('Get blog post error:', error);
+        logger.error('Get blog post error:', error);
         res.status(500).json({ error: 'Failed to get blog post' });
     }
 };
@@ -114,7 +115,7 @@ export const createBlogPost = async (req: Request, res: Response): Promise<void>
 
         res.status(201).json(post);
     } catch (error) {
-        console.error('Create blog post error:', error);
+        logger.error('Create blog post error:', error);
         res.status(500).json({ error: 'Failed to create blog post' });
     }
 };
@@ -157,7 +158,7 @@ export const updateBlogPost = async (req: Request, res: Response): Promise<void>
 
         res.json(post);
     } catch (error) {
-        console.error('Update blog post error:', error);
+        logger.error('Update blog post error:', error);
         res.status(500).json({ error: 'Failed to update blog post' });
     }
 };
@@ -191,7 +192,7 @@ export const deleteBlogPost = async (req: Request, res: Response): Promise<void>
 
         res.json({ message: 'Blog post deleted successfully' });
     } catch (error) {
-        console.error('Delete blog post error:', error);
+        logger.error('Delete blog post error:', error);
         res.status(500).json({ error: 'Failed to delete blog post' });
     }
 };

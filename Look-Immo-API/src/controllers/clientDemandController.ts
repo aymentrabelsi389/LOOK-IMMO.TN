@@ -1,32 +1,43 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../utils/prisma';
+import { logger } from '../utils/logger';
 
 // Get all client demands
 export const getClientDemands = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { status, type, search } = req.query;
+        const page = Math.max(1, parseInt(req.query.page as string) || 1);
+        const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 100));
 
-        const demands = await prisma.clientDemand.findMany({
-            where: {
-                ...(status && status !== 'all' ? { status: status as any } : {}),
-                ...(type && type !== 'all' ? { type: type as any } : {}),
-                ...(search
-                    ? {
-                        OR: [
-                            { clientName: { contains: search as string, mode: 'insensitive' } },
-                            { phone: { contains: search as string, mode: 'insensitive' } },
-                            { description: { contains: search as string, mode: 'insensitive' } },
-                        ],
-                    }
-                    : {}),
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+        const where = {
+            ...(status && status !== 'all' ? { status: status as any } : {}),
+            ...(type && type !== 'all' ? { type: type as any } : {}),
+            ...(search
+                ? {
+                    OR: [
+                        { clientName: { contains: search as string, mode: 'insensitive' as const } },
+                        { phone: { contains: search as string, mode: 'insensitive' as const } },
+                        { description: { contains: search as string, mode: 'insensitive' as const } },
+                    ],
+                }
+                : {}),
+        };
 
+        const [demands, total] = await Promise.all([
+            prisma.clientDemand.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            prisma.clientDemand.count({ where }),
+        ]);
+
+        res.setHeader('X-Total-Count', String(total));
         res.json(demands);
     } catch (error) {
-        console.error('Get client demands error:', error);
+        logger.error('Get client demands error:', error);
         res.status(500).json({ error: 'Failed to get client demands' });
     }
 };
@@ -56,7 +67,7 @@ export const createClientDemand = async (req: AuthRequest, res: Response): Promi
 
         res.status(201).json(demand);
     } catch (error) {
-        console.error('Create client demand error:', error);
+        logger.error('Create client demand error:', error);
         res.status(500).json({ error: 'Failed to create client demand' });
     }
 };
@@ -78,7 +89,7 @@ export const updateClientDemand = async (req: AuthRequest, res: Response): Promi
 
         res.json(demand);
     } catch (error) {
-        console.error('Update client demand error:', error);
+        logger.error('Update client demand error:', error);
         res.status(500).json({ error: 'Failed to update client demand' });
     }
 };
@@ -94,7 +105,7 @@ export const deleteClientDemand = async (req: AuthRequest, res: Response): Promi
 
         res.json({ message: 'Client demand deleted successfully' });
     } catch (error) {
-        console.error('Delete client demand error:', error);
+        logger.error('Delete client demand error:', error);
         res.status(500).json({ error: 'Failed to delete client demand' });
     }
 };

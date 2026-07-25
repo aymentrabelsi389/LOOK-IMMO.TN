@@ -2,6 +2,7 @@ import { Server as SocketServer, Socket } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import jwt from 'jsonwebtoken';
 import { parse as parseCookie } from 'cookie';
+import { logger } from './logger';
 
 interface AuthedSocket extends Socket {
     data: {
@@ -40,7 +41,7 @@ const authenticateSocket = (socket: AuthedSocket, next: (err?: Error) => void) =
 
         const secret = process.env.JWT_SECRET;
         if (!secret) {
-            console.error('[SOCKET] JWT_SECRET not set — rejecting authenticated handshake');
+            logger.error('[SOCKET] JWT_SECRET not set — rejecting authenticated handshake');
             return next();
         }
 
@@ -68,7 +69,7 @@ export const initSocket = (server: HttpServer) => {
 
     io.on('connection', (socket: AuthedSocket) => {
         const { userId, role } = socket.data;
-        console.log('Client connected to socket:', socket.id, userId ? `(user:${userId}, role:${role})` : '(anonymous)');
+        logger.info('Client connected to socket:', socket.id, userId ? `(user:${userId}, role:${role})` : '(anonymous)');
 
         // Room membership is derived ONLY from the verified JWT — never from
         // client-declared events. This prevents any socket from joining
@@ -81,7 +82,7 @@ export const initSocket = (server: HttpServer) => {
         }
 
         socket.on('disconnect', () => {
-            console.log('Client disconnected from socket:', socket.id);
+            logger.info('Client disconnected from socket:', socket.id);
         });
     });
 

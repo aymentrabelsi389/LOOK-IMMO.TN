@@ -2,31 +2,42 @@ import { Request, Response } from 'express';
 import { emitToAdmin } from '../utils/socket';
 import { prisma } from '../utils/prisma';
 import { createNotification } from '../services/notificationService';
+import { logger } from '../utils/logger';
 
 // Get all messages
 export const getMessages = async (req: Request, res: Response): Promise<void> => {
     try {
         const { status, search } = req.query;
+        const page = Math.max(1, parseInt(req.query.page as string) || 1);
+        const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 100));
 
-        const messages = await prisma.message.findMany({
-            where: {
-                ...(status && status !== 'all' ? { status: status as any } : {}),
-                ...(search
-                    ? {
-                        OR: [
-                            { name: { contains: search as string, mode: 'insensitive' } },
-                            { email: { contains: search as string, mode: 'insensitive' } },
-                            { message: { contains: search as string, mode: 'insensitive' } },
-                        ],
-                    }
-                    : {}),
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+        const where = {
+            ...(status && status !== 'all' ? { status: status as any } : {}),
+            ...(search
+                ? {
+                    OR: [
+                        { name: { contains: search as string, mode: 'insensitive' as const } },
+                        { email: { contains: search as string, mode: 'insensitive' as const } },
+                        { message: { contains: search as string, mode: 'insensitive' as const } },
+                    ],
+                }
+                : {}),
+        };
 
+        const [messages, total] = await Promise.all([
+            prisma.message.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            prisma.message.count({ where }),
+        ]);
+
+        res.setHeader('X-Total-Count', String(total));
         res.json(messages);
     } catch (error) {
-        console.error('Get messages error:', error);
+        logger.error('Get messages error:', error);
         res.status(500).json({ error: 'Failed to get messages' });
     }
 };
@@ -47,7 +58,7 @@ export const getMessage = async (req: Request, res: Response): Promise<void> => 
 
         res.json(message);
     } catch (error) {
-        console.error('Get message error:', error);
+        logger.error('Get message error:', error);
         res.status(500).json({ error: 'Failed to get message' });
     }
 };
@@ -91,10 +102,10 @@ export const createMessage = async (req: Request, res: Response): Promise<void> 
                 metadata: { messageId: message.id }
             });
         } catch (notifErr) {
-            console.error('Failed to create message notification:', notifErr);
+            logger.error('Failed to create message notification:', notifErr);
         }
     } catch (error) {
-        console.error('Create message error:', error);
+        logger.error('Create message error:', error);
         res.status(500).json({ error: 'Failed to create message' });
     }
 };
@@ -124,7 +135,7 @@ export const updateMessage = async (req: Request, res: Response): Promise<void> 
         // Emit socket event for real-time updates
         emitToAdmin('message_update', message);
     } catch (error) {
-        console.error('Update message error:', error);
+        logger.error('Update message error:', error);
         res.status(500).json({ error: 'Failed to update message' });
     }
 };
@@ -161,7 +172,7 @@ export const deleteMessage = async (req: Request, res: Response): Promise<void> 
         // Emit socket event for real-time updates
         emitToAdmin('message_delete', { id });
     } catch (error) {
-        console.error('Delete message error:', error);
+        logger.error('Delete message error:', error);
         res.status(500).json({ error: 'Failed to delete message' });
     }
 };

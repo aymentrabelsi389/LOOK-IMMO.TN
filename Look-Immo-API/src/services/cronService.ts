@@ -50,3 +50,26 @@ export const initMorningReminderCron = () => {
         await checkTodayVisitsAndNotify();
     });
 };
+
+export const cleanupExpiredRefreshTokens = async () => {
+    try {
+        const result = await prisma.refreshToken.deleteMany({
+            where: { expiresAt: { lt: new Date() } },
+        });
+        if (result.count > 0) {
+            logger.info(`Cleaned up ${result.count} expired refresh token(s).`);
+        }
+    } catch (error) {
+        logger.error('Failed to clean up expired refresh tokens:', error);
+    }
+};
+
+export const initRefreshTokenCleanupCron = () => {
+    // Run every day at 03:00 — expired-but-unused RefreshToken rows
+    // accumulate indefinitely otherwise (rotation/reuse-detection only
+    // deletes tokens on explicit logout/refresh/reset, not on plain expiry).
+    cron.schedule('0 3 * * *', async () => {
+        logger.info('Running refresh token cleanup cron job');
+        await cleanupExpiredRefreshTokens();
+    });
+};

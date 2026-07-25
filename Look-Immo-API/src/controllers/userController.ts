@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../utils/prisma';
 import { COOKIE_OPTIONS } from './authController';
+import { logger } from '../utils/logger';
 
 // Get all users (Admin only)
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
@@ -64,7 +65,7 @@ export const getUsers = async (req: Request, res: Response): Promise<void> => {
 
         res.json(transformedUsers);
     } catch (error) {
-        console.error('Get users error:', error);
+        logger.error('Get users error:', error);
         res.status(500).json({ error: 'Failed to get users' });
     }
 };
@@ -118,7 +119,7 @@ export const getUser = async (req: Request, res: Response): Promise<void> => {
             favorites: user.favorites.map((f: any) => f.propertyId)
         });
     } catch (error) {
-        console.error('Get user error:', error);
+        logger.error('Get user error:', error);
         res.status(500).json({ error: 'Failed to get user' });
     }
 };
@@ -174,7 +175,7 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 
         res.status(201).json(user);
     } catch (error) {
-        console.error('Create user error:', error);
+        logger.error('Create user error:', error);
         res.status(500).json({ error: 'Failed to create user' });
     }
 };
@@ -277,7 +278,7 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
 
         res.json(user);
     } catch (error) {
-        console.error('Update user error:', error);
+        logger.error('Update user error:', error);
         res.status(500).json({ error: 'Failed to update user' });
     }
 };
@@ -311,7 +312,7 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
 
         res.json({ message: 'User deleted successfully' });
     } catch (error) {
-        console.error('Delete user error:', error);
+        logger.error('Delete user error:', error);
         res.status(500).json({ error: 'Failed to delete user' });
     }
 };

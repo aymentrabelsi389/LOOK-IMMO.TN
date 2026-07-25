@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
+import { logger } from '../utils/logger';
 
 export interface AuthRequest extends Request {
     user?: {
@@ -26,11 +27,8 @@ export const authMiddleware = async (
         // 1. Prefer HTTP-only cookie
         let token = req.cookies?.access_token;
 
-        
-        // DEV DEBUG: log whether cookie/header present (no token values)
-        if (process.env.NODE_ENV !== 'production') {
-            console.log('[DEBUG auth] hasCookie:', !!req.cookies?.access_token, 'hasAuthHeader:', !!req.headers.authorization);
-        }
+        logger.debug('auth check', { hasCookie: !!req.cookies?.access_token, hasAuthHeader: !!req.headers.authorization });
+
         // 2. Fallback to Bearer header (for backward compatibility)
         if (!token) {
             const authHeader = req.headers.authorization;
@@ -54,7 +52,7 @@ export const authMiddleware = async (
                 role: string;
             };
         } catch (err) {
-            if (process.env.NODE_ENV !== 'production') console.log('[DEBUG auth] token verify error:', err && (err as Error).message);
+            logger.debug('token verify error', { message: err && (err as Error).message });
             throw err;
         }
 

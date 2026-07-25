@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../utils/prisma';
+import { logger } from '../utils/logger';
 
 // Get all visits
 export const getVisits = async (req: Request, res: Response): Promise<void> => {
@@ -33,7 +34,7 @@ export const getVisits = async (req: Request, res: Response): Promise<void> => {
 
         res.json(visits);
     } catch (error) {
-        console.error('Get visits error:', error);
+        logger.error('Get visits error:', error);
         res.status(500).json({ error: 'Failed to get visits' });
     }
 };
@@ -62,7 +63,7 @@ export const getVisit = async (req: Request, res: Response): Promise<void> => {
 
         res.json(visit);
     } catch (error) {
-        console.error('Get visit error:', error);
+        logger.error('Get visit error:', error);
         res.status(500).json({ error: 'Failed to get visit' });
     }
 };
@@ -109,7 +110,7 @@ export const createVisit = async (req: AuthRequest, res: Response): Promise<void
 
         res.status(201).json(visit);
     } catch (error) {
-        console.error('Create visit error:', error);
+        logger.error('Create visit error:', error);
         res.status(500).json({ error: 'Failed to create visit' });
     }
 };
@@ -134,7 +135,7 @@ export const deleteVisit = async (req: Request, res: Response): Promise<void> =>
 
         res.json({ message: 'Visit deleted successfully' });
     } catch (error) {
-        console.error('Delete visit error:', error);
+        logger.error('Delete visit error:', error);
         res.status(500).json({ error: 'Failed to delete visit' });
     }
 };

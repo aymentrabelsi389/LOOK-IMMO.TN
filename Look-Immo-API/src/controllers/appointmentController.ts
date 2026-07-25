@@ -3,6 +3,7 @@ import { AuthRequest } from '../middleware/auth';
 import { emitToAdmin, emitToUser } from '../utils/socket';
 import { prisma } from '../utils/prisma';
 import { createNotification } from '../services/notificationService';
+import { logger } from '../utils/logger';
 
 // Get all appointments
 export const getAppointments = async (req: Request, res: Response): Promise<void> => {
@@ -62,7 +63,7 @@ export const getAppointments = async (req: Request, res: Response): Promise<void
 
         res.json(appointments);
     } catch (error) {
-        console.error('Get appointments error:', error);
+        logger.error('Get appointments error:', error);
         res.status(500).json({ error: 'Failed to get appointments' });
     }
 };
@@ -107,7 +108,7 @@ export const getAppointment = async (req: Request, res: Response): Promise<void>
 
         res.json(appointment);
     } catch (error) {
-        console.error('Get appointment error:', error);
+        logger.error('Get appointment error:', error);
         res.status(500).json({ error: 'Failed to get appointment' });
     }
 };
@@ -201,10 +202,10 @@ export const createAppointment = async (req: Request, res: Response): Promise<vo
                 }
             }
         } catch (notifErr) {
-            console.error('Failed to create appointment notifications:', notifErr);
+            logger.error('Failed to create appointment notifications:', notifErr);
         }
     } catch (error) {
-        console.error('Create appointment error:', error);
+        logger.error('Create appointment error:', error);
         res.status(500).json({ error: 'Failed to create appointment' });
     }
 };
@@ -286,7 +287,7 @@ export const updateAppointment = async (req: AuthRequest, res: Response): Promis
                         },
                     });
                 } catch (notificationError) {
-                    console.error('Failed to create status notification:', notificationError);
+                    logger.error('Failed to create status notification:', notificationError);
                 }
             }
         }
@@ -312,7 +313,7 @@ export const updateAppointment = async (req: AuthRequest, res: Response): Promis
             }
         }
     } catch (error) {
-        console.error('Update appointment error:', error);
+        logger.error('Update appointment error:', error);
         res.status(500).json({ error: 'Failed to update appointment' });
     }
 };
@@ -365,7 +366,7 @@ export const deleteAppointment = async (req: Request, res: Response): Promise<vo
                 },
             });
         } catch (notificationError) {
-            console.error('Failed to create delete notification:', notificationError);
+            logger.error('Failed to create delete notification:', notificationError);
         }
 
         res.json({ message: 'Appointment deleted successfully' });
@@ -389,7 +390,7 @@ export const deleteAppointment = async (req: Request, res: Response): Promise<vo
             }
         }
     } catch (error) {
-        console.error('Delete appointment error:', error);
+        logger.error('Delete appointment error:', error);
         res.status(500).json({ error: 'Failed to delete appointment' });
     }
 };

@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../utils/prisma';
+import { logger } from '../utils/logger';
 
 // Get all locations
 export const getLocations = async (req: Request, res: Response): Promise<void> => {
@@ -18,7 +19,7 @@ export const getLocations = async (req: Request, res: Response): Promise<void> =
 
         res.json(locations);
     } catch (error) {
-        console.error('Get locations error:', error);
+        logger.error('Get locations error:', error);
         res.status(500).json({ error: 'Failed to get locations' });
     }
 };
@@ -39,7 +40,7 @@ export const getLocation = async (req: Request, res: Response): Promise<void> =>
 
         res.json(location);
     } catch (error) {
-        console.error('Get location error:', error);
+        logger.error('Get location error:', error);
         res.status(500).json({ error: 'Failed to get location' });
     }
 };
@@ -74,7 +75,7 @@ export const createLocation = async (req: Request, res: Response): Promise<void>
 
         res.status(201).json(location);
     } catch (error) {
-        console.error('Create location error:', error);
+        logger.error('Create location error:', error);
         res.status(500).json({ error: 'Failed to create location' });
     }
 };
@@ -115,7 +116,7 @@ export const updateLocation = async (req: Request, res: Response): Promise<void>
 
         res.json(location);
     } catch (error) {
-        console.error('Update location error:', error);
+        logger.error('Update location error:', error);
         res.status(500).json({ error: 'Failed to update location' });
     }
 };
@@ -149,7 +150,7 @@ export const deleteLocation = async (req: Request, res: Response): Promise<void>
 
         res.json({ message: 'Location deleted successfully' });
     } catch (error) {
-        console.error('Delete location error:', error);
+        logger.error('Delete location error:', error);
         res.status(500).json({ error: 'Failed to delete location' });
     }
 };
@@ -182,7 +183,7 @@ export const updateLocationOrder = async (req: AuthRequest, res: Response): Prom
 
         res.json({ success: true, message: 'Location order updated successfully' });
     } catch (error) {
-        console.error('Update location order error:', error);
+        logger.error('Update location order error:', error);
         res.status(500).json({ error: 'Failed to update location order' });
     }
 };

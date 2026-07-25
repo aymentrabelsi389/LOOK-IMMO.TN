@@ -23,7 +23,7 @@ const getRefreshTokenSecret = () => {
 const ACCESS_TOKEN_EXPIRY = process.env.NODE_ENV === 'production' ? '15m' : '2h';
 const REFRESH_TOKEN_EXPIRY = '7d';
 
-const COOKIE_OPTIONS = {
+export const COOKIE_OPTIONS = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax' as 'lax',  // 'lax' works for same-domain nginx proxy; 'strict' blocks cookies on navigations

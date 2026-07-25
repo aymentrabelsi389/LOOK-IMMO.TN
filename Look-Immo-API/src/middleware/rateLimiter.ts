@@ -59,3 +59,14 @@ export const ratingLimiter = rateLimit({
     legacyHeaders: false,
     message: { error: 'Trop d\'avis soumis depuis cette IP. Veuillez réessayer dans 15 minutes.' },
 });
+
+// Visit tracking: generous but bounded — this fires on real page navigation
+// (multiple per session), but had no limiter at all before, so it was an
+// open DB-write flood vector.
+export const trackVisitLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000,
+    max: isProd ? 100 : 99999,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Trop de requêtes depuis cette IP.' },
+});

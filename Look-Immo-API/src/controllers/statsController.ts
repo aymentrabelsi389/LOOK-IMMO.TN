@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../utils/prisma';
+import { getCache, setCache } from '../utils/redis';
 
 // Track a website visit
 export const trackVisit = async (req: Request, res: Response): Promise<void> => {
@@ -37,6 +38,13 @@ export const trackVisit = async (req: Request, res: Response): Promise<void> => 
 // Get dashboard statistics
 export const getDashboardStats = async (req: Request, res: Response): Promise<void> => {
     try {
+        const cacheKey = 'stats:dashboard';
+        const cached = await getCache(cacheKey);
+        if (cached) {
+            res.json(cached);
+            return;
+        }
+
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
         const todayEnd = new Date();
@@ -163,7 +171,7 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
             signups: performanceResults[i][1],
         }));
 
-        res.json({
+        const responseData = {
             totals: {
                 users: totalUsers,
                 properties: totalProperties,
@@ -197,7 +205,13 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
             performance,
             onlineCount: onlineVisitCount, // ✅ Real 5-minute window count
             siteViews: totalWebsiteVisits,
-        });
+        };
+
+        // Short TTL: keeps the dashboard reasonably live while absorbing
+        // repeated admin refreshes/polling without re-running ~27 queries.
+        await setCache(cacheKey, responseData, 60);
+
+        res.json(responseData);
     } catch (error) {
         console.error('Get dashboard stats error:', error);
         res.status(500).json({ error: 'Failed to get dashboard statistics' });

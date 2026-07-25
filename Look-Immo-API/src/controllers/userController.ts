@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../utils/prisma';
+import { COOKIE_OPTIONS } from './authController';
 
 // Get all users (Admin only)
 export const getUsers = async (req: Request, res: Response): Promise<void> => {
@@ -244,6 +245,16 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
             },
         });
 
+        // Revoking sessions on password change: if a password changes here,
+        // any stolen/leaked session (including the attacker's, if this
+        // change is a compromise-recovery action) should stop working —
+        // same behavior resetPassword already has. Note this runs whenever
+        // *any* password field is present, whether the caller is the user
+        // themselves or an admin resetting someone else's password.
+        if (password) {
+            await prisma.refreshToken.deleteMany({ where: { userId: id } });
+        }
+
         // Notification if role changed
         if (role && role !== existingUser.role) {
             await prisma.notification.create({
@@ -253,6 +264,15 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
                     entityId: user.id,
                 },
             });
+        }
+
+        // If the caller changed their own password, their current session's
+        // access/refresh cookies are now stale relative to the revoked
+        // refresh token — clear them so the client re-authenticates cleanly
+        // instead of hitting a confusing 401 on the next silent refresh.
+        if (password && isSelf) {
+            res.clearCookie('access_token', COOKIE_OPTIONS);
+            res.clearCookie('refresh_token', COOKIE_OPTIONS);
         }
 
         res.json(user);

@@ -210,28 +210,33 @@ export const createProperty = async (req: AuthRequest, res: Response): Promise<v
             },
         });
 
-        // Create notification using the notification service
-        try {
-            await createNotification({
-                type: 'property_add',
-                title: 'Nouvelle Propriété',
-                message: `Une nouvelle propriété a été ajoutée : ${property.title}`,
-                icon: 'Home',
-                link: `/property/${property.id}`,
-                userId: null, // Send to all admins/agents
-                metadata: { propertyId: property.id }
-            });
-
-            // Check client demands and notify about matches
-            await checkPropertyMatchesAndNotify(property);
-        } catch (notifErr) {
-            console.error('Failed to create property notifications:', notifErr);
-        }
-
         // Invalidate property list cache
         await clearCachePattern('properties:list:*');
 
         res.status(201).json(property);
+
+        // Notification + demand-matching scan run AFTER the response is sent.
+        // checkPropertyMatchesAndNotify loops over every active ClientDemand
+        // doing string/score matching — it was previously awaited before the
+        // response, adding latency to property creation proportional to
+        // demand volume. Fire-and-forget with its own error handling instead.
+        (async () => {
+            try {
+                await createNotification({
+                    type: 'property_add',
+                    title: 'Nouvelle Propriété',
+                    message: `Une nouvelle propriété a été ajoutée : ${property.title}`,
+                    icon: 'Home',
+                    link: `/property/${property.id}`,
+                    userId: null, // Send to all admins/agents
+                    metadata: { propertyId: property.id }
+                });
+
+                await checkPropertyMatchesAndNotify(property);
+            } catch (notifErr) {
+                console.error('Failed to create property notifications:', notifErr);
+            }
+        })();
     } catch (error) {
         console.error('Create property error:', error);
         res.status(500).json({ error: 'Failed to create property' });

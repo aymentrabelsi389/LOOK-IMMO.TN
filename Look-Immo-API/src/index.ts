@@ -18,6 +18,7 @@ import cors from 'cors';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
+import compression from 'compression';
 import http from 'http';
 import routes from './routes';
 import seoRoutes from './routes/seo';
@@ -80,6 +81,11 @@ app.use(cors({
 
 // Parse cookies (HTTP-only JWT cookies)
 app.use(cookieParser());
+
+// Compress responses (JSON payloads, especially property lists and dashboard
+// stats, benefit significantly). Images are already pre-compressed WebP, so
+// this mainly helps API/text traffic — negligible CPU cost at this scale.
+app.use(compression());
 
 // Base security headers with 1-year HSTS (HTTP Strict Transport Security)
 app.use(helmet({

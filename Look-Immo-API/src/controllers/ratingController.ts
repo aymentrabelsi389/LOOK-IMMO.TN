@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import { AuthRequest } from '../middleware/auth';
 import { deleteCache, clearCachePattern } from '../utils/redis';
 import { prisma } from '../utils/prisma';
 import { createNotification } from '../services/notificationService';
@@ -55,9 +56,13 @@ export const getRating = async (req: Request, res: Response): Promise<void> => {
 };
 
 // Create rating
-export const createRating = async (req: Request, res: Response): Promise<void> => {
+export const createRating = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { userName, propertyId, stars, comment } = req.body;
+        // Only trust the server-verified identity (set by optionalAuth from a
+        // valid JWT) — never a client-supplied userId, which would let an
+        // unauthenticated caller attribute or overwrite a rating as anyone.
+        const verifiedUserId = req.user?.id || null;
 
         if (!userName || !propertyId || !stars) {
             res.status(400).json({ error: 'User name, property, and stars are required' });
@@ -79,18 +84,20 @@ export const createRating = async (req: Request, res: Response): Promise<void> =
             return;
         }
 
-        // Check if an existing rating by this user exists
+        // Check if an existing rating by this (verified) user exists
         let existingRating = null;
-        if (req.body.userId) {
+        if (verifiedUserId) {
             existingRating = await prisma.rating.findFirst({
-                where: { propertyId, userId: req.body.userId }
+                where: { propertyId, userId: verifiedUserId }
             });
         }
-        
-        // Fallback to name if user ID was not reliably saved
-        if (!existingRating && userName) {
+
+        // Fallback to name only when the caller is anonymous (no verified
+        // identity) — anonymous ratings under the same display name are
+        // treated as edits from the same person, same as before.
+        if (!existingRating && !verifiedUserId && userName) {
             existingRating = await prisma.rating.findFirst({
-                where: { propertyId, userName }
+                where: { propertyId, userName, userId: null }
             });
         }
 
@@ -101,7 +108,7 @@ export const createRating = async (req: Request, res: Response): Promise<void> =
                 data: {
                     stars,
                     comment: comment !== undefined ? comment : existingRating.comment,
-                    userId: req.body.userId || existingRating.userId,
+                    userId: verifiedUserId || existingRating.userId,
                 },
                 include: {
                     property: { select: { id: true, title: true } },
@@ -114,7 +121,7 @@ export const createRating = async (req: Request, res: Response): Promise<void> =
                     propertyId,
                     stars,
                     comment,
-                    userId: req.body.userId || null,
+                    userId: verifiedUserId,
                 },
                 include: {
                     property: { select: { id: true, title: true } },

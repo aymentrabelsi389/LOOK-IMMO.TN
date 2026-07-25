@@ -23,11 +23,12 @@ import * as settingController from '../controllers/settingController';
 import * as uploadController from '../controllers/uploadController';
 import * as exchangeRateController from '../controllers/exchangeRateController';
 import { validate } from '../middleware/validate';
-import { authLimiter, forgotPasswordLimiter, messageLimiter, appointmentLimiter, ratingLimiter } from '../middleware/rateLimiter';
+import { authLimiter, forgotPasswordLimiter, messageLimiter, appointmentLimiter, ratingLimiter, trackVisitLimiter } from '../middleware/rateLimiter';
 import { loginSchema, registerSchema, forgotPasswordSchema, verifyResetCodeSchema, resetPasswordSchema } from '../schemas/authSchema';
 import { createPropertySchema, updatePropertySchema, reorderPropertySchema } from '../schemas/propertySchema';
 import { createAppointmentSchema, updateAppointmentSchema } from '../schemas/appointmentSchema';
 import { createMessageSchema, updateMessageSchema } from '../schemas/messageSchema';
+import { createUserSchema, updateUserSchema } from '../schemas/userSchema';
 
 const router = Router();
 
@@ -44,8 +45,8 @@ router.post('/auth/reset-password', validate(resetPasswordSchema), authControlle
 // ==================== USERS ====================
 router.get('/users', authMiddleware, agentOrAdmin, userController.getUsers);
 router.get('/users/:id', authMiddleware, agentOrAdmin, userController.getUser);
-router.post('/users', authMiddleware, adminOnly, userController.createUser);
-router.put('/users/:id', authMiddleware, authenticated, userController.updateUser);
+router.post('/users', authMiddleware, adminOnly, validate(createUserSchema), userController.createUser);
+router.put('/users/:id', authMiddleware, authenticated, validate(updateUserSchema), userController.updateUser);
 router.delete('/users/:id', authMiddleware, adminOnly, userController.deleteUser);
 
 // ==================== PROPERTIES ====================
@@ -93,7 +94,7 @@ router.delete('/transactions/:id', authMiddleware, agentOrAdmin, transactionCont
 // ==================== RATINGS ====================
 router.get('/ratings', ratingController.getRatings); // Public
 router.get('/ratings/:id', ratingController.getRating); // Public
-router.post('/ratings', ratingLimiter, ratingController.createRating); // Public (or authenticated clients)
+router.post('/ratings', ratingLimiter, optionalAuth, ratingController.createRating); // Public (or authenticated clients)
 router.delete('/ratings/:id', authMiddleware, agentOrAdmin, ratingController.deleteRating);
 
 // ==================== LOCATIONS ====================
@@ -121,7 +122,7 @@ router.delete('/notifications/all', authMiddleware, adminOnly, notificationContr
 router.delete('/notifications/:id', authMiddleware, adminOnly, notificationController.deleteNotification);
 
 // ==================== STATISTICS ====================
-router.post('/stats/track-visit', optionalAuth, statsController.trackVisit); // Public
+router.post('/stats/track-visit', trackVisitLimiter, optionalAuth, statsController.trackVisit); // Public
 router.get('/stats/dashboard', authMiddleware, adminOnly, statsController.getDashboardStats);
 router.get('/stats/properties', authMiddleware, adminOnly, statsController.getPropertyStats);
 router.get('/stats/users', authMiddleware, adminOnly, statsController.getUserStats);
@@ -155,7 +156,9 @@ router.post(
 );
 
 // GET /api/download  — secure direct file download
-router.get('/download', uploadController.downloadFile);
+// Contracts/documents may contain client PII (ID scans, signed agreements),
+// so this requires an authenticated agent/admin session — never public.
+router.get('/download', authMiddleware, agentOrAdmin, uploadController.downloadFile);
 
 // POST /api/upload/blog-image  — accepts 'image' field, returns { url }
 router.post(

@@ -1,9 +1,23 @@
 import { PrismaClient, Role, PropertyType, PropertyStatus, PriceType } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 const prisma = new PrismaClient();
 
 async function main() {
+    // This script WIPES all app data (users, properties, appointments, etc.)
+    // and re-seeds demo content — it must never run against production.
+    if (process.env.NODE_ENV === 'production') {
+        console.error('❌ seed-full.ts deletes all data and is for local/dev use only.');
+        console.error('   Refusing to run because NODE_ENV=production.');
+        process.exit(1);
+    }
+
+    // Demo password — never hardcoded. Override with SEED_DEMO_PASSWORD if
+    // you need a specific value locally; otherwise a random one is generated
+    // and printed once below.
+    const demoPassword = process.env.SEED_DEMO_PASSWORD || crypto.randomBytes(12).toString('base64url');
+
     console.log('Starting seed...');
 
     // 1. Clean existing data
@@ -18,7 +32,7 @@ async function main() {
     await prisma.location.deleteMany();
     await prisma.user.deleteMany();
 
-    const hashedPassword = await bcrypt.hash('password123', 12);
+    const hashedPassword = await bcrypt.hash(demoPassword, 12);
 
     // 2. Create Users
     const admin = await prisma.user.create({
@@ -27,7 +41,6 @@ async function main() {
             email: 'admin@lookimmo.tn',
             password: hashedPassword,
             role: Role.admin,
-            phone: '+216 98 720 473'
         }
     });
 
@@ -37,7 +50,6 @@ async function main() {
             email: 'agent@lookimmo.tn',
             password: hashedPassword,
             role: Role.agent,
-            phone: '+216 22 333 444'
         }
     });
 
@@ -47,11 +59,11 @@ async function main() {
             email: 'client@test.com',
             password: hashedPassword,
             role: Role.client,
-            phone: '+216 55 666 777'
         }
     });
 
     console.log('Users created');
+    console.log(`Demo password for all seeded users: ${demoPassword}`);
 
     // 3. Create Properties
     const propertiesData = [

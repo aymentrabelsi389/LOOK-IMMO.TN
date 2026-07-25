@@ -137,7 +137,7 @@ app.disable('x-powered-by');
 
 app.use('/uploads', express.static(UPLOADS_DIR, {
   maxAge: '30d',
-  immutable: true
+  immutable: true,
 }));
 
 // Static assets (JS/CSS/images/fonts/robots.txt/sitemap.xml) — identical to

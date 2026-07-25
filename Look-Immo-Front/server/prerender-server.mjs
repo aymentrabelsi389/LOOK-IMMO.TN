@@ -26,6 +26,7 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DIST_DIR = process.env.DIST_DIR || path.resolve(__dirname, '../dist');
+const UPLOADS_DIR = '/app/uploads';
 const INDEX_HTML_PATH = path.join(DIST_DIR, 'index.html');
 
 const PORT = process.env.PORT || 8080;
@@ -133,6 +134,11 @@ async function resolveMetaForRequest(pathname) {
 
 const app = express();
 app.disable('x-powered-by');
+
+app.use('/uploads', express.static(UPLOADS_DIR, {
+  maxAge: '30d',
+  immutable: true
+}));
 
 // Static assets (JS/CSS/images/fonts/robots.txt/sitemap.xml) — identical to
 // what nginx was doing. index:false so "/" falls through to our own handler

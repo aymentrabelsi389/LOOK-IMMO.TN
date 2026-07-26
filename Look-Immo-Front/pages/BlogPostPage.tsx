@@ -3,9 +3,11 @@ import { Calendar, Clock, ChevronRight } from 'lucide-react';
 import DOMPurify from 'dompurify';
 
 import { useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { useSEO } from '@/hooks/useSEO';
 import { useUI } from '@/context/UIContext';
-import { useData } from '@/context/DataContext';
+import { blogAPI } from '@/services/api';
+import LuxuryLoader from '@/components/ui/LuxuryLoader';
 
 // Safely sanitize and process HTML content on the client side
 const getSafeBlogContent = (content: string): string => {
@@ -32,14 +34,18 @@ const BlogPostPage = () => {
   const { id } = useParams<{ id: string }>();
   const { selectedBlogPostId: contextPostId, handleNavigate } = useUI();
   const postId = id || contextPostId;
-  const { blogPosts } = useData();
 
-  const post = blogPosts.find(p => p.id === postId);
+  const { data: post, isLoading, error } = useQuery({
+    queryKey: ['blogPost', postId],
+    queryFn: () => blogAPI.getById(postId!),
+    enabled: !!postId,
+  });
+
   const onBack = () => handleNavigate('blog');
 
   useSEO({
     title: post ? post.title : "Article de blog",
-    description: post ? `${post.excerpt || post.content.substring(0, 150)}...` : "Découvrez cet article sur le blog Look Immo."
+    description: post ? `${post.excerpt || (post.content ? post.content.substring(0, 150) : '')}...` : "Découvrez cet article sur le blog Look Immo."
   });
 
   // JSON-LD Structured Data for Google Rich Results
@@ -69,7 +75,9 @@ const BlogPostPage = () => {
     },
   } : null;
 
-  if (!post) return <div className="text-center py-20">Article non trouvé</div>;
+  if (isLoading) return <LuxuryLoader message="Chargement de l'article..." />;
+
+  if (error || !post) return <div className="text-center py-20">Article non trouvé</div>;
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString('fr-FR', {

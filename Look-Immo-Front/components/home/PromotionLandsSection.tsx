@@ -1,25 +1,40 @@
 import React from 'react';
-import { Property, User } from '@/types';
+import { User } from '@/types';
+import { useQuery } from '@tanstack/react-query';
+import { propertiesAPI } from '@/services/api';
 import PropertyCarousel from './PropertyCarousel';
 import { SkeletonPropertyCard } from '../ui/SkeletonCard';
 
 const PromotionLandsSection = ({
-  properties,
   onSelectProperty,
   userRole,
   onToggleFavorite,
   user,
-  isLoading
 }: {
-  properties: Property[],
   onSelectProperty: (id: string) => void,
   userRole?: string,
   onToggleFavorite: (propertyId: string) => void,
   user: User | null,
-  isLoading?: boolean
 }) => {
-  const devLands = properties
-    .filter(p => p.isHotDeal && p.type === 'land' && p.listingType === 'sale' && p.price <= 15000000 && p.features.area >= 1000)
+  // Fetch promotion land properties directly with server-side filters.
+  // This bypasses the paginated global context (page 1, limit 24) so these
+  // properties always appear even if they have a high displayOrder.
+  const { data: result, isLoading } = useQuery({
+    queryKey: ['promotionLands'],
+    queryFn: () => propertiesAPI.getAll({
+      category: 'land',
+      type: 'sale',
+      isHotDeal: 'true',
+      noLimit: 'true',
+    }),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const devLands = (result?.data ?? [])
+    .filter(p =>
+      p.price <= 15000000 &&
+      p.features?.area >= 1000
+    )
     .sort((a, b) => {
       const orderA = a.displayOrder || 999999;
       const orderB = b.displayOrder || 999999;

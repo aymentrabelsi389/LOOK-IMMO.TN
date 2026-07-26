@@ -11,7 +11,15 @@ class SocketService {
 
         this.socket = io(SOCKET_URL, {
             withCredentials: true,
-            transports: ['websocket', 'polling']
+            // Start with polling so the connection succeeds through nginx,
+            // then automatically upgrades to WebSocket (Socket.io default behaviour).
+            // Forcing 'websocket' first causes repeated failures when nginx
+            // hasn't completed the HTTP-to-WS upgrade handshake yet.
+            transports: ['polling', 'websocket'],
+            // Limit retry storms — wait 2s before first reconnect, cap at 10s
+            reconnectionDelay: 2000,
+            reconnectionDelayMax: 10000,
+            reconnectionAttempts: 5,
         });
 
         this.socket.on('connect', () => {

@@ -225,12 +225,10 @@ const HomePage = () => {
         isLoading={isLoading}
       />
       <PromotionLandsSection
-        properties={properties}
         onSelectProperty={onSelectProperty}
         userRole={userRole}
         onToggleFavorite={onToggleFavorite}
         user={user}
-        isLoading={isLoading}
       />
       <NewsSection blogPosts={blogPosts} onSelectPost={onSelectPost} />
     </div>

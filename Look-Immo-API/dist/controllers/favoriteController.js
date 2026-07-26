@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.checkFavorite = exports.removeFavorite = exports.addFavorite = exports.getFavorites = void 0;
 const prisma_1 = require("../utils/prisma");
+const notificationService_1 = require("../services/notificationService");
+const logger_1 = require("../utils/logger");
 // Get user's favorites
 const getFavorites = async (req, res) => {
     try {
@@ -26,7 +28,7 @@ const getFavorites = async (req, res) => {
         res.json(favorites.map((f) => f.property));
     }
     catch (error) {
-        console.error('Get favorites error:', error);
+        logger_1.logger.error('Get favorites error:', error);
         res.status(500).json({ error: 'Failed to get favorites' });
     }
 };
@@ -51,6 +53,21 @@ const addFavorite = async (req, res) => {
             },
         });
         res.status(201).json(favorite);
+        // Send favorite notification to admins/agents
+        try {
+            await (0, notificationService_1.createNotification)({
+                type: 'wishlist_add',
+                title: 'Bien Enregistré',
+                message: `Le bien "${favorite.property.title}" a été ajouté aux favoris d'un utilisateur.`,
+                icon: 'Heart',
+                link: `/property/${propertyId}`,
+                userId: null,
+                metadata: { propertyId, userId }
+            });
+        }
+        catch (notifErr) {
+            logger_1.logger.error('Failed to create favorite notification:', notifErr);
+        }
     }
     catch (error) {
         if (error.code === 'P2002') {
@@ -61,7 +78,7 @@ const addFavorite = async (req, res) => {
             res.status(404).json({ error: 'Property not found' });
             return;
         }
-        console.error('Add favorite error:', error);
+        logger_1.logger.error('Add favorite error:', error);
         res.status(500).json({ error: 'Failed to add to favorites' });
     }
 };
@@ -87,7 +104,7 @@ const removeFavorite = async (req, res) => {
             res.status(404).json({ error: 'Favorite not found' });
             return;
         }
-        console.error('Remove favorite error:', error);
+        logger_1.logger.error('Remove favorite error:', error);
         res.status(500).json({ error: 'Failed to remove from favorites' });
     }
 };
@@ -109,7 +126,7 @@ const checkFavorite = async (req, res) => {
         res.json({ isFavorite: !!favorite });
     }
     catch (error) {
-        console.error('Check favorite error:', error);
+        logger_1.logger.error('Check favorite error:', error);
         res.status(500).json({ error: 'Failed to check favorite status' });
     }
 };

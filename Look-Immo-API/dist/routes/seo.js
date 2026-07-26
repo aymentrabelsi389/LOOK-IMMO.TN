@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const prisma_1 = require("../utils/prisma");
+const logger_1 = require("../utils/logger");
 const router = (0, express_1.Router)();
 const SITE_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 /**
@@ -55,7 +56,7 @@ ${blogPosts.map(p => `  <url>
         res.send(xml);
     }
     catch (error) {
-        console.error('Sitemap generation error:', error);
+        logger_1.logger.error('Sitemap generation error:', error);
         res.status(500).send('Error generating sitemap');
     }
 });

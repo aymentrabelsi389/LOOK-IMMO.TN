@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateLocationOrder = exports.deleteLocation = exports.updateLocation = exports.createLocation = exports.getLocation = exports.getLocations = void 0;
 const prisma_1 = require("../utils/prisma");
+const logger_1 = require("../utils/logger");
 // Get all locations
 const getLocations = async (req, res) => {
     try {
@@ -17,7 +18,7 @@ const getLocations = async (req, res) => {
         res.json(locations);
     }
     catch (error) {
-        console.error('Get locations error:', error);
+        logger_1.logger.error('Get locations error:', error);
         res.status(500).json({ error: 'Failed to get locations' });
     }
 };
@@ -36,7 +37,7 @@ const getLocation = async (req, res) => {
         res.json(location);
     }
     catch (error) {
-        console.error('Get location error:', error);
+        logger_1.logger.error('Get location error:', error);
         res.status(500).json({ error: 'Failed to get location' });
     }
 };
@@ -68,7 +69,7 @@ const createLocation = async (req, res) => {
         res.status(201).json(location);
     }
     catch (error) {
-        console.error('Create location error:', error);
+        logger_1.logger.error('Create location error:', error);
         res.status(500).json({ error: 'Failed to create location' });
     }
 };
@@ -105,7 +106,7 @@ const updateLocation = async (req, res) => {
         res.json(location);
     }
     catch (error) {
-        console.error('Update location error:', error);
+        logger_1.logger.error('Update location error:', error);
         res.status(500).json({ error: 'Failed to update location' });
     }
 };
@@ -135,7 +136,7 @@ const deleteLocation = async (req, res) => {
         res.json({ message: 'Location deleted successfully' });
     }
     catch (error) {
-        console.error('Delete location error:', error);
+        logger_1.logger.error('Delete location error:', error);
         res.status(500).json({ error: 'Failed to delete location' });
     }
 };
@@ -161,7 +162,7 @@ const updateLocationOrder = async (req, res) => {
         res.json({ success: true, message: 'Location order updated successfully' });
     }
     catch (error) {
-        console.error('Update location order error:', error);
+        logger_1.logger.error('Update location order error:', error);
         res.status(500).json({ error: 'Failed to update location order' });
     }
 };

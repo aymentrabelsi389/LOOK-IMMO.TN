@@ -44,7 +44,12 @@ if (process.env.SENTRY_DSN) {
     Sentry.init({
         dsn: process.env.SENTRY_DSN,
         environment: process.env.NODE_ENV || 'development',
-        tracesSampleRate: 1.0,
+        // 100% tracing is fine while validating the integration, but gets
+        // expensive (Sentry quota + per-request overhead) at real traffic
+        // volume. Default to 10%, override via SENTRY_TRACES_SAMPLE_RATE.
+        tracesSampleRate: process.env.SENTRY_TRACES_SAMPLE_RATE
+            ? parseFloat(process.env.SENTRY_TRACES_SAMPLE_RATE)
+            : (process.env.NODE_ENV === 'production' ? 0.1 : 1.0),
     });
 }
 const express_1 = __importDefault(require("express"));
@@ -52,6 +57,7 @@ const cors_1 = __importDefault(require("cors"));
 const path_1 = __importDefault(require("path"));
 const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const helmet_1 = __importDefault(require("helmet"));
+const compression_1 = __importDefault(require("compression"));
 const http_1 = __importDefault(require("http"));
 const routes_1 = __importDefault(require("./routes"));
 const seo_1 = __importDefault(require("./routes/seo"));
@@ -63,6 +69,7 @@ const redis_1 = require("./utils/redis");
 const socket_1 = require("./utils/socket");
 const prisma_1 = require("./utils/prisma");
 const exchangeRateService_1 = require("./services/exchangeRateService");
+const cronService_1 = require("./services/cronService");
 const logger_1 = require("./utils/logger");
 // ─── Startup Environment Validation ──────────────────────────────────────────
 // Fail fast if critical env vars are missing — prevents silent misconfiguration
@@ -107,6 +114,10 @@ app.use((0, cors_1.default)({
 }));
 // Parse cookies (HTTP-only JWT cookies)
 app.use((0, cookie_parser_1.default)());
+// Compress responses (JSON payloads, especially property lists and dashboard
+// stats, benefit significantly). Images are already pre-compressed WebP, so
+// this mainly helps API/text traffic — negligible CPU cost at this scale.
+app.use((0, compression_1.default)());
 // Base security headers with 1-year HSTS (HTTP Strict Transport Security)
 app.use((0, helmet_1.default)({
     crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow loading images cross-origin
@@ -138,10 +149,12 @@ app.use('/api', routes_1.default);
 app.get('/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
-// Test error route for Sentry verification
-app.get('/api/test-error', (req, res) => {
-    throw new Error('Test Sentry Backend Error Spike');
-});
+// Test error route for Sentry verification (non-production only)
+if (!isProd) {
+    app.get('/api/test-error', (req, res) => {
+        throw new Error('Test Sentry Backend Error Spike');
+    });
+}
 // 404 handler
 app.use((req, res) => {
     res.status(404).json({ error: 'Route not found' });
@@ -162,6 +175,8 @@ const server = http_1.default.createServer(app);
 (0, socket_1.initSocket)(server);
 (0, redis_1.connectRedis)();
 (0, exchangeRateService_1.initExchangeRateCron)();
+(0, cronService_1.initMorningReminderCron)();
+(0, cronService_1.initRefreshTokenCleanupCron)();
 server.listen(PORT, () => {
     logger_1.logger.info('Server started', {
         env: process.env.NODE_ENV || 'development',

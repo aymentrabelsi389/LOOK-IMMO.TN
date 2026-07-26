@@ -4,9 +4,19 @@ exports.deleteTransaction = exports.updateTransaction = exports.createTransactio
 const prisma_1 = require("../utils/prisma");
 const getTransactions = async (req, res) => {
     try {
-        const transactions = await prisma_1.prisma.financeTransaction.findMany({
-            orderBy: { date: 'desc' }
-        });
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        // Higher default than other lists: this feeds accounting/reporting views
+        // that typically want "all transactions for the year" in one call.
+        const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit) || 500));
+        const [transactions, total] = await Promise.all([
+            prisma_1.prisma.financeTransaction.findMany({
+                orderBy: { date: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            prisma_1.prisma.financeTransaction.count(),
+        ]);
+        res.setHeader('X-Total-Count', String(total));
         res.json(transactions);
     }
     catch (error) {

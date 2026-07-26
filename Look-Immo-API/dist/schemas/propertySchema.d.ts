@@ -46,15 +46,15 @@ export declare const createPropertySchema: z.ZodObject<{
             cos: z.ZodOptional<z.ZodUnion<readonly [z.ZodNumber, z.ZodString]>>;
         }, z.core.$strip>>;
         category: z.ZodOptional<z.ZodEnum<{
-            apartment: "apartment";
             villa: "villa";
             commerce: "commerce";
-            land: "land";
-            commercial: "commercial";
+            apartment: "apartment";
             studio: "studio";
             duplex: "duplex";
             triplex: "triplex";
             penthouse: "penthouse";
+            land: "land";
+            commercial: "commercial";
             depot: "depot";
         }>>;
         isFeatured: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
@@ -66,6 +66,7 @@ export declare const createPropertySchema: z.ZodObject<{
             lat: z.ZodOptional<z.ZodNumber>;
             lng: z.ZodOptional<z.ZodNumber>;
         }, z.core.$strip>>;
+        ownerPhone: z.ZodNullable<z.ZodOptional<z.ZodString>>;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export declare const updatePropertySchema: z.ZodObject<{
@@ -118,15 +119,15 @@ export declare const updatePropertySchema: z.ZodObject<{
             cos: z.ZodOptional<z.ZodUnion<readonly [z.ZodNumber, z.ZodString]>>;
         }, z.core.$strip>>;
         category: z.ZodOptional<z.ZodEnum<{
-            apartment: "apartment";
             villa: "villa";
             commerce: "commerce";
-            land: "land";
-            commercial: "commercial";
+            apartment: "apartment";
             studio: "studio";
             duplex: "duplex";
             triplex: "triplex";
             penthouse: "penthouse";
+            land: "land";
+            commercial: "commercial";
             depot: "depot";
         }>>;
         isFeatured: z.ZodOptional<z.ZodBoolean>;
@@ -138,6 +139,7 @@ export declare const updatePropertySchema: z.ZodObject<{
             lat: z.ZodOptional<z.ZodNumber>;
             lng: z.ZodOptional<z.ZodNumber>;
         }, z.core.$strip>>;
+        ownerPhone: z.ZodNullable<z.ZodOptional<z.ZodString>>;
     }, z.core.$strip>;
 }, z.core.$strip>;
 export declare const reorderPropertySchema: z.ZodObject<{

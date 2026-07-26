@@ -2,6 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getUserStats = exports.getPropertyStats = exports.getDashboardStats = exports.trackVisit = void 0;
 const prisma_1 = require("../utils/prisma");
+const redis_1 = require("../utils/redis");
+const logger_1 = require("../utils/logger");
 // Track a website visit
 const trackVisit = async (req, res) => {
     try {
@@ -34,6 +36,12 @@ exports.trackVisit = trackVisit;
 // Get dashboard statistics
 const getDashboardStats = async (req, res) => {
     try {
+        const cacheKey = 'stats:dashboard';
+        const cached = await (0, redis_1.getCache)(cacheKey);
+        if (cached) {
+            res.json(cached);
+            return;
+        }
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
         const todayEnd = new Date();
@@ -135,7 +143,7 @@ const getDashboardStats = async (req, res) => {
             visits: performanceResults[i][0],
             signups: performanceResults[i][1],
         }));
-        res.json({
+        const responseData = {
             totals: {
                 users: totalUsers,
                 properties: totalProperties,
@@ -169,10 +177,14 @@ const getDashboardStats = async (req, res) => {
             performance,
             onlineCount: onlineVisitCount, // ✅ Real 5-minute window count
             siteViews: totalWebsiteVisits,
-        });
+        };
+        // Short TTL: keeps the dashboard reasonably live while absorbing
+        // repeated admin refreshes/polling without re-running ~27 queries.
+        await (0, redis_1.setCache)(cacheKey, responseData, 60);
+        res.json(responseData);
     }
     catch (error) {
-        console.error('Get dashboard stats error:', error);
+        logger_1.logger.error('Get dashboard stats error:', error);
         res.status(500).json({ error: 'Failed to get dashboard statistics' });
     }
 };
@@ -204,7 +216,7 @@ const getPropertyStats = async (req, res) => {
         });
     }
     catch (error) {
-        console.error('Get property stats error:', error);
+        logger_1.logger.error('Get property stats error:', error);
         res.status(500).json({ error: 'Failed to get property statistics' });
     }
 };
@@ -231,7 +243,7 @@ const getUserStats = async (req, res) => {
         });
     }
     catch (error) {
-        console.error('Get user stats error:', error);
+        logger_1.logger.error('Get user stats error:', error);
         res.status(500).json({ error: 'Failed to get user statistics' });
     }
 };

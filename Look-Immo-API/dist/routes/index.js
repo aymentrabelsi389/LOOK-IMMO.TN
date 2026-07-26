@@ -61,6 +61,7 @@ const authSchema_1 = require("../schemas/authSchema");
 const propertySchema_1 = require("../schemas/propertySchema");
 const appointmentSchema_1 = require("../schemas/appointmentSchema");
 const messageSchema_1 = require("../schemas/messageSchema");
+const userSchema_1 = require("../schemas/userSchema");
 const router = (0, express_1.Router)();
 // ==================== AUTH ====================
 router.post('/auth/register', rateLimiter_1.authLimiter, (0, validate_1.validate)(authSchema_1.registerSchema), authController.register);
@@ -74,8 +75,8 @@ router.post('/auth/reset-password', (0, validate_1.validate)(authSchema_1.resetP
 // ==================== USERS ====================
 router.get('/users', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, userController.getUsers);
 router.get('/users/:id', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, userController.getUser);
-router.post('/users', auth_1.authMiddleware, roleGuard_1.adminOnly, userController.createUser);
-router.put('/users/:id', auth_1.authMiddleware, roleGuard_1.authenticated, userController.updateUser);
+router.post('/users', auth_1.authMiddleware, roleGuard_1.adminOnly, (0, validate_1.validate)(userSchema_1.createUserSchema), userController.createUser);
+router.put('/users/:id', auth_1.authMiddleware, roleGuard_1.authenticated, (0, validate_1.validate)(userSchema_1.updateUserSchema), userController.updateUser);
 router.delete('/users/:id', auth_1.authMiddleware, roleGuard_1.adminOnly, userController.deleteUser);
 // ==================== PROPERTIES ====================
 router.get('/properties', auth_1.optionalAuth, propertyController.getProperties);
@@ -114,7 +115,7 @@ router.delete('/transactions/:id', auth_1.authMiddleware, roleGuard_1.agentOrAdm
 // ==================== RATINGS ====================
 router.get('/ratings', ratingController.getRatings); // Public
 router.get('/ratings/:id', ratingController.getRating); // Public
-router.post('/ratings', rateLimiter_1.ratingLimiter, ratingController.createRating); // Public (or authenticated clients)
+router.post('/ratings', rateLimiter_1.ratingLimiter, auth_1.optionalAuth, ratingController.createRating); // Public (or authenticated clients)
 router.delete('/ratings/:id', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, ratingController.deleteRating);
 // ==================== LOCATIONS ====================
 router.get('/locations', locationController.getLocations);
@@ -132,12 +133,13 @@ router.delete('/blog/:id', auth_1.authMiddleware, roleGuard_1.adminOnly, blogCon
 // ==================== NOTIFICATIONS ====================
 router.get('/notifications', auth_1.authMiddleware, roleGuard_1.adminOnly, notificationController.getNotifications);
 router.get('/notifications/unread-count', auth_1.authMiddleware, roleGuard_1.adminOnly, notificationController.getUnreadCount);
-router.put('/notifications/:id/read', auth_1.authMiddleware, roleGuard_1.adminOnly, notificationController.markAsRead);
 router.put('/notifications/mark-all-read', auth_1.authMiddleware, roleGuard_1.adminOnly, notificationController.markAllAsRead);
+router.put('/notifications/:id/read', auth_1.authMiddleware, roleGuard_1.adminOnly, notificationController.markAsRead);
 router.delete('/notifications/read', auth_1.authMiddleware, roleGuard_1.adminOnly, notificationController.deleteReadNotifications);
+router.delete('/notifications/all', auth_1.authMiddleware, roleGuard_1.adminOnly, notificationController.deleteAllNotifications);
 router.delete('/notifications/:id', auth_1.authMiddleware, roleGuard_1.adminOnly, notificationController.deleteNotification);
 // ==================== STATISTICS ====================
-router.post('/stats/track-visit', auth_1.optionalAuth, statsController.trackVisit); // Public
+router.post('/stats/track-visit', rateLimiter_1.trackVisitLimiter, auth_1.optionalAuth, statsController.trackVisit); // Public
 router.get('/stats/dashboard', auth_1.authMiddleware, roleGuard_1.adminOnly, statsController.getDashboardStats);
 router.get('/stats/properties', auth_1.authMiddleware, roleGuard_1.adminOnly, statsController.getPropertyStats);
 router.get('/stats/users', auth_1.authMiddleware, roleGuard_1.adminOnly, statsController.getUserStats);
@@ -148,13 +150,15 @@ router.delete('/favorites/:propertyId', auth_1.authMiddleware, roleGuard_1.authe
 router.get('/favorites/check/:propertyId', auth_1.optionalAuth, favoriteController.checkFavorite);
 // ==================== IMAGE UPLOADS ====================
 // POST /api/upload/property-image  — accepts 'image' field, returns { url }
-router.post('/upload/property-image', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, upload_1.uploadImage.single('image'), (0, upload_1.optimizeAndSave)({ folder: 'properties', quality: 82, multiSize: true }), uploadController.handleImageUpload);
+router.post('/upload/property-image', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, upload_1.uploadImage.single('image'), (0, upload_1.assertMagicBytes)(), (0, upload_1.optimizeAndSave)({ folder: 'properties', quality: 82, multiSize: true }), uploadController.handleImageUpload);
 // POST /api/upload/property-document  — accepts 'file' field, returns { url }
-router.post('/upload/property-document', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, upload_1.uploadContract.single('file'), uploadController.handleDocumentUpload);
+router.post('/upload/property-document', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, upload_1.uploadContract.single('file'), (0, upload_1.assertMagicBytes)(), uploadController.handleDocumentUpload);
 // GET /api/download  — secure direct file download
-router.get('/download', uploadController.downloadFile);
+// Contracts/documents may contain client PII (ID scans, signed agreements),
+// so this requires an authenticated agent/admin session — never public.
+router.get('/download', auth_1.authMiddleware, roleGuard_1.agentOrAdmin, uploadController.downloadFile);
 // POST /api/upload/blog-image  — accepts 'image' field, returns { url }
-router.post('/upload/blog-image', auth_1.authMiddleware, roleGuard_1.adminOnly, upload_1.uploadImage.single('image'), (0, upload_1.optimizeAndSave)({ folder: 'blog', width: 900, quality: 80 }), uploadController.handleImageUpload);
+router.post('/upload/blog-image', auth_1.authMiddleware, roleGuard_1.adminOnly, upload_1.uploadImage.single('image'), (0, upload_1.assertMagicBytes)(), (0, upload_1.optimizeAndSave)({ folder: 'blog', width: 900, quality: 80 }), uploadController.handleImageUpload);
 // ==================== SETTINGS ====================
 // Anyone can read site settings
 router.get('/settings', settingController.getSettings);

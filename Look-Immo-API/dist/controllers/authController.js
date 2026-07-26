@@ -3,20 +3,34 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.resetPassword = exports.verifyResetCode = exports.forgotPassword = exports.getMe = exports.refresh = exports.logout = exports.login = exports.register = void 0;
+exports.resetPassword = exports.verifyResetCode = exports.forgotPassword = exports.getMe = exports.refresh = exports.logout = exports.login = exports.register = exports.COOKIE_OPTIONS = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const crypto_1 = __importDefault(require("crypto"));
 const prisma_1 = require("../utils/prisma");
 const emailService_1 = require("../services/emailService");
-const getAccessTokenSecret = () => process.env.JWT_SECRET || 'fallback-access-secret';
-const getRefreshTokenSecret = () => process.env.JWT_REFRESH_SECRET || 'fallback-refresh-secret';
+const notificationService_1 = require("../services/notificationService");
+const logger_1 = require("../utils/logger");
+const getAccessTokenSecret = () => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        throw new Error('JWT_SECRET environment variable is not set');
+    }
+    return secret;
+};
+const getRefreshTokenSecret = () => {
+    const secret = process.env.JWT_REFRESH_SECRET;
+    if (!secret) {
+        throw new Error('JWT_REFRESH_SECRET environment variable is not set');
+    }
+    return secret;
+};
 const ACCESS_TOKEN_EXPIRY = process.env.NODE_ENV === 'production' ? '15m' : '2h';
 const REFRESH_TOKEN_EXPIRY = '7d';
-const COOKIE_OPTIONS = {
+exports.COOKIE_OPTIONS = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: (process.env.NODE_ENV === 'production' ? 'strict' : 'lax'),
+    sameSite: 'lax', // 'lax' works for same-domain nginx proxy; 'strict' blocks cookies on navigations
     path: '/',
 };
 const setAuthCookies = async (res, userId, email, role, existingFamilyId) => {
@@ -36,11 +50,11 @@ const setAuthCookies = async (res, userId, email, role, existingFamilyId) => {
         },
     });
     res.cookie('access_token', accessToken, {
-        ...COOKIE_OPTIONS,
+        ...exports.COOKIE_OPTIONS,
         maxAge: process.env.NODE_ENV === 'production' ? 15 * 60 * 1000 : 2 * 60 * 60 * 1000, // prod: 15min, dev: 2h
     });
     res.cookie('refresh_token', refreshToken, {
-        ...COOKIE_OPTIONS,
+        ...exports.COOKIE_OPTIONS,
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
     // Also return tokens in response body for Bearer token fallback (useful in dev/proxy setups)
@@ -64,10 +78,25 @@ const register = async (req, res) => {
             select: { id: true, name: true, email: true, phone: true, role: true, createdAt: true },
         });
         const tokens = await setAuthCookies(res, user.id, user.email, user.role);
+        // Send registration notification for admins
+        try {
+            await (0, notificationService_1.createNotification)({
+                type: 'user_signup',
+                title: 'Nouvel Utilisateur',
+                message: `${user.name} a créé un nouveau compte.`,
+                icon: 'UserPlus',
+                link: '/admin',
+                userId: null,
+                metadata: { userId: user.id }
+            });
+        }
+        catch (notifErr) {
+            logger_1.logger.error('Failed to create signup notification:', notifErr);
+        }
         res.status(201).json({ user: { ...user, favorites: [] }, accessToken: tokens.accessToken });
     }
     catch (error) {
-        console.error('Register error:', error);
+        logger_1.logger.error('Register error:', error);
         res.status(500).json({ error: 'Failed to register user' });
     }
 };
@@ -109,7 +138,7 @@ const login = async (req, res) => {
         });
     }
     catch (error) {
-        console.error('Login error:', error);
+        logger_1.logger.error('Login error:', error);
         res.status(500).json({ error: 'Failed to login' });
     }
 };
@@ -128,10 +157,10 @@ const logout = async (req, res) => {
         }
     }
     catch (error) {
-        console.error('Logout token revocation error:', error);
+        logger_1.logger.error('Logout token revocation error:', error);
     }
-    res.clearCookie('access_token', COOKIE_OPTIONS);
-    res.clearCookie('refresh_token', COOKIE_OPTIONS);
+    res.clearCookie('access_token', exports.COOKIE_OPTIONS);
+    res.clearCookie('refresh_token', exports.COOKIE_OPTIONS);
     res.json({ message: 'Logged out successfully' });
 };
 exports.logout = logout;
@@ -144,8 +173,8 @@ const refresh = async (req, res) => {
         }
         const decoded = jsonwebtoken_1.default.verify(refreshToken, getRefreshTokenSecret());
         if (!decoded.token || !decoded.familyId) {
-            res.clearCookie('access_token', COOKIE_OPTIONS);
-            res.clearCookie('refresh_token', COOKIE_OPTIONS);
+            res.clearCookie('access_token', exports.COOKIE_OPTIONS);
+            res.clearCookie('refresh_token', exports.COOKIE_OPTIONS);
             res.status(401).json({ error: 'Invalid refresh token structure' });
             return;
         }
@@ -155,27 +184,27 @@ const refresh = async (req, res) => {
         });
         // 2. Reuse detection (Compromise Signal)
         if (tokenRecord?.used) {
-            console.warn(`[Security Alert] Refresh token reuse detected for family ${decoded.familyId}. Revoking family!`);
+            logger_1.logger.warn(`[Security Alert] Refresh token reuse detected for family ${decoded.familyId}. Revoking family!`);
             await prisma_1.prisma.refreshToken.deleteMany({
                 where: { familyId: decoded.familyId },
             });
-            res.clearCookie('access_token', COOKIE_OPTIONS);
-            res.clearCookie('refresh_token', COOKIE_OPTIONS);
+            res.clearCookie('access_token', exports.COOKIE_OPTIONS);
+            res.clearCookie('refresh_token', exports.COOKIE_OPTIONS);
             res.status(401).json({ error: 'Compromise detected. Session revoked.' });
             return;
         }
         // 3. Token not found at all
         if (!tokenRecord) {
-            res.clearCookie('access_token', COOKIE_OPTIONS);
-            res.clearCookie('refresh_token', COOKIE_OPTIONS);
+            res.clearCookie('access_token', exports.COOKIE_OPTIONS);
+            res.clearCookie('refresh_token', exports.COOKIE_OPTIONS);
             res.status(401).json({ error: 'Refresh token not found' });
             return;
         }
         // 4. Token expired
         if (new Date() > tokenRecord.expiresAt) {
             await prisma_1.prisma.refreshToken.delete({ where: { id: tokenRecord.id } });
-            res.clearCookie('access_token', COOKIE_OPTIONS);
-            res.clearCookie('refresh_token', COOKIE_OPTIONS);
+            res.clearCookie('access_token', exports.COOKIE_OPTIONS);
+            res.clearCookie('refresh_token', exports.COOKIE_OPTIONS);
             res.status(401).json({ error: 'Expired refresh token' });
             return;
         }
@@ -197,9 +226,9 @@ const refresh = async (req, res) => {
         const tokens = await setAuthCookies(res, user.id, user.email, user.role, decoded.familyId);
         res.json({ message: 'Token refreshed', accessToken: tokens.accessToken });
     }
-    catch (error) {
-        res.clearCookie('access_token', COOKIE_OPTIONS);
-        res.clearCookie('refresh_token', COOKIE_OPTIONS);
+    catch {
+        res.clearCookie('access_token', exports.COOKIE_OPTIONS);
+        res.clearCookie('refresh_token', exports.COOKIE_OPTIONS);
         res.status(401).json({ error: 'Invalid or expired refresh token' });
     }
 };
@@ -230,7 +259,7 @@ const getMe = async (req, res) => {
         });
     }
     catch (error) {
-        console.error('Get me error:', error);
+        logger_1.logger.error('Get me error:', error);
         res.status(500).json({ error: 'Failed to get user' });
     }
 };
@@ -247,7 +276,7 @@ const forgotPassword = async (req, res) => {
         const user = await prisma_1.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
         if (!user) {
             // Log audit for security
-            console.log(`[AUDIT] Password reset requested for non-existent email: ${email}`);
+            logger_1.logger.info(`[AUDIT] Password reset requested for non-existent email: ${email}`);
             res.json(genericSuccess);
             return;
         }
@@ -263,13 +292,13 @@ const forgotPassword = async (req, res) => {
                 resetAttempts: 0
             }
         });
-        console.log(`[AUDIT] Password reset code generated and hashed for user: ${user.email}`);
+        logger_1.logger.info(`[AUDIT] Password reset code generated and hashed for user: ${user.email}`);
         // Send email
         await (0, emailService_1.sendResetCodeEmail)(user.email, code);
         res.json(genericSuccess);
     }
     catch (error) {
-        console.error('Forgot password error:', error);
+        logger_1.logger.error('Forgot password error:', error);
         res.status(500).json({ error: 'Failed to process forgot password request' });
     }
 };
@@ -303,14 +332,14 @@ const verifyResetCode = async (req, res) => {
         });
         const isValid = await bcryptjs_1.default.compare(code, user.resetCodeHash);
         if (!isValid) {
-            console.log(`[AUDIT] Failed reset code attempt (${user.resetAttempts + 1}/5) for user: ${user.email}`);
+            logger_1.logger.info(`[AUDIT] Failed reset code attempt (${user.resetAttempts + 1}/5) for user: ${user.email}`);
             res.status(400).json({ error: 'Code de vérification incorrect' });
             return;
         }
         res.json({ message: 'Code vérifié avec succès' });
     }
     catch (error) {
-        console.error('Verify reset code error:', error);
+        logger_1.logger.error('Verify reset code error:', error);
         res.status(500).json({ error: 'Failed to verify reset code' });
     }
 };
@@ -357,14 +386,18 @@ const resetPassword = async (req, res) => {
                 resetAttempts: 0
             }
         });
-        console.log(`[AUDIT] Password reset successfully for user: ${user.email}`);
+        // Revoke all active sessions (refresh tokens) for the user
+        await prisma_1.prisma.refreshToken.deleteMany({
+            where: { userId: user.id }
+        });
+        logger_1.logger.info(`[AUDIT] Password reset successfully for user: ${user.email}`);
         // Invalidate sessions on the client by clearing auth cookies
-        res.clearCookie('access_token', COOKIE_OPTIONS);
-        res.clearCookie('refresh_token', COOKIE_OPTIONS);
+        res.clearCookie('access_token', exports.COOKIE_OPTIONS);
+        res.clearCookie('refresh_token', exports.COOKIE_OPTIONS);
         res.json({ message: 'Votre mot de passe a été réinitialisé avec succès.' });
     }
     catch (error) {
-        console.error('Reset password error:', error);
+        logger_1.logger.error('Reset password error:', error);
         res.status(500).json({ error: 'Failed to reset password' });
     }
 };

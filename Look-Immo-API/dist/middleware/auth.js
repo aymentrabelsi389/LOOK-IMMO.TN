@@ -5,15 +5,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.optionalAuth = exports.authMiddleware = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const getAccessTokenSecret = () => process.env.JWT_SECRET || 'fallback-access-secret';
+const logger_1 = require("../utils/logger");
+const getAccessTokenSecret = () => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+        throw new Error('JWT_SECRET environment variable is not set');
+    }
+    return secret;
+};
 const authMiddleware = async (req, res, next) => {
     try {
         // 1. Prefer HTTP-only cookie
         let token = req.cookies?.access_token;
-        // DEV DEBUG: log whether cookie/header present (no token values)
-        if (process.env.NODE_ENV !== 'production') {
-            console.log('[DEBUG auth] hasCookie:', !!req.cookies?.access_token, 'hasAuthHeader:', !!req.headers.authorization);
-        }
+        logger_1.logger.debug('auth check', { hasCookie: !!req.cookies?.access_token, hasAuthHeader: !!req.headers.authorization });
         // 2. Fallback to Bearer header (for backward compatibility)
         if (!token) {
             const authHeader = req.headers.authorization;
@@ -32,8 +36,7 @@ const authMiddleware = async (req, res, next) => {
             decoded = jsonwebtoken_1.default.verify(token, getAccessTokenSecret());
         }
         catch (err) {
-            if (process.env.NODE_ENV !== 'production')
-                console.log('[DEBUG auth] token verify error:', err && err.message);
+            logger_1.logger.debug('token verify error', { message: err && err.message });
             throw err;
         }
         req.user = { id: decoded.id, email: decoded.email, role: decoded.role };

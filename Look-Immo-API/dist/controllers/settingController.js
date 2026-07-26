@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updateSettings = exports.getSettings = void 0;
 const redis_1 = require("../utils/redis");
 const prisma_1 = require("../utils/prisma");
+const logger_1 = require("../utils/logger");
 const getSettings = async (req, res) => {
     try {
         const cacheKey = 'settings:global';
@@ -43,7 +44,7 @@ const getSettings = async (req, res) => {
         res.json(setting.value);
     }
     catch (error) {
-        console.error('Error fetching settings:', error);
+        logger_1.logger.error('Error fetching settings:', error);
         res.status(500).json({ error: 'Failed to fetch settings' });
     }
 };
@@ -60,7 +61,7 @@ const updateSettings = async (req, res) => {
         res.json(setting.value);
     }
     catch (error) {
-        console.error('Error updating settings:', error);
+        logger_1.logger.error('Error updating settings:', error);
         res.status(500).json({ error: 'Failed to update settings' });
     }
 };

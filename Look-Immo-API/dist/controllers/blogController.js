@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteBlogPost = exports.updateBlogPost = exports.createBlogPost = exports.getBlogPost = exports.getBlogPosts = void 0;
 const prisma_1 = require("../utils/prisma");
 const sanitize_1 = require("../utils/sanitize");
+const logger_1 = require("../utils/logger");
 // Get all blog posts
 const getBlogPosts = async (req, res) => {
     try {
@@ -52,7 +53,7 @@ const getBlogPosts = async (req, res) => {
         });
     }
     catch (error) {
-        console.error('Get blog posts error:', error);
+        logger_1.logger.error('Get blog posts error:', error);
         res.status(500).json({ error: 'Failed to get blog posts' });
     }
 };
@@ -71,7 +72,7 @@ const getBlogPost = async (req, res) => {
         res.json(post);
     }
     catch (error) {
-        console.error('Get blog post error:', error);
+        logger_1.logger.error('Get blog post error:', error);
         res.status(500).json({ error: 'Failed to get blog post' });
     }
 };
@@ -107,7 +108,7 @@ const createBlogPost = async (req, res) => {
         res.status(201).json(post);
     }
     catch (error) {
-        console.error('Create blog post error:', error);
+        logger_1.logger.error('Create blog post error:', error);
         res.status(500).json({ error: 'Failed to create blog post' });
     }
 };
@@ -146,7 +147,7 @@ const updateBlogPost = async (req, res) => {
         res.json(post);
     }
     catch (error) {
-        console.error('Update blog post error:', error);
+        logger_1.logger.error('Update blog post error:', error);
         res.status(500).json({ error: 'Failed to update blog post' });
     }
 };
@@ -176,7 +177,7 @@ const deleteBlogPost = async (req, res) => {
         res.json({ message: 'Blog post deleted successfully' });
     }
     catch (error) {
-        console.error('Delete blog post error:', error);
+        logger_1.logger.error('Delete blog post error:', error);
         res.status(500).json({ error: 'Failed to delete blog post' });
     }
 };

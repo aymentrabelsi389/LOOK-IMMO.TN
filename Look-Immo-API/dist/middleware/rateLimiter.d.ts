@@ -4,4 +4,5 @@ export declare const forgotPasswordLimiter: import("express-rate-limit").RateLim
 export declare const messageLimiter: import("express-rate-limit").RateLimitRequestHandler;
 export declare const appointmentLimiter: import("express-rate-limit").RateLimitRequestHandler;
 export declare const ratingLimiter: import("express-rate-limit").RateLimitRequestHandler;
+export declare const trackVisitLimiter: import("express-rate-limit").RateLimitRequestHandler;
 //# sourceMappingURL=rateLimiter.d.ts.map

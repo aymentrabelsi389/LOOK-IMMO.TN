@@ -63,6 +63,7 @@ exports.createPropertySchema = zod_1.z.object({
         latitude: zod_1.z.number().min(-90).max(90).optional(),
         longitude: zod_1.z.number().min(-180).max(180).optional(),
         location: locationSchema,
+        ownerPhone: zod_1.z.string().max(30).optional().nullable(),
     }),
 });
 // Schema for partially updating a property
@@ -92,6 +93,7 @@ exports.updatePropertySchema = zod_1.z.object({
         latitude: zod_1.z.number().min(-90).max(90).optional(),
         longitude: zod_1.z.number().min(-180).max(180).optional(),
         location: locationSchema,
+        ownerPhone: zod_1.z.string().max(30).optional().nullable(),
     }),
 });
 // Schema for bulk reorder

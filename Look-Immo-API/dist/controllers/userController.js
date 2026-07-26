@@ -6,6 +6,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteUser = exports.updateUser = exports.createUser = exports.getUser = exports.getUsers = void 0;
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const prisma_1 = require("../utils/prisma");
+const authController_1 = require("./authController");
+const logger_1 = require("../utils/logger");
 // Get all users (Admin only)
 const getUsers = async (req, res) => {
     try {
@@ -64,7 +66,7 @@ const getUsers = async (req, res) => {
         res.json(transformedUsers);
     }
     catch (error) {
-        console.error('Get users error:', error);
+        logger_1.logger.error('Get users error:', error);
         res.status(500).json({ error: 'Failed to get users' });
     }
 };
@@ -116,7 +118,7 @@ const getUser = async (req, res) => {
         });
     }
     catch (error) {
-        console.error('Get user error:', error);
+        logger_1.logger.error('Get user error:', error);
         res.status(500).json({ error: 'Failed to get user' });
     }
 };
@@ -166,7 +168,7 @@ const createUser = async (req, res) => {
         res.status(201).json(user);
     }
     catch (error) {
-        console.error('Create user error:', error);
+        logger_1.logger.error('Create user error:', error);
         res.status(500).json({ error: 'Failed to create user' });
     }
 };
@@ -232,6 +234,15 @@ const updateUser = async (req, res) => {
                 lastLogin: true,
             },
         });
+        // Revoking sessions on password change: if a password changes here,
+        // any stolen/leaked session (including the attacker's, if this
+        // change is a compromise-recovery action) should stop working —
+        // same behavior resetPassword already has. Note this runs whenever
+        // *any* password field is present, whether the caller is the user
+        // themselves or an admin resetting someone else's password.
+        if (password) {
+            await prisma_1.prisma.refreshToken.deleteMany({ where: { userId: id } });
+        }
         // Notification if role changed
         if (role && role !== existingUser.role) {
             await prisma_1.prisma.notification.create({
@@ -242,10 +253,18 @@ const updateUser = async (req, res) => {
                 },
             });
         }
+        // If the caller changed their own password, their current session's
+        // access/refresh cookies are now stale relative to the revoked
+        // refresh token — clear them so the client re-authenticates cleanly
+        // instead of hitting a confusing 401 on the next silent refresh.
+        if (password && isSelf) {
+            res.clearCookie('access_token', authController_1.COOKIE_OPTIONS);
+            res.clearCookie('refresh_token', authController_1.COOKIE_OPTIONS);
+        }
         res.json(user);
     }
     catch (error) {
-        console.error('Update user error:', error);
+        logger_1.logger.error('Update user error:', error);
         res.status(500).json({ error: 'Failed to update user' });
     }
 };
@@ -275,7 +294,7 @@ const deleteUser = async (req, res) => {
         res.json({ message: 'User deleted successfully' });
     }
     catch (error) {
-        console.error('Delete user error:', error);
+        logger_1.logger.error('Delete user error:', error);
         res.status(500).json({ error: 'Failed to delete user' });
     }
 };

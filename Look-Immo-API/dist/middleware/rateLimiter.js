@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ratingLimiter = exports.appointmentLimiter = exports.messageLimiter = exports.forgotPasswordLimiter = exports.authLimiter = exports.globalLimiter = void 0;
+exports.trackVisitLimiter = exports.ratingLimiter = exports.appointmentLimiter = exports.messageLimiter = exports.forgotPasswordLimiter = exports.authLimiter = exports.globalLimiter = void 0;
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const isProd = process.env.NODE_ENV === 'production';
 // Global API rate limiter (generous to handle normal navigation)
@@ -56,5 +56,15 @@ exports.ratingLimiter = (0, express_rate_limit_1.default)({
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Trop d\'avis soumis depuis cette IP. Veuillez réessayer dans 15 minutes.' },
+});
+// Visit tracking: generous but bounded — this fires on real page navigation
+// (multiple per session), but had no limiter at all before, so it was an
+// open DB-write flood vector.
+exports.trackVisitLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 5 * 60 * 1000,
+    max: isProd ? 100 : 99999,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: 'Trop de requêtes depuis cette IP.' },
 });
 //# sourceMappingURL=rateLimiter.js.map

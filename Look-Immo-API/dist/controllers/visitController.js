@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteVisit = exports.createVisit = exports.getVisit = exports.getVisits = void 0;
 const prisma_1 = require("../utils/prisma");
+const logger_1 = require("../utils/logger");
 // Get all visits
 const getVisits = async (req, res) => {
     try {
@@ -32,7 +33,7 @@ const getVisits = async (req, res) => {
         res.json(visits);
     }
     catch (error) {
-        console.error('Get visits error:', error);
+        logger_1.logger.error('Get visits error:', error);
         res.status(500).json({ error: 'Failed to get visits' });
     }
 };
@@ -59,7 +60,7 @@ const getVisit = async (req, res) => {
         res.json(visit);
     }
     catch (error) {
-        console.error('Get visit error:', error);
+        logger_1.logger.error('Get visit error:', error);
         res.status(500).json({ error: 'Failed to get visit' });
     }
 };
@@ -102,7 +103,7 @@ const createVisit = async (req, res) => {
         res.status(201).json(visit);
     }
     catch (error) {
-        console.error('Create visit error:', error);
+        logger_1.logger.error('Create visit error:', error);
         res.status(500).json({ error: 'Failed to create visit' });
     }
 };
@@ -124,7 +125,7 @@ const deleteVisit = async (req, res) => {
         res.json({ message: 'Visit deleted successfully' });
     }
     catch (error) {
-        console.error('Delete visit error:', error);
+        logger_1.logger.error('Delete visit error:', error);
         res.status(500).json({ error: 'Failed to delete visit' });
     }
 };

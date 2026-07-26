@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteAppointment = exports.updateAppointment = exports.createAppointment = exports.getAppointment = exports.getAppointments = void 0;
 const socket_1 = require("../utils/socket");
 const prisma_1 = require("../utils/prisma");
+const notificationService_1 = require("../services/notificationService");
+const logger_1 = require("../utils/logger");
 // Get all appointments
 const getAppointments = async (req, res) => {
     try {
@@ -59,7 +61,7 @@ const getAppointments = async (req, res) => {
         res.json(appointments);
     }
     catch (error) {
-        console.error('Get appointments error:', error);
+        logger_1.logger.error('Get appointments error:', error);
         res.status(500).json({ error: 'Failed to get appointments' });
     }
 };
@@ -99,7 +101,7 @@ const getAppointment = async (req, res) => {
         res.json(appointment);
     }
     catch (error) {
-        console.error('Get appointment error:', error);
+        logger_1.logger.error('Get appointment error:', error);
         res.status(500).json({ error: 'Failed to get appointment' });
     }
 };
@@ -144,24 +146,51 @@ const createAppointment = async (req, res) => {
         res.status(201).json(appointment);
         // Emit socket event for real-time updates
         (0, socket_1.emitToAdmin)('appointment_new', appointment);
-        // Find matching user to emit to their personal socket room
-        if (appointment.clientEmail || appointment.clientPhone) {
-            const clientUser = await prisma_1.prisma.user.findFirst({
-                where: {
-                    OR: [
-                        ...(appointment.clientEmail ? [{ email: appointment.clientEmail }] : []),
-                        ...(appointment.clientPhone ? [{ phone: appointment.clientPhone }] : [])
-                    ]
-                },
-                select: { id: true }
+        // Send appointment booking notifications
+        try {
+            const formattedDate = new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+            // Create notification for admins/agents
+            await (0, notificationService_1.createNotification)({
+                type: 'appointment_new',
+                title: 'Nouveau Rendez-vous',
+                message: `Nouveau rendez-vous planifié pour le ${formattedDate} à ${time}.`,
+                icon: 'Calendar',
+                link: '/admin', // Will point to appointments management
+                userId: null,
+                metadata: { appointmentId: appointment.id }
             });
-            if (clientUser) {
-                (0, socket_1.emitToUser)(clientUser.id, 'appointment_new', appointment);
+            // Find matching user to emit to their personal socket room and create personal notification
+            if (appointment.clientEmail || appointment.clientPhone) {
+                const clientUser = await prisma_1.prisma.user.findFirst({
+                    where: {
+                        OR: [
+                            ...(appointment.clientEmail ? [{ email: appointment.clientEmail }] : []),
+                            ...(appointment.clientPhone ? [{ phone: appointment.clientPhone }] : [])
+                        ]
+                    },
+                    select: { id: true }
+                });
+                if (clientUser) {
+                    (0, socket_1.emitToUser)(clientUser.id, 'appointment_new', appointment);
+                    // Create notification for the client user
+                    await (0, notificationService_1.createNotification)({
+                        type: 'appointment_new',
+                        title: 'Rendez-vous Confirmé',
+                        message: `Votre demande de rendez-vous pour le ${formattedDate} à ${time} a été reçue.`,
+                        icon: 'Calendar',
+                        link: '/dashboard',
+                        userId: clientUser.id,
+                        metadata: { appointmentId: appointment.id }
+                    });
+                }
             }
+        }
+        catch (notifErr) {
+            logger_1.logger.error('Failed to create appointment notifications:', notifErr);
         }
     }
     catch (error) {
-        console.error('Create appointment error:', error);
+        logger_1.logger.error('Create appointment error:', error);
         res.status(500).json({ error: 'Failed to create appointment' });
     }
 };
@@ -233,7 +262,7 @@ const updateAppointment = async (req, res) => {
                     });
                 }
                 catch (notificationError) {
-                    console.error('Failed to create status notification:', notificationError);
+                    logger_1.logger.error('Failed to create status notification:', notificationError);
                 }
             }
         }
@@ -257,7 +286,7 @@ const updateAppointment = async (req, res) => {
         }
     }
     catch (error) {
-        console.error('Update appointment error:', error);
+        logger_1.logger.error('Update appointment error:', error);
         res.status(500).json({ error: 'Failed to update appointment' });
     }
 };
@@ -304,7 +333,7 @@ const deleteAppointment = async (req, res) => {
             });
         }
         catch (notificationError) {
-            console.error('Failed to create delete notification:', notificationError);
+            logger_1.logger.error('Failed to create delete notification:', notificationError);
         }
         res.json({ message: 'Appointment deleted successfully' });
         // Emit socket event for real-time updates
@@ -326,7 +355,7 @@ const deleteAppointment = async (req, res) => {
         }
     }
     catch (error) {
-        console.error('Delete appointment error:', error);
+        logger_1.logger.error('Delete appointment error:', error);
         res.status(500).json({ error: 'Failed to delete appointment' });
     }
 };

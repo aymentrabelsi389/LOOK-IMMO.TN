@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendResetCodeEmail = void 0;
 const nodemailer_1 = __importDefault(require("nodemailer"));
+const logger_1 = require("../utils/logger");
 // Create a transport using SMTP environment variables
 const host = process.env.SMTP_HOST || '';
 const port = parseInt(process.env.SMTP_PORT || '587', 10);
@@ -145,9 +146,9 @@ Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.
 L'équipe Look Immo
     `;
     if (!transporter) {
-        console.warn('\n⚠️  [EMAIL SERVICE] Nodemailer is not configured (missing SMTP environment variables).');
-        console.warn(`👉 [RESET CODE FOR ${email}]: ${code}`);
-        console.warn('Please add SMTP config in .env to send real emails.\n');
+        logger_1.logger.warn('\n⚠️  [EMAIL SERVICE] Nodemailer is not configured (missing SMTP environment variables).');
+        logger_1.logger.warn(`👉 [RESET CODE FOR ${email}]: ${code}`);
+        logger_1.logger.warn('Please add SMTP config in .env to send real emails.\n');
         return;
     }
     try {
@@ -158,10 +159,10 @@ L'équipe Look Immo
             text,
             html,
         });
-        console.log(`✅ [EMAIL SERVICE] Reset code email sent successfully to: ${email}`);
+        logger_1.logger.info(`✅ [EMAIL SERVICE] Reset code email sent successfully to: ${email}`);
     }
     catch (error) {
-        console.error(`❌ [EMAIL SERVICE] Failed to send email to ${email}:`, error);
+        logger_1.logger.error(`❌ [EMAIL SERVICE] Failed to send email to ${email}:`, error);
         throw new Error("Impossible d'envoyer l'e-mail de réinitialisation.");
     }
 };

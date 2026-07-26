@@ -5,4 +5,5 @@ export declare const markAsRead: (req: Request, res: Response) => Promise<void>;
 export declare const markAllAsRead: (req: Request, res: Response) => Promise<void>;
 export declare const deleteNotification: (req: Request, res: Response) => Promise<void>;
 export declare const deleteReadNotifications: (req: Request, res: Response) => Promise<void>;
+export declare const deleteAllNotifications: (req: Request, res: Response) => Promise<void>;
 //# sourceMappingURL=notificationController.d.ts.map

@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.updatePropertyOrder = exports.deleteProperty = exports.updateProperty = exports.createProperty = exports.getProperty = exports.getProperties = void 0;
 const redis_1 = require("../utils/redis");
 const prisma_1 = require("../utils/prisma");
+const notificationService_1 = require("../services/notificationService");
+const logger_1 = require("../utils/logger");
 // Get all properties
 const getProperties = async (req, res) => {
     try {
@@ -79,6 +81,7 @@ const getProperties = async (req, res) => {
                     },
                     averageRating: true,
                     ratingsCount: true,
+                    ownerPhone: true,
                 },
                 orderBy: [
                     { displayOrder: 'asc' },
@@ -107,7 +110,7 @@ const getProperties = async (req, res) => {
         res.json(responseData);
     }
     catch (error) {
-        console.error('Get properties error:', error);
+        logger_1.logger.error('Get properties error:', error);
         res.status(500).json({ error: 'Failed to get properties' });
     }
 };
@@ -145,7 +148,7 @@ const getProperty = async (req, res) => {
         res.json(property);
     }
     catch (error) {
-        console.error('Get property error:', error);
+        logger_1.logger.error('Get property error:', error);
         res.status(500).json({ error: 'Failed to get property' });
     }
 };
@@ -153,17 +156,12 @@ exports.getProperty = getProperty;
 // Create property
 const createProperty = async (req, res) => {
     try {
-        const { title, description, price, priceType, type, city, zone, status, images, features, category, isFeatured, isNew, isHotDeal, location } = req.body;
+        const { title, description, price, priceType, type, city, zone, status, images, features, category, isFeatured, isNew, isHotDeal, location, ownerPhone } = req.body;
         const ownerId = req.user?.id;
         if (!title || !price || !type || !city || !ownerId) {
             res.status(400).json({ error: 'Title, price, type, and city are required' });
             return;
         }
-        // Get max displayOrder to assign new property to end
-        const maxOrder = await prisma_1.prisma.property.findFirst({
-            orderBy: { displayOrder: 'desc' },
-            select: { displayOrder: true }
-        });
         const property = await prisma_1.prisma.property.create({
             data: {
                 title,
@@ -180,8 +178,8 @@ const createProperty = async (req, res) => {
                 isFeatured: isFeatured || false,
                 isNew: isNew || false,
                 isHotDeal: isHotDeal || false,
-                displayOrder: (maxOrder?.displayOrder || 0) + 1,
                 ownerId,
+                ownerPhone: ownerPhone || null,
                 // Handle lat/lng if provided in location object or directly
                 latitude: location?.lat || req.body.latitude,
                 longitude: location?.lng || req.body.longitude,
@@ -192,21 +190,34 @@ const createProperty = async (req, res) => {
                 },
             },
         });
-        // Create notification
-        await prisma_1.prisma.notification.create({
-            data: {
-                type: 'property_add',
-                message: `New property added: ${property.title}`,
-                entityId: property.id,
-                userId: ownerId,
-            },
-        });
         // Invalidate property list cache
         await (0, redis_1.clearCachePattern)('properties:list:*');
         res.status(201).json(property);
+        // Notification + demand-matching scan run AFTER the response is sent.
+        // checkPropertyMatchesAndNotify loops over every active ClientDemand
+        // doing string/score matching — it was previously awaited before the
+        // response, adding latency to property creation proportional to
+        // demand volume. Fire-and-forget with its own error handling instead.
+        (async () => {
+            try {
+                await (0, notificationService_1.createNotification)({
+                    type: 'property_add',
+                    title: 'Nouvelle Propriété',
+                    message: `Une nouvelle propriété a été ajoutée : ${property.title}`,
+                    icon: 'Home',
+                    link: `/property/${property.id}`,
+                    userId: null, // Send to all admins/agents
+                    metadata: { propertyId: property.id }
+                });
+                await (0, notificationService_1.checkPropertyMatchesAndNotify)(property);
+            }
+            catch (notifErr) {
+                logger_1.logger.error('Failed to create property notifications:', notifErr);
+            }
+        })();
     }
     catch (error) {
-        console.error('Create property error:', error);
+        logger_1.logger.error('Create property error:', error);
         res.status(500).json({ error: 'Failed to create property' });
     }
 };
@@ -215,12 +226,9 @@ exports.createProperty = createProperty;
 const updateProperty = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, price, priceType, type, city, zone, status, images, features, category, isFeatured, isNew, isHotDeal, location } = req.body;
+        const { title, description, price, priceType, type, city, zone, status, images, features, category, isFeatured, isNew, isHotDeal, location, ownerPhone } = req.body;
         const userId = req.user?.id;
         const userRole = req.user?.role;
-        console.log('Update Property Request Body:', req.body);
-        console.log('isFeatured Type:', typeof req.body.isFeatured);
-        console.log('isFeatured Value:', req.body.isFeatured);
         const existingProperty = await prisma_1.prisma.property.findUnique({
             where: { id },
         });
@@ -250,6 +258,7 @@ const updateProperty = async (req, res) => {
                 ...(req.body.isFeatured !== undefined && { isFeatured: req.body.isFeatured }),
                 ...(req.body.isNew !== undefined && { isNew: req.body.isNew }),
                 ...(req.body.isHotDeal !== undefined && { isHotDeal: req.body.isHotDeal }),
+                ...(ownerPhone !== undefined && { ownerPhone: ownerPhone || null }),
                 // Handle lat/lng updates
                 ...((location?.lat || req.body.latitude) && { latitude: parseFloat(location?.lat || req.body.latitude) }),
                 ...((location?.lng || req.body.longitude) && { longitude: parseFloat(location?.lng || req.body.longitude) }),
@@ -275,7 +284,7 @@ const updateProperty = async (req, res) => {
         res.json(property);
     }
     catch (error) {
-        console.error('Update property error:', error);
+        logger_1.logger.error('Update property error:', error);
         res.status(500).json({ error: 'Failed to update property' });
     }
 };
@@ -316,7 +325,7 @@ const deleteProperty = async (req, res) => {
         res.json({ message: 'Property deleted successfully' });
     }
     catch (error) {
-        console.error('Delete property error:', error);
+        logger_1.logger.error('Delete property error:', error);
         res.status(500).json({ error: 'Failed to delete property' });
     }
 };
@@ -345,7 +354,7 @@ const updatePropertyOrder = async (req, res) => {
         res.json({ success: true, message: 'Property order updated successfully' });
     }
     catch (error) {
-        console.error('Update property order error:', error);
+        logger_1.logger.error('Update property order error:', error);
         res.status(500).json({ error: 'Failed to update property order' });
     }
 };

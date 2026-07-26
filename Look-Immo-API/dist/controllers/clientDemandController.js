@@ -2,30 +2,40 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteClientDemand = exports.updateClientDemand = exports.createClientDemand = exports.getClientDemands = void 0;
 const prisma_1 = require("../utils/prisma");
+const logger_1 = require("../utils/logger");
 // Get all client demands
 const getClientDemands = async (req, res) => {
     try {
         const { status, type, search } = req.query;
-        const demands = await prisma_1.prisma.clientDemand.findMany({
-            where: {
-                ...(status && status !== 'all' ? { status: status } : {}),
-                ...(type && type !== 'all' ? { type: type } : {}),
-                ...(search
-                    ? {
-                        OR: [
-                            { clientName: { contains: search, mode: 'insensitive' } },
-                            { phone: { contains: search, mode: 'insensitive' } },
-                            { description: { contains: search, mode: 'insensitive' } },
-                        ],
-                    }
-                    : {}),
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 100));
+        const where = {
+            ...(status && status !== 'all' ? { status: status } : {}),
+            ...(type && type !== 'all' ? { type: type } : {}),
+            ...(search
+                ? {
+                    OR: [
+                        { clientName: { contains: search, mode: 'insensitive' } },
+                        { phone: { contains: search, mode: 'insensitive' } },
+                        { description: { contains: search, mode: 'insensitive' } },
+                    ],
+                }
+                : {}),
+        };
+        const [demands, total] = await Promise.all([
+            prisma_1.prisma.clientDemand.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            prisma_1.prisma.clientDemand.count({ where }),
+        ]);
+        res.setHeader('X-Total-Count', String(total));
         res.json(demands);
     }
     catch (error) {
-        console.error('Get client demands error:', error);
+        logger_1.logger.error('Get client demands error:', error);
         res.status(500).json({ error: 'Failed to get client demands' });
     }
 };
@@ -53,7 +63,7 @@ const createClientDemand = async (req, res) => {
         res.status(201).json(demand);
     }
     catch (error) {
-        console.error('Create client demand error:', error);
+        logger_1.logger.error('Create client demand error:', error);
         res.status(500).json({ error: 'Failed to create client demand' });
     }
 };
@@ -73,7 +83,7 @@ const updateClientDemand = async (req, res) => {
         res.json(demand);
     }
     catch (error) {
-        console.error('Update client demand error:', error);
+        logger_1.logger.error('Update client demand error:', error);
         res.status(500).json({ error: 'Failed to update client demand' });
     }
 };
@@ -88,7 +98,7 @@ const deleteClientDemand = async (req, res) => {
         res.json({ message: 'Client demand deleted successfully' });
     }
     catch (error) {
-        console.error('Delete client demand error:', error);
+        logger_1.logger.error('Delete client demand error:', error);
         res.status(500).json({ error: 'Failed to delete client demand' });
     }
 };

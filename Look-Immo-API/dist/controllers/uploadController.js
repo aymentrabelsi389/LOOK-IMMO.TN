@@ -7,6 +7,34 @@ exports.downloadFile = exports.handleDocumentUpload = exports.handleImageUpload 
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
 const upload_1 = require("../utils/upload");
+const logger_1 = require("../utils/logger");
+/**
+ * Build the set of trusted redirect origins from env vars at startup.
+ * Only URLs whose origin matches one of these will be followed by downloadFile.
+ *
+ * Populated from:
+ *   S3_PUBLIC_URL  — CDN / Spaces public URL
+ *   S3_ENDPOINT    — S3-compatible endpoint
+ *   BACKEND_URL    — own server (serves local /uploads/ files)
+ *
+ * If none are set the set is empty and all external redirects are blocked.
+ */
+function buildAllowedOrigins() {
+    const origins = new Set();
+    const add = (raw) => {
+        if (!raw)
+            return;
+        try {
+            origins.add(new URL(raw).origin);
+        }
+        catch { /* ignore invalid URL */ }
+    };
+    add(process.env.S3_PUBLIC_URL);
+    add(process.env.S3_ENDPOINT);
+    add(process.env.BACKEND_URL);
+    return origins;
+}
+const ALLOWED_REDIRECT_ORIGINS = buildAllowedOrigins();
 /**
  * POST /api/upload/image
  *
@@ -54,7 +82,7 @@ const handleDocumentUpload = async (req, res) => {
         });
     }
     catch (error) {
-        console.error('[UPLOAD] Document upload failed:', error);
+        logger_1.logger.error('[UPLOAD] Document upload failed:', error);
         res.status(500).json({ error: 'Erreur lors du téléchargement du document.' });
     }
 };
@@ -70,8 +98,21 @@ const downloadFile = (req, res) => {
         res.status(400).json({ error: 'L\'URL du fichier est requise.' });
         return;
     }
-    // If it is an external URL (e.g. S3 public URL), redirect to it directly
+    // If it is an external URL (e.g. S3 public URL), only redirect to trusted origins.
+    // Unrestricted redirect would allow open-redirect phishing via /api/download?url=...
     if (url.startsWith('http://') || url.startsWith('https://')) {
+        let origin;
+        try {
+            origin = new URL(url).origin;
+        }
+        catch {
+            res.status(400).json({ error: 'URL invalide.' });
+            return;
+        }
+        if (!ALLOWED_REDIRECT_ORIGINS.has(origin)) {
+            res.status(403).json({ error: 'Redirect vers une URL non autorisée.' });
+            return;
+        }
         res.redirect(url);
         return;
     }
@@ -94,7 +135,7 @@ const downloadFile = (req, res) => {
         res.download(absolutePath);
     }
     catch (error) {
-        console.error('File download error:', error);
+        logger_1.logger.error('File download error:', error);
         res.status(500).json({ error: 'Erreur lors du téléchargement.' });
     }
 };

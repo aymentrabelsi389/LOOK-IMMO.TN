@@ -3,29 +3,40 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteMessage = exports.updateMessage = exports.createMessage = exports.getMessage = exports.getMessages = void 0;
 const socket_1 = require("../utils/socket");
 const prisma_1 = require("../utils/prisma");
+const notificationService_1 = require("../services/notificationService");
+const logger_1 = require("../utils/logger");
 // Get all messages
 const getMessages = async (req, res) => {
     try {
         const { status, search } = req.query;
-        const messages = await prisma_1.prisma.message.findMany({
-            where: {
-                ...(status && status !== 'all' ? { status: status } : {}),
-                ...(search
-                    ? {
-                        OR: [
-                            { name: { contains: search, mode: 'insensitive' } },
-                            { email: { contains: search, mode: 'insensitive' } },
-                            { message: { contains: search, mode: 'insensitive' } },
-                        ],
-                    }
-                    : {}),
-            },
-            orderBy: { createdAt: 'desc' },
-        });
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 100));
+        const where = {
+            ...(status && status !== 'all' ? { status: status } : {}),
+            ...(search
+                ? {
+                    OR: [
+                        { name: { contains: search, mode: 'insensitive' } },
+                        { email: { contains: search, mode: 'insensitive' } },
+                        { message: { contains: search, mode: 'insensitive' } },
+                    ],
+                }
+                : {}),
+        };
+        const [messages, total] = await Promise.all([
+            prisma_1.prisma.message.findMany({
+                where,
+                orderBy: { createdAt: 'desc' },
+                skip: (page - 1) * limit,
+                take: limit,
+            }),
+            prisma_1.prisma.message.count({ where }),
+        ]);
+        res.setHeader('X-Total-Count', String(total));
         res.json(messages);
     }
     catch (error) {
-        console.error('Get messages error:', error);
+        logger_1.logger.error('Get messages error:', error);
         res.status(500).json({ error: 'Failed to get messages' });
     }
 };
@@ -44,7 +55,7 @@ const getMessage = async (req, res) => {
         res.json(message);
     }
     catch (error) {
-        console.error('Get message error:', error);
+        logger_1.logger.error('Get message error:', error);
         res.status(500).json({ error: 'Failed to get message' });
     }
 };
@@ -71,9 +82,24 @@ const createMessage = async (req, res) => {
         res.status(201).json(message);
         // Emit socket event for real-time updates
         (0, socket_1.emitToAdmin)('message_new', message);
+        // Create contact message notification for admins
+        try {
+            await (0, notificationService_1.createNotification)({
+                type: 'message_new',
+                title: 'Nouveau Message',
+                message: `Vous avez reçu un nouveau message de ${message.name}.`,
+                icon: 'MessageSquare',
+                link: '/admin', // Will show messages tab in AdminPanel
+                userId: null,
+                metadata: { messageId: message.id }
+            });
+        }
+        catch (notifErr) {
+            logger_1.logger.error('Failed to create message notification:', notifErr);
+        }
     }
     catch (error) {
-        console.error('Create message error:', error);
+        logger_1.logger.error('Create message error:', error);
         res.status(500).json({ error: 'Failed to create message' });
     }
 };
@@ -99,7 +125,7 @@ const updateMessage = async (req, res) => {
         (0, socket_1.emitToAdmin)('message_update', message);
     }
     catch (error) {
-        console.error('Update message error:', error);
+        logger_1.logger.error('Update message error:', error);
         res.status(500).json({ error: 'Failed to update message' });
     }
 };
@@ -131,7 +157,7 @@ const deleteMessage = async (req, res) => {
         (0, socket_1.emitToAdmin)('message_delete', { id });
     }
     catch (error) {
-        console.error('Delete message error:', error);
+        logger_1.logger.error('Delete message error:', error);
         res.status(500).json({ error: 'Failed to delete message' });
     }
 };

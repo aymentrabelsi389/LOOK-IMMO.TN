@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteRating = exports.createRating = exports.getRating = exports.getRatings = void 0;
 const redis_1 = require("../utils/redis");
 const prisma_1 = require("../utils/prisma");
+const notificationService_1 = require("../services/notificationService");
+const logger_1 = require("../utils/logger");
 // Get all ratings
 const getRatings = async (req, res) => {
     try {
@@ -22,7 +24,7 @@ const getRatings = async (req, res) => {
         res.json(ratings);
     }
     catch (error) {
-        console.error('Get ratings error:', error);
+        logger_1.logger.error('Get ratings error:', error);
         res.status(500).json({ error: 'Failed to get ratings' });
     }
 };
@@ -46,7 +48,7 @@ const getRating = async (req, res) => {
         res.json(rating);
     }
     catch (error) {
-        console.error('Get rating error:', error);
+        logger_1.logger.error('Get rating error:', error);
         res.status(500).json({ error: 'Failed to get rating' });
     }
 };
@@ -55,6 +57,10 @@ exports.getRating = getRating;
 const createRating = async (req, res) => {
     try {
         const { userName, propertyId, stars, comment } = req.body;
+        // Only trust the server-verified identity (set by optionalAuth from a
+        // valid JWT) — never a client-supplied userId, which would let an
+        // unauthenticated caller attribute or overwrite a rating as anyone.
+        const verifiedUserId = req.user?.id || null;
         if (!userName || !propertyId || !stars) {
             res.status(400).json({ error: 'User name, property, and stars are required' });
             return;
@@ -71,17 +77,19 @@ const createRating = async (req, res) => {
             res.status(404).json({ error: 'Property not found' });
             return;
         }
-        // Check if an existing rating by this user exists
+        // Check if an existing rating by this (verified) user exists
         let existingRating = null;
-        if (req.body.userId) {
+        if (verifiedUserId) {
             existingRating = await prisma_1.prisma.rating.findFirst({
-                where: { propertyId, userId: req.body.userId }
+                where: { propertyId, userId: verifiedUserId }
             });
         }
-        // Fallback to name if user ID was not reliably saved
-        if (!existingRating && userName) {
+        // Fallback to name only when the caller is anonymous (no verified
+        // identity) — anonymous ratings under the same display name are
+        // treated as edits from the same person, same as before.
+        if (!existingRating && !verifiedUserId && userName) {
             existingRating = await prisma_1.prisma.rating.findFirst({
-                where: { propertyId, userName }
+                where: { propertyId, userName, userId: null }
             });
         }
         let rating;
@@ -91,7 +99,7 @@ const createRating = async (req, res) => {
                 data: {
                     stars,
                     comment: comment !== undefined ? comment : existingRating.comment,
-                    userId: req.body.userId || existingRating.userId,
+                    userId: verifiedUserId || existingRating.userId,
                 },
                 include: {
                     property: { select: { id: true, title: true } },
@@ -105,7 +113,7 @@ const createRating = async (req, res) => {
                     propertyId,
                     stars,
                     comment,
-                    userId: req.body.userId || null,
+                    userId: verifiedUserId,
                 },
                 include: {
                     property: { select: { id: true, title: true } },
@@ -118,9 +126,24 @@ const createRating = async (req, res) => {
         await (0, redis_1.clearCachePattern)('properties:list:*');
         await (0, redis_1.deleteCache)(`properties:detail:${propertyId}`);
         res.status(201).json(rating);
+        // Send new rating notification for admins
+        try {
+            await (0, notificationService_1.createNotification)({
+                type: 'rating_new',
+                title: 'Nouvel Avis',
+                message: `Le bien "${rating.property.title}" a reçu un nouvel avis de ${rating.stars} étoiles de ${rating.userName}.`,
+                icon: 'Star',
+                link: `/property/${propertyId}`,
+                userId: null,
+                metadata: { ratingId: rating.id, propertyId }
+            });
+        }
+        catch (notifErr) {
+            logger_1.logger.error('Failed to create rating notification:', notifErr);
+        }
     }
     catch (error) {
-        console.error('Create rating error:', error);
+        logger_1.logger.error('Create rating error:', error);
         res.status(500).json({ error: 'Failed to create rating' });
     }
 };
@@ -156,13 +179,13 @@ const deleteRating = async (req, res) => {
             });
         }
         catch (notifError) {
-            console.error('Failed to create notification for rating deletion:', notifError);
+            logger_1.logger.error('Failed to create notification for rating deletion:', notifError);
             // Non-critical, continue with deletion success
         }
         res.json({ message: 'Rating deleted successfully' });
     }
     catch (error) {
-        console.error('Delete rating error:', error);
+        logger_1.logger.error('Delete rating error:', error);
         res.status(500).json({ error: error.message || 'Failed to delete rating' });
     }
 };

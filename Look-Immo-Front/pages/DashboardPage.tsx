@@ -391,7 +391,7 @@ const DashboardPage = () => {
     });
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 sm:py-12">
+    <div className="max-w-6xl mx-auto px-4 py-6 sm:py-12 opacity-0 animate-fade-in-up">
       {/* Header with Action Buttons */}
       <div className="relative overflow-hidden bg-gradient-to-br from-brand-dark via-[#112942] to-[#0A1A2A] rounded-3xl p-6 sm:p-8 border border-white/10 shadow-xl mb-10">
         {/* Radial decorative light */}

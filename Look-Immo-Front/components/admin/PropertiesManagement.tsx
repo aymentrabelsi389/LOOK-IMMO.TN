@@ -40,9 +40,10 @@ interface SortablePropertyItemProps {
   openEditModal: (p: Property) => Promise<void>;
   handleDelete: (id: string) => void;
   openHistoryModal: React.Dispatch<React.SetStateAction<Property | null>>;
+  index: number;
 }
 
-const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, openHistoryModal }: SortablePropertyItemProps) => {
+const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, openHistoryModal, index }: SortablePropertyItemProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: p.id });
   const [activePlanMenu, setActivePlanMenu] = useState(false);
   const [activePaperMenu, setActivePaperMenu] = useState(false);
@@ -58,13 +59,14 @@ const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, openHistory
     transition,
     zIndex: isDragging ? 40 : (activePlanMenu || activePaperMenu) ? 30 : 1,
     opacity: isDragging ? 0.5 : 1,
+    animationDelay: `${index * 50}ms`,
   };
 
   return (
     <div 
       ref={setNodeRef} 
       style={style} 
-      className="group bg-white border-b border-gray-100 last:border-0 hover:bg-blue-50/20 transition-all p-4 md:p-0 md:flex md:items-center md:min-w-[1000px] w-full overflow-hidden"
+      className="group bg-white border-b border-gray-100 last:border-0 hover:bg-blue-50/20 transition-all p-4 md:p-0 md:flex md:items-center md:min-w-[1000px] w-full overflow-hidden opacity-0 animate-fade-in-up"
     >
       {/* Mobile Card Layout */}
       <div className="flex flex-col w-full md:hidden gap-3">
@@ -625,13 +627,14 @@ const PropertiesManagement = ({
                    <p className="font-bold">Aucune propriété trouvée</p>
                 </div>
               ) : (
-                paginatedProperties.map(p => (
+                paginatedProperties.map((p, index) => (
                   <SortablePropertyItem
                     key={p.id}
                     p={p}
                     openEditModal={openEditModal}
                     handleDelete={handleDelete}
                     openHistoryModal={setHistoryProperty}
+                    index={index}
                   />
                 ))
               )}

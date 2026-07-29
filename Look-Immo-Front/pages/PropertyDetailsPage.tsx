@@ -826,7 +826,7 @@ const PropertyDetailsPage = () => {
 
       {/* Fullscreen Lightbox Modal */}
       {showLightbox && (
-        <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 md:p-12 animate-fade-in" onClick={() => setShowLightbox(false)}>
+        <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md animate-fade-in" onClick={() => setShowLightbox(false)}>
           {/* Header Content */}
           <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10 bg-gradient-to-b from-black/60 to-transparent">
             <div className="flex flex-col text-left">
@@ -843,7 +843,7 @@ const PropertyDetailsPage = () => {
 
           {/* Main Image Stage with Pointer-based Swipe Gestures */}
           <div
-            className="relative w-full h-full flex items-center justify-center select-none touch-pan-y"
+            className="absolute inset-y-20 inset-x-2 md:inset-y-28 md:inset-x-16 flex items-center justify-center select-none touch-pan-y"
             onClick={(e) => e.stopPropagation()}
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp}
@@ -874,13 +874,13 @@ const PropertyDetailsPage = () => {
               <>
                 <button
                   onClick={() => setCurrentImageIndex((currentImageIndex - 1 + property.images.length) % property.images.length)}
-                  className="absolute left-0 md:left-4 top-1/2 -translate-y-1/2 p-4 text-white/50 hover:text-white bg-white/0 hover:bg-white/10 rounded-full transition-all transform hover:scale-110 active:scale-95"
+                  className="absolute left-0 md:left-4 top-1/2 -translate-y-1/2 p-4 text-white/50 hover:text-white bg-white/0 hover:bg-white/10 rounded-full transition-all transform hover:scale-110 active:scale-95 z-10"
                 >
                   <ChevronLeft size={48} />
                 </button>
                 <button
                   onClick={() => setCurrentImageIndex((currentImageIndex + 1) % property.images.length)}
-                  className="absolute right-0 md:right-4 top-1/2 -translate-y-1/2 p-4 text-white/50 hover:text-white bg-white/0 hover:bg-white/10 rounded-full transition-all transform hover:scale-110 active:scale-95"
+                  className="absolute right-0 md:right-4 top-1/2 -translate-y-1/2 p-4 text-white/50 hover:text-white bg-white/0 hover:bg-white/10 rounded-full transition-all transform hover:scale-110 active:scale-95 z-10"
                 >
                   <ChevronRight size={48} />
                 </button>
@@ -889,7 +889,7 @@ const PropertyDetailsPage = () => {
           </div>
 
           {/* Caption Overlay */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-white/90 text-sm font-medium text-center whitespace-nowrap">
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-white/90 text-sm font-medium text-center whitespace-nowrap z-10">
             {property.title}
           </div>
         </div>

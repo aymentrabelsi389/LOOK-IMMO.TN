@@ -9,6 +9,7 @@ import { useSEO } from '@/hooks/useSEO';
 import { useUI } from '@/context/UIContext';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useData } from '@/context/DataContext';
+import { ScrollReveal } from '@/components/ui/ScrollReveal';
 
 import hero1 from '../photo-1613490493576-7fde63acd811.webp';
 import hero2 from '../photo-1512917774080-9991f1c4c750.webp';
@@ -92,17 +93,17 @@ const HomePage = () => {
         </div>
 
         <div className="relative max-w-[1440px] mx-auto px-4 h-full flex flex-col justify-center items-center">
-          <div className="text-center mb-8 animate-fade-in-up">
-            <h1 className="text-4xl md:text-7xl font-bold text-white mb-2 font-serif tracking-tight drop-shadow-2xl">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl md:text-7xl font-bold text-white mb-2 font-serif tracking-tight drop-shadow-2xl opacity-0 animate-fade-in-up">
               L'adresse de vos <span className="text-brand-teal italic">  rêves</span>
             </h1>
-            <p className="text-base md:text-xl text-gray-200 max-w-2xl mx-auto font-light leading-relaxed drop-shadow-lg">
+            <p className="text-base md:text-xl text-gray-200 max-w-2xl mx-auto font-light leading-relaxed drop-shadow-lg opacity-0 animate-fade-in-up delay-100">
               Trouvez des biens soigneusement sélectionnés pour vivre ou investir.
             </p>
           </div>
 
           {/* Search Widget */}
-          <div className="w-full max-w-3xl bg-white/10 backdrop-blur-2xl rounded-3xl p-5 md:p-8 shadow-2xl border border-white/20 animate-fade-in-up delay-100 relative z-20">
+          <div className="w-full max-w-3xl bg-white/10 backdrop-blur-2xl rounded-3xl p-5 md:p-8 shadow-2xl border border-white/20 opacity-0 animate-fade-in-up delay-200 relative z-20">
             {/* Tabs - Centered */}
             <div className="flex justify-center mb-8">
               <div className="bg-brand-dark/50 rounded-full p-1.5 flex border border-white/10">
@@ -196,41 +197,52 @@ const HomePage = () => {
         </div>
       </div>
 
-      <FeaturedPropertiesSection
-        properties={properties}
-        onSelectProperty={onSelectProperty}
-        userRole={userRole}
-        onToggleFavorite={onToggleFavorite}
-        user={user}
-        isLoading={isLoading}
-        onViewAll={() => {
-          onSearch({
-            query: '',
-            listingType: 'all',
-            propertyType: 'all',
-            minPrice: 0,
-            maxPrice: 5000000,
-            minBedrooms: 0,
-            minArea: 0
-          });
-          onNavigate('listings');
-        }}
-      />
-      <NewPropertiesSection
-        properties={properties}
-        onSelectProperty={onSelectProperty}
-        userRole={userRole}
-        onToggleFavorite={onToggleFavorite}
-        user={user}
-        isLoading={isLoading}
-      />
-      <PromotionLandsSection
-        onSelectProperty={onSelectProperty}
-        userRole={userRole}
-        onToggleFavorite={onToggleFavorite}
-        user={user}
-      />
-      <NewsSection blogPosts={blogPosts} onSelectPost={onSelectPost} />
+      <ScrollReveal>
+        <FeaturedPropertiesSection
+          properties={properties}
+          onSelectProperty={onSelectProperty}
+          userRole={userRole}
+          onToggleFavorite={onToggleFavorite}
+          user={user}
+          isLoading={isLoading}
+          onViewAll={() => {
+            onSearch({
+              query: '',
+              listingType: 'all',
+              propertyType: 'all',
+              minPrice: 0,
+              maxPrice: 5000000,
+              minBedrooms: 0,
+              minArea: 0
+            });
+            onNavigate('listings');
+          }}
+        />
+      </ScrollReveal>
+      
+      <ScrollReveal>
+        <NewPropertiesSection
+          properties={properties}
+          onSelectProperty={onSelectProperty}
+          userRole={userRole}
+          onToggleFavorite={onToggleFavorite}
+          user={user}
+          isLoading={isLoading}
+        />
+      </ScrollReveal>
+
+      <ScrollReveal>
+        <PromotionLandsSection
+          onSelectProperty={onSelectProperty}
+          userRole={userRole}
+          onToggleFavorite={onToggleFavorite}
+          user={user}
+        />
+      </ScrollReveal>
+
+      <ScrollReveal>
+        <NewsSection blogPosts={blogPosts} onSelectPost={onSelectPost} />
+      </ScrollReveal>
     </div>
   );
 };

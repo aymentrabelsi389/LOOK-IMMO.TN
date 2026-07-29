@@ -38,11 +38,12 @@ const SortableLocationRow: React.FC<SortableLocationRowProps> = memo(({ loc, ind
     transition, 
     zIndex: isDragging ? 10 : 1, 
     position: 'relative' as const, 
-    opacity: isDragging ? 0.5 : 1 
+    opacity: isDragging ? 0.5 : 1,
+    animationDelay: `${index * 50}ms`
   };
   
   return (
-    <tr ref={setNodeRef} style={style} className="group hover:bg-blue-50/30 transition-all duration-200 cursor-default border-b border-transparent hover:border-gray-100">
+    <tr ref={setNodeRef} style={style} className="group hover:bg-blue-50/30 transition-all duration-200 cursor-default border-b border-transparent hover:border-gray-100 opacity-0 animate-fade-in-up">
       <td className="px-8 py-5">
         <div className="flex items-center">
           <button {...attributes} {...listeners} className="p-1 mr-4 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing focus:outline-none shrink-0 touch-none">
@@ -88,11 +89,12 @@ const SortableLocationCard = memo(({ loc, index, openEditModal, confirmDelete }:
     transform: CSS.Transform.toString(transform), 
     transition, 
     zIndex: isDragging ? 10 : 1, 
-    opacity: isDragging ? 0.5 : 1 
+    opacity: isDragging ? 0.5 : 1,
+    animationDelay: `${index * 50}ms`
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="p-5 bg-white space-y-4 hover:bg-gray-50 transition-colors">
+    <div ref={setNodeRef} style={style} className="p-5 bg-white space-y-4 hover:bg-gray-50 transition-colors opacity-0 animate-fade-in-up">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button {...attributes} {...listeners} className="p-2 -ml-2 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing touch-none">

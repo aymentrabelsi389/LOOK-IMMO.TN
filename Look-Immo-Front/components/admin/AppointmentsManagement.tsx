@@ -238,10 +238,14 @@ const AppointmentsManagement = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {paginatedAppointments.map(apt => {
+                  {paginatedAppointments.map((apt, index) => {
                     const data = getDisplayData(apt);
                     return (
-                      <tr key={apt.id} className={`group hover:bg-blue-50/30 transition-all duration-200 cursor-default ${apt.status === 'pending' ? 'bg-yellow-50/30' : ''}`}>
+                      <tr
+                        key={apt.id}
+                        className={`group hover:bg-blue-50/30 transition-all duration-200 cursor-default opacity-0 animate-fade-in-up ${apt.status === 'pending' ? 'bg-yellow-50/30' : ''}`}
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
                         <td className="px-8 py-5">
                           <div className="flex items-center">
                             <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center border border-gray-200 text-gray-400 group-hover:bg-white group-hover:shadow-sm transition-all font-black text-xs">
@@ -347,10 +351,14 @@ const AppointmentsManagement = ({
 
             {/* Mobile Card View */}
             <div className="md:hidden divide-y divide-gray-100">
-              {paginatedAppointments.map(apt => {
+              {paginatedAppointments.map((apt, index) => {
                 const data = getDisplayData(apt);
                 return (
-                  <div key={apt.id} className={`p-5 hover:bg-gray-50 transition-colors space-y-4 ${apt.status === 'pending' ? 'bg-yellow-50/20 border-l-4 border-l-yellow-500' : 'bg-white'}`}>
+                  <div
+                    key={apt.id}
+                    className={`p-5 hover:bg-gray-50 transition-colors space-y-4 opacity-0 animate-fade-in-up ${apt.status === 'pending' ? 'bg-yellow-50/20 border-l-4 border-l-yellow-500' : 'bg-white'}`}
+                    style={{ animationDelay: `${index * 50}ms` }}
+                  >
                     <div className="flex justify-between items-start">
                       <div className="flex items-center">
                         <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center border border-gray-200 text-gray-400 font-black text-xs uppercase tracking-widest">

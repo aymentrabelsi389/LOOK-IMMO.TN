@@ -262,7 +262,9 @@ const AdminPanel = () => {
               <p className="text-sm text-gray-500 font-bold uppercase tracking-widest animate-pulse">Chargement de la section...</p>
             </div>
           }>
-            {renderMainContent()}
+            <div key={activeTab} className="opacity-0 animate-fade-in-up">
+              {renderMainContent()}
+            </div>
           </Suspense>
         </main>
       </div>

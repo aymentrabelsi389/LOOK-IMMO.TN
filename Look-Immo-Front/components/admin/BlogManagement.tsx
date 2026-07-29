@@ -202,8 +202,12 @@ const BlogManagement = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {paginatedPosts.map(post => (
-                    <tr key={post.id} className="group hover:bg-blue-50/30 transition-all duration-200 cursor-default">
+                  {paginatedPosts.map((post, index) => (
+                    <tr
+                      key={post.id}
+                      className="group hover:bg-blue-50/30 transition-all duration-200 cursor-default opacity-0 animate-fade-in-up"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
                       <td className="px-8 py-5">
                         <div className="flex items-center">
                           <div className="w-16 h-12 rounded-xl overflow-hidden shadow-sm border border-gray-100 mr-4 shrink-0 group-hover:scale-105 transition-transform">
@@ -252,8 +256,12 @@ const BlogManagement = ({
 
             {/* Mobile Card View */}
             <div className="md:hidden divide-y divide-gray-100">
-              {paginatedPosts.map(post => (
-                <div key={post.id} className="p-5 bg-white hover:bg-gray-50 transition-colors space-y-4">
+              {paginatedPosts.map((post, index) => (
+                <div
+                  key={post.id}
+                  className="p-5 bg-white hover:bg-gray-50 transition-colors space-y-4 opacity-0 animate-fade-in-up"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
                   <div className="flex gap-4">
                     <div className="w-24 h-24 rounded-2xl overflow-hidden shadow-sm border border-gray-100 shrink-0">
                       <img src={post.image} alt="" className="w-full h-full object-cover" />

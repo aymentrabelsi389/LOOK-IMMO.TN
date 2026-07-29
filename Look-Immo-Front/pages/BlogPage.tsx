@@ -32,8 +32,12 @@ const BlogPage = () => {
 
       <div className="max-w-7xl mx-auto px-4 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {visiblePosts.map(post => (
-            <div key={post.id} className="relative group h-full">
+          {visiblePosts.map((post, index) => (
+            <div
+              key={post.id}
+              className="relative group h-full opacity-0 animate-fade-in-up"
+              style={{ animationDelay: `${index * 60}ms` }}
+            >
               {/* Blue Glow Shadow Effect */}
               <div className="absolute -inset-1 bg-gradient-to-r from-brand-teal to-blue-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
               <article

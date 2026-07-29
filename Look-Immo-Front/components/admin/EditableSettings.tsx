@@ -170,7 +170,7 @@ const EditableSettings = ({ settings, setSettings, availableLocations }: Editabl
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column: General Info */}
         <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 opacity-0 animate-fade-in-up">
             <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center">
               <Globe size={20} className="text-brand-teal mr-2" />
               Informations Générales
@@ -218,7 +218,7 @@ const EditableSettings = ({ settings, setSettings, availableLocations }: Editabl
           </div>
 
           {/* About Text */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 opacity-0 animate-fade-in-up delay-100">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-gray-900 flex items-center">
                 <Info size={20} className="text-brand-teal mr-2" />
@@ -261,7 +261,7 @@ const EditableSettings = ({ settings, setSettings, availableLocations }: Editabl
           </div>
 
           {/* Discovery Links */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex-1 flex flex-col">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex-1 flex flex-col opacity-0 animate-fade-in-up delay-200">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-lg font-bold text-gray-900 flex items-center">
                 <MapPin className="mr-2 text-brand-teal" size={20} />
@@ -334,7 +334,7 @@ const EditableSettings = ({ settings, setSettings, availableLocations }: Editabl
 
         {/* Right Column: Social Media & Map */}
         <div className="space-y-6 flex flex-col h-full">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 opacity-0 animate-fade-in-up delay-100">
             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
               <MessageCircle size={20} className="text-brand-teal mr-2" />
               Réseaux Sociaux
@@ -381,7 +381,7 @@ const EditableSettings = ({ settings, setSettings, availableLocations }: Editabl
           </div>
 
           {/* Map Setting */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col min-h-[500px] flex-1">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col min-h-[500px] flex-1 opacity-0 animate-fade-in-up delay-200">
             <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
               <MapPin size={20} className="text-brand-teal mr-2" />
               Localisation de l'agence

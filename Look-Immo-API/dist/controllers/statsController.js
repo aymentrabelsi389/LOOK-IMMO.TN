@@ -46,10 +46,9 @@ const getDashboardStats = async (req, res) => {
         todayStart.setHours(0, 0, 0, 0);
         const todayEnd = new Date();
         todayEnd.setHours(23, 59, 59, 999);
-        const [totalUsers, totalProperties, totalVisits, totalAppointments, totalMessages, pendingAppointments, unreadMessages, usersByRole, propertiesByType, propertiesByStatus, recentProperties, recentAppointments, totalWebsiteVisits, onlineVisitCount, todayAppointments,] = await Promise.all([
+        const [totalUsers, totalProperties, totalAppointments, totalMessages, pendingAppointments, unreadMessages, usersByRole, propertiesByType, propertiesByStatus, recentProperties, recentAppointments, totalWebsiteVisits, onlineVisitCount, todayAppointments,] = await Promise.all([
             prisma_1.prisma.user.count(),
             prisma_1.prisma.property.count(),
-            prisma_1.prisma.visit.count(),
             prisma_1.prisma.appointment.count(),
             prisma_1.prisma.message.count(),
             prisma_1.prisma.appointment.count({ where: { status: 'pending' } }),

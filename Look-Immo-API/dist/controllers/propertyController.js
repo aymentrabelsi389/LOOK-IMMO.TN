@@ -226,7 +226,7 @@ exports.createProperty = createProperty;
 const updateProperty = async (req, res) => {
     try {
         const { id } = req.params;
-        const { title, description, price, priceType, type, city, zone, status, images, features, category, isFeatured, isNew, isHotDeal, location, ownerPhone } = req.body;
+        const { title, description, price, priceType, type, city, zone, status, images, location, ownerPhone } = req.body;
         const userId = req.user?.id;
         const userRole = req.user?.role;
         const existingProperty = await prisma_1.prisma.property.findUnique({

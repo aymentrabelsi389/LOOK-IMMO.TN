@@ -517,8 +517,12 @@ const FinancesManagement = ({ properties, showNotification }: FinancesManagement
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 text-sm">
-                  {paginatedTransactions.map((tx) => (
-                    <tr key={tx.id} className="hover:bg-gray-50/80 transition duration-150">
+                  {paginatedTransactions.map((tx, index) => (
+                    <tr
+                      key={tx.id}
+                      className="hover:bg-gray-50/80 transition duration-150 opacity-0 animate-fade-in-up"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
                       <td className="px-6 py-4 font-mono text-xs text-brand-grey font-bold">
                         {tx.id}
                       </td>
@@ -599,8 +603,12 @@ const FinancesManagement = ({ properties, showNotification }: FinancesManagement
 
             {/* Mobile Cards View */}
             <div className="md:hidden divide-y divide-gray-100">
-              {paginatedTransactions.map((tx) => (
-                <div key={tx.id} className="p-6 space-y-4 hover:bg-gray-50/50">
+              {paginatedTransactions.map((tx, index) => (
+                <div
+                  key={tx.id}
+                  className="p-6 space-y-4 hover:bg-gray-50/50 opacity-0 animate-fade-in-up"
+                  style={{ animationDelay: `${index * 50}ms` }}
+                >
                   <div className="flex items-center justify-between">
                     <span className="font-mono text-xs text-brand-grey font-bold">{tx.id}</span>
                     <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${

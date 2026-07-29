@@ -506,15 +506,20 @@ const ListingsPage = () => {
           ) : serverProperties.length > 0 ? (
             <>
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-5">
-                {serverProperties.map(property => (
-                  <PropertyCard
+                {serverProperties.map((property, index) => (
+                  <div
                     key={property.id}
-                    property={property}
-                    onSelect={onSelectProperty}
-                    isFavorite={user?.favorites.includes(property.id) || false}
-                    userRole={userRole}
-                    onToggleFavorite={onToggleFavorite}
-                  />
+                    className="opacity-0 animate-fade-in-up"
+                    style={{ animationDelay: `${index * 60}ms` }}
+                  >
+                    <PropertyCard
+                      property={property}
+                      onSelect={onSelectProperty}
+                      isFavorite={user?.favorites.includes(property.id) || false}
+                      userRole={userRole}
+                      onToggleFavorite={onToggleFavorite}
+                    />
+                  </div>
                 ))}
               </div>
 

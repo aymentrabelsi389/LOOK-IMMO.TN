@@ -6,6 +6,7 @@ import Price from '../Price';
 import PropertyMatchModal from './PropertyMatchModal';
 import { useDemandsManagement } from './demands/hooks/useDemandsManagement';
 import CustomDropdown from '../ui/CustomDropdown';
+import { StatusDropdown } from './demands/StatusDropdown';
 
 interface DemandsManagementProps {
   clientDemands?: ClientDemand[];
@@ -192,10 +193,14 @@ const DemandsManagement = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {paginatedDemands.map(demand => {
+                    {paginatedDemands.map((demand, index) => {
                       const matches = getMatchesForDemand(demand);
                       return (
-                        <tr key={demand.id} className={`group hover:bg-blue-50/30 transition-all duration-200 cursor-default ${demand.status === 'searching' ? 'bg-orange-50/30' : ''}`}>
+                        <tr
+                          key={demand.id}
+                          className={`group hover:bg-blue-50/30 transition-all duration-200 cursor-default opacity-0 animate-fade-in-up ${demand.status === 'searching' ? 'bg-orange-50/30' : ''}`}
+                          style={{ animationDelay: `${index * 50}ms` }}
+                        >
                           <td className="px-8 py-5">
                             <div className="flex items-center">
                               <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center border border-gray-200 text-gray-400 group-hover:bg-white group-hover:shadow-sm transition-all font-black text-xs">
@@ -233,21 +238,10 @@ const DemandsManagement = ({
                             </div>
                           </td>
                           <td className="px-6 py-5">
-                            <select
-                              value={demand.status}
-                              onChange={(e) => handleUpdateStatus(demand.id, e.target.value as ClientDemand['status'])}
-                              className={`text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl border border-transparent transition-all cursor-pointer outline-none ${
-                                demand.status === 'searching' ? 'bg-orange-100 text-orange-700 hover:bg-orange-200' :
-                                demand.status === 'contacted' ? 'bg-blue-100 text-blue-700 hover:bg-blue-200' :
-                                demand.status === 'matched' ? 'bg-green-100 text-green-700 hover:bg-green-200' :
-                                'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                              }`}
-                            >
-                              <option value="searching">En recherche</option>
-                              <option value="contacted">Contacté</option>
-                              <option value="matched">Matché</option>
-                              <option value="closed">Fermé</option>
-                            </select>
+                            <StatusDropdown
+                              status={demand.status}
+                              onChange={(newStatus) => handleUpdateStatus(demand.id, newStatus)}
+                            />
                           </td>
                           <td className="px-6 py-5">
                             {matches.length > 0 ? (
@@ -297,10 +291,14 @@ const DemandsManagement = ({
 
               {/* Mobile Card View */}
               <div className="md:hidden divide-y divide-gray-100">
-                {paginatedDemands.map(demand => {
+                {paginatedDemands.map((demand, index) => {
                   const matches = getMatchesForDemand(demand);
                   return (
-                    <div key={demand.id} className={`p-5 hover:bg-gray-50 transition-colors space-y-4 ${demand.status === 'searching' ? 'bg-orange-50/20 border-l-4 border-l-orange-500' : 'bg-white'}`}>
+                    <div
+                      key={demand.id}
+                      className={`p-5 hover:bg-gray-50 transition-colors space-y-4 opacity-0 animate-fade-in-up ${demand.status === 'searching' ? 'bg-orange-50/20 border-l-4 border-l-orange-500' : 'bg-white'}`}
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
                       <div className="flex justify-between items-start">
                         <div className="flex items-center">
                           <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center border border-gray-200 text-gray-400 font-black text-xs uppercase tracking-widest">
@@ -348,21 +346,10 @@ const DemandsManagement = ({
                       </div>
 
                       <div className="flex justify-between items-center pt-2">
-                        <select
-                          value={demand.status}
-                          onChange={(e) => handleUpdateStatus(demand.id, e.target.value as ClientDemand['status'])}
-                          className={`text-[9px] font-black uppercase tracking-wider px-3 py-1.5 rounded-xl border border-transparent outline-none ${
-                            demand.status === 'searching' ? 'bg-orange-100 text-orange-700' :
-                            demand.status === 'contacted' ? 'bg-blue-100 text-blue-700' :
-                            demand.status === 'matched' ? 'bg-green-100 text-green-700' :
-                            'bg-gray-100 text-gray-600'
-                          }`}
-                        >
-                          <option value="searching">En recherche</option>
-                          <option value="contacted">Contacté</option>
-                          <option value="matched">Matché</option>
-                          <option value="closed">Fermé</option>
-                        </select>
+                        <StatusDropdown
+                          status={demand.status}
+                          onChange={(newStatus) => handleUpdateStatus(demand.id, newStatus)}
+                        />
 
                         {matches.length > 0 && (
                           <button

@@ -162,7 +162,7 @@ export function usePropertiesManagement({
       await propertiesAPI.delete(deleteConfirmId);
       setProperties(prev => prev.filter(p => p.id !== deleteConfirmId));
       showNotification('success', 'Propriété supprimée');
-    } catch (error) {
+    } catch {
       showNotification('error', 'Erreur de suppression');
     }
     setDeleteConfirmId(null);
@@ -256,7 +256,7 @@ export function usePropertiesManagement({
         }
       }
       setShowModal(false);
-    } catch (error) {
+    } catch {
       showNotification('error', 'Erreur d\'enregistrement');
     }
   };
@@ -400,7 +400,12 @@ export function usePropertiesManagement({
       const up = updates.find(u => u.id === p.id);
       return up ? { ...p, displayOrder: up.displayOrder } : p;
     }));
-    await propertiesAPI.updateOrder(updates);
+    try {
+      await propertiesAPI.updateOrder(updates);
+      showNotification('success', 'Ordre mis à jour');
+    } catch {
+      showNotification('error', 'Erreur de réorganisation');
+    }
   };
 
   return {

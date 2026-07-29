@@ -52,7 +52,10 @@ const Footer = ({
     (window as any)._forceInstantScroll = true;
     onNavigate(page);
     if (targetId) {
-      setTimeout(() => smoothScrollTo(targetId, 1000), 100);
+      // First jump to top instantly so the user sees the full top-to-bottom scroll effect
+      window.scrollTo(0, 0);
+      // Wait for the page to mount and the DOM element to be ready, then smooth scroll
+      setTimeout(() => smoothScrollTo(targetId, 1200), 350);
     }
   };
 

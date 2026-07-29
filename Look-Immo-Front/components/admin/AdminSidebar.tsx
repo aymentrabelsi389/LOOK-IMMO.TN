@@ -20,7 +20,6 @@ const AdminSidebar = ({
   setActiveTab,
   sidebarOpen,
   setSidebarOpen,
-  user,
   unreadMessagesCount,
   pendingAppointmentsCount,
   newUsersCount,

@@ -12,6 +12,7 @@ import L from 'leaflet';
 import { SiteSettings } from '@/types';
 import { settingsAPI } from '@/services/api';
 import { notify } from '@/services/notificationStore';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface EditableSettingsProps {
   settings: SiteSettings;
@@ -54,15 +55,7 @@ const LocationDropdown = ({ value, onChange, options }: LocationDropdownProps) =
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(containerRef, () => setIsOpen(false));
 
   const allOptions = [...options];
   if (value && !allOptions.includes(value)) {

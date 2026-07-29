@@ -153,7 +153,7 @@ const ClientAppointmentsHistoryModal: React.FC<ClientAppointmentsHistoryModalPro
 
         {/* Appointments List */}
         <div className="flex-1 overflow-y-auto px-4 py-4 md:px-8 md:py-6 space-y-4 custom-scrollbar">
-          {clientAppointments.map((apt, index) => {
+          {clientAppointments.map((apt) => {
             const data = getDisplayData(apt);
             const isCurrent = apt.id === clientAppointment.id;
             return (

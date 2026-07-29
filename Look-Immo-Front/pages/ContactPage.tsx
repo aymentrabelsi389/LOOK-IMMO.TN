@@ -8,6 +8,7 @@ import { useSEO } from '@/hooks/useSEO';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useData } from '@/context/DataContext';
 import { notify } from '@/services/notificationStore';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 // Helper component to fix Leaflet resize issues
 const MapUpdater = () => {
@@ -52,15 +53,7 @@ const ContactPage = () => {
   ];
 
   // Close subject dropdown on outside click
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (subjectDropdownRef.current && !subjectDropdownRef.current.contains(event.target as Node)) {
-        setSubjectDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(subjectDropdownRef, () => setSubjectDropdownOpen(false));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

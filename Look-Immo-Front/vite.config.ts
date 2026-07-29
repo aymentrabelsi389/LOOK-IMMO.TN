@@ -79,11 +79,6 @@ export default defineConfig(({ mode }) => {
               return 'vendor-icons';
             }
 
-            // zod — validation, only used in forms
-            if (id.includes('zod')) {
-              return 'vendor-zod';
-            }
-
             // date-fns — if present
             if (id.includes('date-fns')) {
               return 'vendor-date';

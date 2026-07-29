@@ -291,7 +291,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         });
       } else {
         // Standard Client Listeners
-        socketService.on('appointment_new', (newAppt) => {
+        socketService.on('appointment_new', () => {
           queryClient.invalidateQueries({ queryKey: ['appointments'] });
         });
 
@@ -301,7 +301,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
           queryClient.invalidateQueries({ queryKey: ['appointments'] });
         });
 
-        socketService.on('appointment_delete', ({ id }) => {
+        socketService.on('appointment_delete', () => {
           notify.warning("Un de vos rendez-vous a été annulé par l'administration.", { duration: 6000 });
           queryClient.invalidateQueries({ queryKey: ['appointments'] });
         });

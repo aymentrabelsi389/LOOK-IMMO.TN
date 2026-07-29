@@ -248,7 +248,7 @@ export const createProperty = async (req: AuthRequest, res: Response): Promise<v
 export const updateProperty = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         const { id } = req.params;
-        const { title, description, price, priceType, type, city, zone, status, images, features, category, isFeatured, isNew, isHotDeal, location, ownerPhone } = req.body;
+        const { title, description, price, priceType, type, city, zone, status, images, location, ownerPhone } = req.body;
         const userId = req.user?.id;
         const userRole = req.user?.role;
 

@@ -1,7 +1,7 @@
 
 import React, { useState, memo } from 'react';
 import { 
-  Plus, Edit, Trash2, MapPin, GripVertical, ChevronLeft, ChevronRight, List, X
+  Plus, Edit, Trash2, MapPin, GripVertical, List, X
 } from 'lucide-react';
 import {
   DndContext,
@@ -22,6 +22,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { locationsAPI } from '@/services/api';
+import Pagination from '../ui/Pagination';
 
 interface SortableLocationRowProps {
   loc: any;
@@ -368,37 +369,13 @@ const LocationsManagement = ({
             )}
 
             {!showAll && totalPages > 1 && (
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="p-2 border border-gray-200 rounded-lg text-gray-400 hover:bg-gray-50 disabled:opacity-30 transition"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                  <button
-                    key={page}
-                    onClick={() => setCurrentPage(page)}
-                    className={`min-w-[32px] h-8 px-2 flex items-center justify-center rounded-lg text-xs font-bold transition-all ${
-                      currentPage === page
-                        ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-                        : 'text-gray-600 hover:bg-gray-50 border border-transparent hover:border-gray-100'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="p-2 border border-gray-200 rounded-lg text-gray-400 hover:bg-gray-50 disabled:opacity-30 transition"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
+              <Pagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPrev={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                onNext={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                onPageSelect={(page) => setCurrentPage(page)}
+              />
             )}
           </div>
         </div>

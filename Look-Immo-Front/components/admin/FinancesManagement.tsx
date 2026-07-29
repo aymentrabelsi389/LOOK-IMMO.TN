@@ -1,13 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Key, Percent, Calendar, Filter, Search, 
   Plus, Edit2, Trash2, CheckCircle, AlertCircle, Download, 
   BarChart3, RefreshCw, X,
   MapPin, Check, ArrowUpRight, ChevronDown
 } from 'lucide-react';
-import { Property, FinanceTransaction } from '@/types';
+import { Property } from '@/types';
 import { CustomDatePicker } from '../ui/DateTimePicker';
 import { useFinancesManagement } from './finances/hooks/useFinancesManagement';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 
 // ── Custom styled dropdown (consistent with other admin panels) ──────────────
@@ -21,11 +22,7 @@ interface CustomDropdownProps {
 const CustomDropdown = ({ value, onChange, options, placeholder }: CustomDropdownProps) => {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    const handler = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  useClickOutside(ref, () => setOpen(false));
   const selected = options.find(o => o.value === value);
   return (
     <div ref={ref} className="relative w-full">
@@ -68,7 +65,6 @@ interface FinancesManagementProps {
 const FinancesManagement = ({ properties, showNotification }: FinancesManagementProps) => {
   const mgmt = useFinancesManagement({ properties, showNotification });
   const {
-    transactions,
     loading,
     searchQuery,
     setSearchQuery,

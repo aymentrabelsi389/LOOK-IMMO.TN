@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Bell, X, Check, CheckCheck, Trash2, Trash,
+  Bell, X, Trash2, Trash,
   UserPlus, MessageSquare, Calendar, Heart,
-  Star, Home, Sparkles, RefreshCw, Filter
+  Star, Home, Sparkles, RefreshCw
 } from 'lucide-react';
 import { notificationsAPI } from '@/services/api';
 import { socketService } from '@/services/socket';

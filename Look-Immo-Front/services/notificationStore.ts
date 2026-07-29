@@ -130,7 +130,7 @@ const playAudio = (type: Toast['type']) => {
       osc.start(now);
       osc.stop(now + 0.2);
     }
-  } catch (e) {
+  } catch {
     // Silent fail if browser restricts audio context before user gesture
   }
 };

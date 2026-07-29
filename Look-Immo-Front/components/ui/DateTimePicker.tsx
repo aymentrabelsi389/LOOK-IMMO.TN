@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { CalendarDays, ChevronLeft, ChevronRight, Clock, ChevronDown } from 'lucide-react';
+import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface DatePickerProps {
   value: string;
@@ -14,15 +15,7 @@ export const CustomDatePicker: React.FC<DatePickerProps> = ({ value, onChange, r
   const popoverRef = useRef<HTMLDivElement>(null);
 
   // Close when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(popoverRef, () => setIsOpen(false));
 
   // Sync current month view with selected value
   useEffect(() => {
@@ -166,15 +159,7 @@ export const CustomTimePicker: React.FC<TimePickerProps> = ({ value, onChange, r
   }, [value, isOpen]);
 
   // Close when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(popoverRef, () => setIsOpen(false));
 
 
 

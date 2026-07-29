@@ -15,8 +15,7 @@ import {
   MouseSensor,
   TouchSensor,
   useSensor,
-  useSensors,
-  DragEndEvent
+  useSensors
 } from '@dnd-kit/core';
 import {
   SortableContext,
@@ -128,8 +127,6 @@ const PropertyModal = ({
   isEditing,
   formData,
   setFormData,
-  gpsInput,
-  setGpsInput,
   availableLocations,
   handleSave,
   handleImageUpload,

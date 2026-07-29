@@ -67,6 +67,18 @@ export function useDemandsManagement({
     }
   };
 
+  const handleIgnoreMatchInDemands = useCallback((demandId: string, updatedIgnoredList: string[]) => {
+    setDemands(prev => {
+      const updated = prev.map(d =>
+        d.id === demandId
+          ? { ...d, ignoredPropertyIds: updatedIgnoredList }
+          : d
+      );
+      if (updateDemands) updateDemands(updated);
+      return updated;
+    });
+  }, [updateDemands]);
+
   const handleDelete = async (id: string) => {
     const confirmed = await confirm({
       title: 'Supprimer la demande ?',
@@ -289,6 +301,7 @@ export function useDemandsManagement({
     getMatchesForDemand,
     handleUpdateStatus,
     handleDelete,
-    handleEditSubmit
+    handleEditSubmit,
+    handleIgnoreMatchInDemands
   };
 }

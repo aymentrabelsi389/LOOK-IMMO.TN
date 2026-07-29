@@ -54,7 +54,6 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
         const [
             totalUsers,
             totalProperties,
-            totalVisits,
             totalAppointments,
             totalMessages,
             pendingAppointments,
@@ -70,7 +69,6 @@ export const getDashboardStats = async (req: Request, res: Response): Promise<vo
         ] = await Promise.all([
             prisma.user.count(),
             prisma.property.count(),
-            prisma.visit.count(),
             prisma.appointment.count(),
             prisma.message.count(),
             prisma.appointment.count({ where: { status: 'pending' } }),

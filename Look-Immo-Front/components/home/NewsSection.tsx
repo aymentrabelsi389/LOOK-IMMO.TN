@@ -32,7 +32,7 @@ const NewsSection = ({ blogPosts, onSelectPost }: { blogPosts: BlogPost[], onSel
           renderItem={(post) => (
             <div className="relative group h-full">
               {/* Blue Glow Shadow Effect for Blog Cards */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-brand-teal to-blue-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-500"></div>
+              <div className="absolute -inset-1 bg-gradient-to-r from-brand-teal to-blue-600 rounded-2xl blur opacity-0 [@media(hover:hover)]:group-hover:opacity-25 [@media(hover:hover)]:opacity-25 transition duration-500"></div>
               <div className="relative h-full bg-white rounded-xl overflow-hidden">
                 <Link
                   to={`/blog-post/${post.id}`}
@@ -41,14 +41,14 @@ const NewsSection = ({ blogPosts, onSelectPost }: { blogPosts: BlogPost[], onSel
                     e.preventDefault();
                     onSelectPost(post.id);
                   }}
-                  className="animate-fade-in h-full flex flex-col"
+                  className="animate-fade-in h-full flex flex-col [WebkitTapHighlightColor:transparent]"
                 >
                   <article className="h-full flex flex-col">
                   <div className="relative h-48 overflow-hidden mb-4 flex-shrink-0">
                     <img 
                       src={post.image} 
                       alt={post.title} 
-                      className="w-full h-full object-cover transform group-hover:scale-105 transition duration-500" 
+                      className="w-full h-full object-cover transform [@media(hover:hover)]:group-hover:scale-105 transition duration-500" 
                       loading="lazy"
                       decoding="async"
                     />
@@ -61,13 +61,13 @@ const NewsSection = ({ blogPosts, onSelectPost }: { blogPosts: BlogPost[], onSel
                       <Calendar size={12} className="mr-1" />
                       {formatDate(post.createdAt)}
                     </div>
-                    <h3 className="text-lg font-bold text-brand-dark group-hover:text-brand-teal transition leading-tight mb-2 line-clamp-2">
+                    <h3 className="text-lg font-bold text-brand-dark [@media(hover:hover)]:group-hover:text-brand-teal transition leading-tight mb-2 line-clamp-2">
                       {post.title}
                     </h3>
                     <p className="text-sm text-gray-500 mb-4 line-clamp-2">
                       {post.excerpt}
                     </p>
-                    <div className="mt-auto flex items-center text-sm text-brand-teal font-medium group-hover:translate-x-1 transition-transform">
+                    <div className="mt-auto flex items-center text-sm text-brand-teal font-medium [@media(hover:hover)]:group-hover:translate-x-1 transition-transform">
                       Lire la suite <ArrowRight size={14} className="ml-1" />
                     </div>
                   </div>

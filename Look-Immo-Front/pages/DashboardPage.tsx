@@ -90,10 +90,6 @@ const DashboardPage = () => {
   // Additional props for the Add-Appointment modal
   const [addAdditionalProps, setAddAdditionalProps] = useState<string[]>([]);
 
-  // Refs for property picker containers (outside-click)
-  const aptPropPickerRef = React.useRef<HTMLDivElement>(null);
-  const editPropPickerRef = React.useRef<HTMLDivElement>(null);
-
   const openEditAppointment = (apt: Appointment) => {
     setEditingAppointment(apt);
 

@@ -8,6 +8,7 @@ import {
 import PropertyCard from '@/components/PropertyCard';
 import Price from '@/components/Price';
 import { SkeletonPropertyCard } from '@/components/ui/SkeletonCard';
+import { useClickOutside } from '@/hooks/useClickOutside';
 import { useSEO } from '@/hooks/useSEO';
 import { useUI } from '@/context/UIContext';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -50,16 +51,9 @@ const ListingsPage = () => {
   const listingTypeDropdownRef = useRef<HTMLDivElement>(null);
 
   // Close on outside click
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (cityDropdownRef.current && !cityDropdownRef.current.contains(target)) setIsCityOpen(false);
-      if (typeDropdownRef.current && !typeDropdownRef.current.contains(target)) setIsTypeOpen(false);
-      if (listingTypeDropdownRef.current && !listingTypeDropdownRef.current.contains(target)) setIsListingTypeOpen(false);
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(cityDropdownRef, () => setIsCityOpen(false));
+  useClickOutside(typeDropdownRef, () => setIsTypeOpen(false));
+  useClickOutside(listingTypeDropdownRef, () => setIsListingTypeOpen(false));
 
   // Reset to page 1 when filters change
   useEffect(() => {

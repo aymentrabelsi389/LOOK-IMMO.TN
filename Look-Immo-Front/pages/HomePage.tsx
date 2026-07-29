@@ -14,6 +14,12 @@ import hero1 from '../photo-1613490493576-7fde63acd811.webp';
 import hero2 from '../photo-1512917774080-9991f1c4c750.webp';
 import hero3 from '../photo-1600585154340-be6161a56a0c.webp';
 
+const heroImages = [
+  hero1,
+  hero2,
+  hero3,
+];
+
 const HomePage = () => {
   useSEO({
     title: "L'adresse de vos rêves",
@@ -33,18 +39,12 @@ const HomePage = () => {
   const [forceShowAllLocations, setForceShowAllLocations] = useState(false);
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
 
-  const heroImages = [
-    hero1,
-    hero2,
-    hero3,
-  ];
-
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentHeroIndex((prev) => (prev + 1) % heroImages.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, [heroImages]);
+  }, []);
 
   const handleSearch = () => {
     onSearch({

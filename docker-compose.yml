@@ -1,6 +1,23 @@
 version: '3.8'
 
 services:
+  # ─── CACHE SERVICE (Redis) ─────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: look-immo-redis
+    restart: always
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - lookimmo_network
+    # NOTE: Port 6379 is NOT mapped to host ports, keeping it secure and private.
+
   # ─── DATABASE SERVICE (PostgreSQL) ──────────────────────────────────────────
   db:
     image: postgres:16-alpine
@@ -40,6 +57,7 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-https://look-immo.tn}
       BACKEND_URL: ${BACKEND_URL:-https://look-immo.tn}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      REDIS_URL: redis://redis:6379
       # Object Storage Settings (Optional)
       S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
       S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
@@ -53,6 +71,8 @@ services:
       - uploads_data:/app/uploads
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     networks:
       - lookimmo_network
@@ -87,6 +107,8 @@ volumes:
   postgres_data:
     driver: local
   uploads_data:
+    driver: local
+  redis_data:
     driver: local
 
 # ─── NETWORKS ─────────────────────────────────────────────────────────────────

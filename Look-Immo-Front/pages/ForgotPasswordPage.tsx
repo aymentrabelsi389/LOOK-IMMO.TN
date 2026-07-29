@@ -31,32 +31,38 @@ const ForgotPasswordPage = () => {
   });
 
   // Timers for Step 2
+  const startCodeTimers = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (resendTimerRef.current) clearInterval(resendTimerRef.current);
+
+    // 10 minutes countdown
+    timerRef.current = setInterval(() => {
+      setCodeExpiresIn((prev) => {
+        if (prev <= 1) {
+          clearInterval(timerRef.current!);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // 60 seconds resend cooldown
+    resendTimerRef.current = setInterval(() => {
+      setResendTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(resendTimerRef.current!);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
   useEffect(() => {
     if (step === 2) {
       setCodeExpiresIn(600);
       setResendTimer(60);
-
-      // 10 minutes countdown
-      timerRef.current = setInterval(() => {
-        setCodeExpiresIn((prev) => {
-          if (prev <= 1) {
-            clearInterval(timerRef.current!);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-      // 60 seconds resend cooldown
-      resendTimerRef.current = setInterval(() => {
-        setResendTimer((prev) => {
-          if (prev <= 1) {
-            clearInterval(resendTimerRef.current!);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+      startCodeTimers();
     }
 
     return () => {
@@ -165,6 +171,7 @@ const ForgotPasswordPage = () => {
       setCode(Array(6).fill(''));
       setCodeExpiresIn(600);
       setResendTimer(60);
+      startCodeTimers();
       inputRefs.current[0]?.focus();
     } catch (err: any) {
       notify.error(err.message || "Impossible de renvoyer le code.");

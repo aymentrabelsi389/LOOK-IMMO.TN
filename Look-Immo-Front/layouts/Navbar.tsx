@@ -42,7 +42,6 @@ const Navbar = ({
   currentPage,
   onSearch,
   filters,
-  appointments,
 }: {
   user: User | null;
   onNavigate: (page: string) => void;

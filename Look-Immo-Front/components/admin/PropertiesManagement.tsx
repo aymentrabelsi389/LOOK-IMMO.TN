@@ -1,7 +1,7 @@
-import React, { useState, useMemo, useEffect, memo } from 'react';
+import React, { useState, useMemo, memo } from 'react';
 import {
   GripVertical, MapPin, Star, Edit, Trash2, Search, Plus,
-  ChevronLeft, ChevronRight, X, Image as ImageIcon, List, ChevronDown,
+  ChevronRight, X, Image as ImageIcon, List, ChevronDown,
   FileText, Shield, Eye, Download, Calendar, Mail, Phone, Clock, Check, MessageSquare
 } from 'lucide-react';
 import {
@@ -13,11 +13,13 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { Property, PropertyType, User, Appointment, ClientDemand } from '@/types';
 import { BACKEND_URL } from '@/services/api';
+import Pagination from '../ui/Pagination';
 import { useData } from '@/context/DataContext';
 import Price from '../Price';
 import PropertyModal from './PropertyModal';
 import { getImageSrc } from '@/utils/imageUtils';
 import { usePropertiesManagement } from './properties/hooks/usePropertiesManagement';
+import { useClickOutside } from '@/hooks/useClickOutside';
 const getDownloadUrl = (url: string) => {
   if (!url) return '';
   const cleanUrl = url.replace(BACKEND_URL, '');
@@ -442,15 +444,7 @@ const CustomDropdown = ({ value, onChange, options, placeholder }: DropdownProps
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = React.useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  useClickOutside(dropdownRef, () => setIsOpen(false));
 
   const selectedOption = options.find(opt => opt.value === value) || { label: placeholder || 'Choisir...', value };
 
@@ -499,7 +493,6 @@ const PropertiesManagement = ({
   setProperties,
   availableLocations,
   showNotification,
-  user,
   clientDemands = []
 }: PropertiesManagementProps) => {
   const mgmt = usePropertiesManagement({ properties, setProperties, availableLocations, showNotification, clientDemands });
@@ -669,37 +662,13 @@ const PropertiesManagement = ({
             )}
 
             {!isAdminShowAll && totalPages > 1 && (
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={() => setPropertyCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={propertyCurrentPage === 1}
-                  className="p-2 border border-gray-200 rounded-lg text-gray-400 hover:bg-gray-50 disabled:opacity-30 transition"
-                >
-                  <ChevronLeft size={16} />
-                </button>
-                
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                  <button
-                    key={page}
-                    onClick={() => setPropertyCurrentPage(page)}
-                    className={`min-w-[32px] h-8 px-2 flex items-center justify-center rounded-lg text-xs font-bold transition-all ${
-                      propertyCurrentPage === page
-                        ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-                        : 'text-gray-600 hover:bg-gray-50 border border-transparent hover:border-gray-100'
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ))}
-
-                <button
-                  onClick={() => setPropertyCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={propertyCurrentPage === totalPages}
-                  className="p-2 border border-gray-200 rounded-lg text-gray-400 hover:bg-gray-50 disabled:opacity-30 transition"
-                >
-                  <ChevronRight size={16} />
-                </button>
-              </div>
+              <Pagination
+                currentPage={propertyCurrentPage}
+                totalPages={totalPages}
+                onPrev={() => setPropertyCurrentPage(prev => Math.max(prev - 1, 1))}
+                onNext={() => setPropertyCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                onPageSelect={(page) => setPropertyCurrentPage(page)}
+              />
             )}
           </div>
         </div>

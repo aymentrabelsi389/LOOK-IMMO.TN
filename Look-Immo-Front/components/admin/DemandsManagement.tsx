@@ -1,79 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { Target, Search, Trash2, MapPin, Phone, User as UserIcon, Check, X, ChevronLeft, ChevronRight, Sparkles, AlertCircle, CheckCircle2, Edit2, ChevronDown } from 'lucide-react';
+import React from 'react';
+import { Target, Search, Trash2, MapPin, Phone, User as UserIcon, X, ChevronLeft, ChevronRight, Sparkles, AlertCircle, CheckCircle2, Edit2 } from 'lucide-react';
 import { ClientDemand, Property } from '@/types';
 import { clientDemandsAPI } from '@/services/api';
 import Price from '../Price';
 import PropertyMatchModal from './PropertyMatchModal';
 import { useDemandsManagement } from './demands/hooks/useDemandsManagement';
-
-interface CustomDropdownProps<T extends string> {
-  value: T;
-  onChange: (value: T) => void;
-  options: { value: T; label: string }[];
-  triggerClassName?: string;
-  menuClassName?: string;
-  optionClassName?: string;
-}
-
-const CustomDropdown = <T extends string>({
-  value,
-  onChange,
-  options,
-  triggerClassName = "w-full flex items-center justify-between gap-3 px-4 py-3 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-teal/50 focus:outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10 transition-all text-[10px] font-black text-gray-600 uppercase tracking-widest cursor-pointer",
-  menuClassName = "absolute z-50 mt-2 w-full bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up",
-  optionClassName = "w-full flex items-center justify-between px-4 py-2.5 text-left text-[10px] font-black uppercase tracking-widest transition-colors"
-}: CustomDropdownProps<T>) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = React.useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const selectedOption = options.find(opt => opt.value === value);
-
-  return (
-    <div className="relative inline-block w-full sm:w-auto" ref={containerRef}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={triggerClassName}
-      >
-        <span className="truncate">{selectedOption ? selectedOption.label : ''}</span>
-        <ChevronDown size={14} className={`text-gray-400 transform transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-
-      {isOpen && (
-        <div className={menuClassName}>
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => {
-                onChange(opt.value);
-                setIsOpen(false);
-              }}
-              className={`${optionClassName} ${
-                opt.value === value
-                  ? 'bg-brand-teal/5 text-brand-teal font-black'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              <span>{opt.label}</span>
-              {opt.value === value && <Check size={12} className="text-brand-teal flex-shrink-0" />}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+import CustomDropdown from '../ui/CustomDropdown';
 
 interface DemandsManagementProps {
   clientDemands?: ClientDemand[];
@@ -115,7 +47,8 @@ const DemandsManagement = ({
     getMatchesForDemand,
     handleUpdateStatus,
     handleDelete,
-    handleEditSubmit
+    handleEditSubmit,
+    handleIgnoreMatchInDemands
   } = useDemandsManagement({ initialDemands, updateDemands, properties });
 
   if (loading) return <div className="p-8 text-center text-sm font-bold text-gray-500 animate-pulse">Chargement des demandes...</div>;
@@ -516,24 +449,30 @@ const DemandsManagement = ({
           onIgnoreMatch={async (propertyId: string) => {
             if (!selectedDemand) return;
             const demandId = selectedDemand.id;
+
+            // 1. Persist in localStorage as a fallback
             const localIgnored = JSON.parse(localStorage.getItem(`ignored_matches_${demandId}`) || '[]');
             if (!localIgnored.includes(propertyId)) {
               localIgnored.push(propertyId);
               localStorage.setItem(`ignored_matches_${demandId}`, JSON.stringify(localIgnored));
             }
 
+            // 2. Build the full updated ignored list from the CURRENT selectedDemand
+            const currentIgnored = selectedDemand.ignoredPropertyIds || [];
+            const updatedIgnoredList = Array.from(new Set([...currentIgnored, propertyId]));
+
+            // 3. Update selectedDemand so the modal hides the card immediately
             setSelectedDemand(prev => {
               if (!prev) return null;
-              const ignoredList = prev.ignoredPropertyIds || [];
-              return {
-                ...prev,
-                ignoredPropertyIds: Array.from(new Set([...ignoredList, propertyId]))
-              };
+              return { ...prev, ignoredPropertyIds: updatedIgnoredList };
             });
 
+            // 4. Also update the main demands list so demandsMatches memo recalculates
+            //    (without this the match reappears after the modal reopens)
+            handleIgnoreMatchInDemands(demandId, updatedIgnoredList);
+
+            // 5. Persist to the server
             try {
-              const currentIgnored = selectedDemand.ignoredPropertyIds || [];
-              const updatedIgnoredList = Array.from(new Set([...currentIgnored, propertyId]));
               await clientDemandsAPI.update(demandId, { ignoredPropertyIds: updatedIgnoredList });
             } catch (err) {
               console.log("Server does not support ignoredPropertyIds yet, using localStorage fallback.", err);

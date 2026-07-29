@@ -1,85 +1,17 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   CalendarDays, Search, Calendar, 
-  Check, X, Trash2, ChevronLeft, ChevronRight, List, Phone, Mail, Building2, Clock, MessageSquare,
-  History, ChevronDown
+  Check, X, Trash2, List, Phone, Mail, Building2, Clock, MessageSquare,
+  History
 } from 'lucide-react';
 import { Appointment, User, Property } from '@/types';
 import { appointmentsAPI } from '@/services/api';
 import AppointmentsCalendarModal from './AppointmentsCalendarModal';
 import ClientAppointmentsHistoryModal from './ClientAppointmentsHistoryModal';
 import { useConfirm } from '@/context/ConfirmContext';
-
-
-interface CustomDropdownProps<T extends string> {
-  value: T;
-  onChange: (value: T) => void;
-  options: { value: T; label: string }[];
-  triggerClassName?: string;
-  menuClassName?: string;
-  optionClassName?: string;
-}
-
-const CustomDropdown = <T extends string>({
-  value,
-  onChange,
-  options,
-  triggerClassName = "w-full flex items-center justify-between gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm hover:border-brand-teal/50 focus:outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10 transition-all text-xs font-bold text-gray-600 cursor-pointer",
-  menuClassName = "absolute right-0 z-[60] mt-2 w-full sm:w-[220px] bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up",
-  optionClassName = "w-full flex items-center justify-between px-4 py-2 text-left text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors"
-}: CustomDropdownProps<T>) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = React.useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  const selectedOption = options.find(opt => opt.value === value);
-
-  return (
-    <div className="relative inline-block w-full sm:w-auto" ref={containerRef}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={triggerClassName}
-      >
-        <span className="truncate">{selectedOption ? selectedOption.label : ''}</span>
-        <ChevronDown size={14} className={`text-gray-400 transform transition-transform duration-200 flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`} />
-      </button>
-
-      {isOpen && (
-        <div className={menuClassName}>
-          {options.map((opt) => (
-            <button
-              key={opt.value}
-              type="button"
-              onClick={() => {
-                onChange(opt.value);
-                setIsOpen(false);
-              }}
-              className={`${optionClassName} ${
-                opt.value === value
-                  ? 'bg-brand-teal/5 text-brand-teal font-black'
-                  : ''
-              }`}
-            >
-              <span>{opt.label}</span>
-              {opt.value === value && <Check size={12} className="text-brand-teal flex-shrink-0" />}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+import CustomDropdown from '../ui/CustomDropdown';
+import Pagination from '../ui/Pagination';
 
 interface AppointmentsManagementProps {
   appointments: Appointment[];
@@ -262,6 +194,9 @@ const AppointmentsManagement = ({
               { value: 'scheduled-asc', label: '🗓 Prévu le (Ancien)' }
             ]}
             triggerClassName="w-full sm:w-[220px] flex items-center justify-between gap-3 px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10 shadow-sm text-xs font-bold text-gray-600 cursor-pointer hover:border-brand-teal/50 transition bg-white"
+            menuClassName="absolute right-0 z-[60] mt-2 w-full sm:w-[220px] bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up"
+            optionClassName="w-full flex items-center justify-between px-4 py-2 text-left text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors"
+            optionUnselectedClassName=""
           />
         </div>
       </div>
@@ -522,37 +457,13 @@ const AppointmentsManagement = ({
                 )}
 
                 {!showAll && totalPages > 1 && (
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="p-2 border border-gray-200 rounded-lg text-gray-400 hover:bg-gray-50 disabled:opacity-30 transition"
-                    >
-                      <ChevronLeft size={16} />
-                    </button>
-                    
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                      <button
-                        key={page}
-                        onClick={() => setCurrentPage(page)}
-                        className={`min-w-[32px] h-8 px-2 flex items-center justify-center rounded-lg text-xs font-bold transition-all ${
-                          currentPage === page
-                            ? 'bg-blue-600 text-white shadow-md shadow-blue-200'
-                            : 'text-gray-600 hover:bg-gray-50 border border-transparent hover:border-gray-100'
-                        }`}
-                      >
-                        {page}
-                      </button>
-                    ))}
-
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="p-2 border border-gray-200 rounded-lg text-gray-400 hover:bg-gray-50 disabled:opacity-30 transition"
-                    >
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
+                  <Pagination
+                    currentPage={currentPage}
+                    totalPages={totalPages}
+                    onPrev={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    onNext={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    onPageSelect={(page) => setCurrentPage(page)}
+                  />
                 )}
               </div>
             </div>

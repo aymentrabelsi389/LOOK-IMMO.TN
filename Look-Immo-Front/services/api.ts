@@ -130,17 +130,30 @@ const apiFetch = async (url: string, options: RequestInit = {}): Promise<Respons
 
 // Multipart (file upload) — no Content-Type header (let browser set boundary)
 const apiFetchMultipart = async (url: string, options: RequestInit = {}): Promise<Response> => {
+    const headers = new Headers(options.headers);
+    const storedToken = getStoredToken();
+    if (storedToken) {
+        headers.set('Authorization', `Bearer ${storedToken}`);
+    }
+
     let res = await fetch(`${API_BASE_URL}${url}`, {
         ...defaultOptions,
         ...options,
+        headers,
     });
 
     if (res.status === 401) {
         const refreshed = await tryRefreshToken();
         if (refreshed) {
+            const newToken = getStoredToken();
+            const retryHeaders = new Headers(options.headers);
+            if (newToken) {
+                retryHeaders.set('Authorization', `Bearer ${newToken}`);
+            }
             res = await fetch(`${API_BASE_URL}${url}`, {
                 ...defaultOptions,
                 ...options,
+                headers: retryHeaders,
             });
         } else {
             throw new Error('SESSION_EXPIRED');

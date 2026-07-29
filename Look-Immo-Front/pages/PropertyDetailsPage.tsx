@@ -220,7 +220,7 @@ const PropertyDetailsPage = () => {
     }
   };
 
-  const handleAppointmentSubmit = (e: React.FormEvent) => {
+  const handleAppointmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     // Check if user is logged in
@@ -229,20 +229,24 @@ const PropertyDetailsPage = () => {
       return;
     }
 
-    // Call appointment booking function
-    onBookAppointment({
-      propertyId: property.id,
-      propertyTitle: property.title,
-      date: appointmentForm.date,
-      time: appointmentForm.time,
-      message: appointmentForm.message
-    });
+    try {
+      // Call appointment booking function
+      await onBookAppointment({
+        propertyId: property.id,
+        propertyTitle: property.title,
+        date: appointmentForm.date,
+        time: appointmentForm.time,
+        message: appointmentForm.message
+      });
 
-    setAppointmentSubmitted(true);
-    setTimeout(() => setAppointmentSubmitted(false), 3000);
+      setAppointmentSubmitted(true);
+      setTimeout(() => setAppointmentSubmitted(false), 3000);
 
-    // Reset form
-    setAppointmentForm({ date: '', time: '', message: '' });
+      // Reset form
+      setAppointmentForm({ date: '', time: '', message: '' });
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -523,9 +527,13 @@ const PropertyDetailsPage = () => {
                               key={star}
                               onClick={async () => {
                                 setUserRating(star);
-                                const updated = await onRate(property.id, star);
-                                if (updated) {
-                                  setFullProperty(updated);
+                                try {
+                                  const updated = await onRate(property.id, star);
+                                  if (updated) {
+                                    setFullProperty(updated);
+                                  }
+                                } catch (err) {
+                                  console.error(err);
                                 }
                               }}
                               aria-label={`Noter ${star} étoiles`}

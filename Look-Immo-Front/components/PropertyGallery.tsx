@@ -89,6 +89,32 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
     }
   }, [currentImageIndex]);
 
+  // Preload adjacent (sibling) images in the background (+1 and -1)
+  useEffect(() => {
+    if (!images || images.length <= 1) return;
+
+    const indicesToPreload = [];
+    const nextIdx = (currentImageIndex + 1) % images.length;
+    const prevIdx = (currentImageIndex - 1 + images.length) % images.length;
+
+    indicesToPreload.push(nextIdx);
+    if (prevIdx !== nextIdx) {
+      indicesToPreload.push(prevIdx);
+    }
+
+    indicesToPreload.forEach(idx => {
+      const src = getImageSrc(images[idx], 'large');
+      const srcSet = buildSrcSet(images[idx]);
+      
+      const img = new Image();
+      img.src = src;
+      if (srcSet) {
+        img.srcset = srcSet;
+      }
+    });
+  }, [currentImageIndex, images]);
+
+
   // Manual scrolling for thumbnail carousel on desktop
   const scrollThumbnails = (direction: 'left' | 'right') => {
     if (scrollContainerRef.current) {
@@ -238,7 +264,7 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
                       : `${title} — photo ${idx + 1}`
                   }
                   className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                  loading="eager"
+                  loading="lazy"
                   decoding="async"
                 />
               </button>
@@ -259,21 +285,6 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
           <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none z-10" />
         </div>
       )}
-
-      {/* Hidden preload strip — eagerly fetches all images so they're cached before the user navigates to them */}
-      <div aria-hidden="true" className="hidden">
-        {images.map((img, idx) => (
-          <img
-            key={`preload-${idx}`}
-            src={getImageSrc(img, 'large')}
-            srcSet={buildSrcSet(img)}
-            alt=""
-            loading="eager"
-            decoding="async"
-            fetchPriority={idx === 0 ? 'high' : 'low'}
-          />
-        ))}
-      </div>
     </div>
   );
 };

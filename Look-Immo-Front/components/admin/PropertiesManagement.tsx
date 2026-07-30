@@ -66,7 +66,7 @@ const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, openHistory
     <div 
       ref={setNodeRef} 
       style={style} 
-      className="group bg-white border-b border-gray-100 last:border-0 hover:bg-blue-50/20 transition-all p-4 md:p-0 md:flex md:items-center md:min-w-[1000px] w-full overflow-hidden opacity-0 animate-fade-in-up"
+      className="group bg-white border-b border-gray-100 last:border-0 hover:bg-blue-50/20 transition-all p-4 md:p-0 md:flex md:items-center md:min-w-[1000px] w-full overflow-hidden opacity-0 animate-fade-in"
     >
       {/* Mobile Card Layout */}
       <div className="flex flex-col w-full md:hidden gap-3">

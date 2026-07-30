@@ -43,7 +43,7 @@ const SortableLocationRow: React.FC<SortableLocationRowProps> = memo(({ loc, ind
   };
   
   return (
-    <tr ref={setNodeRef} style={style} className="group hover:bg-blue-50/30 transition-all duration-200 cursor-default border-b border-transparent hover:border-gray-100 opacity-0 animate-fade-in-up">
+    <tr ref={setNodeRef} style={style} className="group hover:bg-blue-50/30 transition-all duration-200 cursor-default border-b border-transparent hover:border-gray-100 opacity-0 animate-fade-in">
       <td className="px-8 py-5">
         <div className="flex items-center">
           <button {...attributes} {...listeners} className="p-1 mr-4 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing focus:outline-none shrink-0 touch-none">
@@ -94,7 +94,7 @@ const SortableLocationCard = memo(({ loc, index, openEditModal, confirmDelete }:
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="p-5 bg-white space-y-4 hover:bg-gray-50 transition-colors opacity-0 animate-fade-in-up">
+    <div ref={setNodeRef} style={style} className="p-5 bg-white space-y-4 hover:bg-gray-50 transition-colors opacity-0 animate-fade-in">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <button {...attributes} {...listeners} className="p-2 -ml-2 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing touch-none">

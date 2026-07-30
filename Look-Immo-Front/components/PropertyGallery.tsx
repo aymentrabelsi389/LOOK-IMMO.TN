@@ -70,7 +70,7 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
     setImageOrientations((prev) => ({ ...prev, [idx]: isVertical ? 'vertical' : 'horizontal' }));
   };
 
-  // Auto-scroll active thumbnail into view
+  // Auto-scroll active thumbnail into center of the strip on every index change
   useEffect(() => {
     if (scrollContainerRef.current) {
       const container = scrollContainerRef.current;
@@ -79,17 +79,12 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
         const thumbLeft = activeThumb.offsetLeft;
         const thumbWidth = activeThumb.offsetWidth;
         const containerWidth = container.offsetWidth;
-        const containerScrollLeft = container.scrollLeft;
 
-        // Check if thumbnail is fully visible
-        const isVisible = thumbLeft >= containerScrollLeft && (thumbLeft + thumbWidth) <= (containerScrollLeft + containerWidth);
-
-        if (!isVisible) {
-          container.scrollTo({
-            left: thumbLeft - containerWidth / 2 + thumbWidth / 2,
-            behavior: 'smooth'
-          });
-        }
+        // Always scroll so the active thumbnail is centered in the strip
+        container.scrollTo({
+          left: thumbLeft - containerWidth / 2 + thumbWidth / 2,
+          behavior: 'smooth'
+        });
       }
     }
   }, [currentImageIndex]);
@@ -125,7 +120,7 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
               alt=""
               aria-hidden="true"
               className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-50 scale-110 transition-all duration-500"
-              loading="lazy"
+              loading="eager"
               decoding="async"
             />
 
@@ -243,7 +238,7 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
                       : `${title} — photo ${idx + 1}`
                   }
                   className="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
-                  loading="lazy"
+                  loading="eager"
                   decoding="async"
                 />
               </button>
@@ -264,6 +259,21 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
           <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-l from-white to-transparent pointer-events-none z-10" />
         </div>
       )}
+
+      {/* Hidden preload strip — eagerly fetches all images so they're cached before the user navigates to them */}
+      <div aria-hidden="true" className="hidden">
+        {images.map((img, idx) => (
+          <img
+            key={`preload-${idx}`}
+            src={getImageSrc(img, 'large')}
+            srcSet={buildSrcSet(img)}
+            alt=""
+            loading="eager"
+            decoding="async"
+            fetchPriority={idx === 0 ? 'high' : 'low'}
+          />
+        ))}
+      </div>
     </div>
   );
 };

@@ -192,7 +192,7 @@ const AdminPanel = () => {
   const renderMainContent = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <DashboardStats stats={dashboardStats} propertiesCount={properties.length} />;
+        return <DashboardStats stats={dashboardStats} propertiesCount={properties.length} onTabChange={setActiveTab} />;
       case 'properties':
         return (
           <PropertiesManagement
@@ -257,9 +257,47 @@ const AdminPanel = () => {
         />
         <main className="flex-1 overflow-y-auto p-6 md:p-8 pb-[72px] md:pb-8">
           <Suspense fallback={
-            <div className="flex flex-col items-center justify-center p-20 space-y-4">
-              <div className="w-10 h-10 border-4 border-brand-teal border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-sm text-gray-500 font-bold uppercase tracking-widest animate-pulse">Chargement de la section...</p>
+            <div className="space-y-8 animate-pulse">
+              {/* Top Grid: 4 Stat Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-white p-6 rounded-2xl border border-gray-100/50 shadow-sm space-y-4">
+                    <div className="flex justify-between items-start">
+                      <div className="space-y-2 flex-1">
+                        <div className="h-3 bg-gray-200 rounded w-2/3" />
+                        <div className="h-8 bg-gray-200 rounded-lg w-1/2" />
+                        <div className="h-3 bg-gray-200 rounded w-1/3" />
+                      </div>
+                      <div className="w-12 h-12 bg-gray-100 rounded-xl flex-shrink-0" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Large Content Area */}
+              <div className="bg-white p-8 rounded-2xl border border-gray-100/50 shadow-sm space-y-6">
+                <div className="flex justify-between items-center">
+                  <div className="space-y-2">
+                    <div className="h-5 bg-gray-200 rounded-lg w-40" />
+                    <div className="h-3 bg-gray-200 rounded w-60" />
+                  </div>
+                  <div className="w-24 h-10 bg-gray-100 rounded-xl" />
+                </div>
+                <div className="space-y-4 pt-4 border-t border-gray-50">
+                  {[...Array(5)].map((_, i) => (
+                    <div key={i} className="flex items-center justify-between py-2">
+                      <div className="flex items-center space-x-4 flex-1">
+                        <div className="w-10 h-10 bg-gray-100 rounded-xl flex-shrink-0" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 bg-gray-200 rounded w-1/4" />
+                          <div className="h-3 bg-gray-200 rounded w-1/2" />
+                        </div>
+                      </div>
+                      <div className="w-20 h-8 bg-gray-100 rounded-lg" />
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           }>
             <div key={activeTab} className="opacity-0 animate-fade-in-up">

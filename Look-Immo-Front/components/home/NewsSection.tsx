@@ -32,7 +32,7 @@ const NewsSection = ({ blogPosts, onSelectPost }: { blogPosts: BlogPost[], onSel
           renderItem={(post) => (
             <div className="relative group h-full">
               {/* Blue Glow Shadow Effect for Blog Cards */}
-              <div className="absolute -inset-1 bg-gradient-to-r from-brand-teal to-blue-600 rounded-2xl blur opacity-0 [@media(hover:hover)]:group-hover:opacity-25 [@media(hover:hover)]:opacity-25 transition duration-500"></div>
+              <div className="absolute -inset-1 bg-gradient-to-r from-brand-teal to-blue-600 rounded-2xl blur opacity-25 md:group-hover:opacity-50 transition duration-500" style={{ willChange: 'opacity', backfaceVisibility: 'hidden' }}></div>
               <div className="relative h-full bg-white rounded-xl overflow-hidden">
                 <Link
                   to={`/blog-post/${post.id}`}
@@ -41,7 +41,7 @@ const NewsSection = ({ blogPosts, onSelectPost }: { blogPosts: BlogPost[], onSel
                     e.preventDefault();
                     onSelectPost(post.id);
                   }}
-                  className="animate-fade-in h-full flex flex-col [WebkitTapHighlightColor:transparent]"
+                  className="h-full flex flex-col [WebkitTapHighlightColor:transparent]"
                 >
                   <article className="h-full flex flex-col">
                   <div className="relative h-48 overflow-hidden mb-4 flex-shrink-0">

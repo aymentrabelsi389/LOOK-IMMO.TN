@@ -510,7 +510,10 @@ const ListingsPage = () => {
                   <div
                     key={property.id}
                     className="opacity-0 animate-fade-in-up"
-                    style={{ animationDelay: `${index * 60}ms` }}
+                    style={{ 
+                      animationDelay: `${index * 100}ms`,
+                      animationDuration: '0.9s'
+                    }}
                   >
                     <PropertyCard
                       property={property}

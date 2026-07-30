@@ -1060,7 +1060,8 @@ const DashboardPage = () => {
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleAddApt} className="p-6 space-y-4 overflow-y-auto flex-1">
+            <form onSubmit={handleAddApt} className="flex flex-col min-h-0 flex-1">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="apt-client-name" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Nom Client *</label>
@@ -1232,7 +1233,8 @@ const DashboardPage = () => {
                 <label htmlFor="apt-notes" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Notes</label>
                 <textarea id="apt-notes" value={aptForm.message} onChange={e => setAptForm({ ...aptForm, message: e.target.value })} placeholder="Notes ou remarques..." rows={2} className="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-brand-teal/20 focus:border-brand-teal focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm"></textarea>
               </div>
-              <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+              </div>
+              <div className="px-6 py-4 flex justify-end gap-3 border-t border-gray-100 flex-shrink-0 bg-white rounded-b-3xl">
                 <button type="button" onClick={() => setShowAptModal(false)} className="px-6 py-3 bg-gray-100 text-gray-500 font-bold rounded-2xl hover:bg-gray-200 transition text-sm">Annuler</button>
                 <button type="submit" className="px-6 py-3 bg-gradient-to-r from-brand-teal to-cyan-500 hover:from-cyan-500 hover:to-brand-teal text-white font-bold rounded-2xl transition-all duration-300 shadow-md shadow-brand-teal/10 text-sm">Enregistrer</button>
               </div>
@@ -1254,7 +1256,8 @@ const DashboardPage = () => {
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleAddDemand} className="p-6 space-y-4 overflow-y-auto flex-1">
+            <form onSubmit={handleAddDemand} className="flex flex-col min-h-0 flex-1">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="demand-client-name" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Nom Client *</label>
@@ -1339,7 +1342,8 @@ const DashboardPage = () => {
                   ))}
                 </div>
               </div>
-              <div className="pt-4 flex justify-end gap-3 border-t border-gray-100">
+              </div>
+              <div className="px-6 py-4 flex justify-end gap-3 border-t border-gray-100 flex-shrink-0 bg-white rounded-b-3xl">
                 <button type="button" onClick={() => setShowDemandModal(false)} className="px-6 py-3 bg-gray-100 text-gray-500 font-bold rounded-2xl hover:bg-gray-200 transition text-sm">Annuler</button>
                 <button type="submit" className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-2xl transition-all duration-300 shadow-md shadow-orange-500/10 text-sm">Enregistrer</button>
               </div>
@@ -1363,7 +1367,8 @@ const DashboardPage = () => {
               </button>
             </div>
 
-            <form onSubmit={saveEditAppointment} className="p-6 space-y-4 overflow-y-auto flex-1">
+            <form onSubmit={saveEditAppointment} className="flex flex-col min-h-0 flex-1">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Date</label>
@@ -1556,8 +1561,8 @@ const DashboardPage = () => {
                   aria-label="Message du rendez-vous"
                 ></textarea>
               </div>
-
-              <div className="pt-4 flex gap-3 border-t border-gray-100">
+              </div>
+              <div className="px-6 py-4 flex gap-3 border-t border-gray-100 flex-shrink-0 bg-white rounded-b-3xl">
                 <button
                   type="button"
                   onClick={() => setEditingAppointment(null)}

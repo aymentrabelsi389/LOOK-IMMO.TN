@@ -58,20 +58,38 @@
 }
 
 /* Animation Delays */
+.delay-50 {
+  animation-delay: 50ms;
+}
+.delay-75 {
+  animation-delay: 75ms;
+}
 .delay-100 {
   animation-delay: 100ms;
+}
+.delay-150 {
+  animation-delay: 150ms;
 }
 .delay-200 {
   animation-delay: 200ms;
 }
+.delay-250 {
+  animation-delay: 250ms;
+}
 .delay-300 {
   animation-delay: 300ms;
+}
+.delay-350 {
+  animation-delay: 350ms;
 }
 .delay-400 {
   animation-delay: 400ms;
 }
 .delay-500 {
   animation-delay: 500ms;
+}
+.delay-600 {
+  animation-delay: 600ms;
 }
 
 /* Premium Toast Animations & Keyframes */

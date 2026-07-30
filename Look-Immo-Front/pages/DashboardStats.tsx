@@ -10,34 +10,44 @@ import {
 interface DashboardStatsProps {
   stats: any;
   propertiesCount: number;
+  onTabChange?: (tab: string) => void;
 }
 
-const DashboardStats = ({ stats, propertiesCount }: DashboardStatsProps) => {
+const DashboardStats = ({ stats, propertiesCount, onTabChange }: DashboardStatsProps) => {
   const cards = [
-    { label: "Utilisateurs", val: stats?.totals?.users?.toString() || "0", icon: <UserIcon size={24} />, gradient: "from-blue-500 to-blue-600", iconBg: "bg-blue-500/10", trend: "Total" },
-    { label: "Propriétés", val: stats?.totals?.properties?.toString() || propertiesCount.toString(), icon: <HomeIcon size={24} />, gradient: "from-emerald-500 to-emerald-600", iconBg: "bg-emerald-500/10", trend: "Actives" },
-    { label: "Rendez-vous", val: stats?.totals?.todayAppointments?.toString() || "0", icon: <Calendar size={24} />, gradient: "from-purple-500 to-purple-600", iconBg: "bg-purple-500/10", trend: `Aujourd'hui (${stats?.totals?.appointments || 0} au total)` },
-    { label: "Visites Site", val: stats?.totals?.visits?.toString() || "0", icon: <Eye size={24} fill="currentColor" />, gradient: "from-orange-500 to-orange-600", iconBg: "bg-orange-500/10", trend: "Vues" }
+    { id: "users", label: "Utilisateurs", val: stats?.totals?.users?.toString() || "0", icon: <UserIcon size={24} />, gradient: "from-blue-500 to-blue-600", iconBg: "bg-blue-50/10", trend: "Total" },
+    { id: "properties", label: "Propriétés", val: stats?.totals?.properties?.toString() || propertiesCount.toString(), icon: <HomeIcon size={24} />, gradient: "from-emerald-500 to-emerald-600", iconBg: "bg-emerald-50/10", trend: "Actives" },
+    { id: "appointments", label: "Rendez-vous", val: stats?.totals?.todayAppointments?.toString() || "0", icon: <Calendar size={24} />, gradient: "from-purple-500 to-purple-600", iconBg: "bg-purple-50/10", trend: `${stats?.totals?.appointments || 0} au total` },
+    { id: "visits", label: "Visites Site", val: stats?.totals?.visits?.toString() || "0", icon: <Eye size={24} fill="currentColor" />, gradient: "from-orange-500 to-orange-600", iconBg: "bg-orange-50/10", trend: "Vues" }
   ];
 
   return (
     <div className="space-y-8 animate-fade-in-up">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {cards.map((stat, i) => (
-          <div key={i} className="group relative bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden">
-            <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
-            <div className="relative flex items-start justify-between">
-              <div className="flex-1">
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{stat.label}</p>
-                <h3 className="text-3xl font-bold text-gray-900 mb-1">{stat.val}</h3>
-                <p className="text-xs text-gray-400 font-medium">{stat.trend}</p>
-              </div>
-              <div className={`p-3 rounded-xl ${stat.iconBg}`}>
-                <div className={`bg-gradient-to-br ${stat.gradient} text-white p-3 rounded-xl`}>{stat.icon}</div>
+        {cards.map((stat, i) => {
+          const isInteractive = stat.id !== 'visits' && !!onTabChange;
+          return (
+            <div 
+              key={i} 
+              onClick={() => isInteractive && onTabChange?.(stat.id)}
+              className={`group relative bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl transition-all duration-300 overflow-hidden ${
+                isInteractive ? 'cursor-pointer hover:border-brand-teal/20 hover:-translate-y-1' : ''
+              }`}
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${stat.gradient} opacity-0 group-hover:opacity-5 transition-opacity duration-300`}></div>
+              <div className="relative flex items-start justify-between">
+                <div className="flex-1">
+                  <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{stat.label}</p>
+                  <h3 className="text-3xl font-bold text-gray-900 mb-1">{stat.val}</h3>
+                  <p className="text-xs text-gray-400 font-medium">{stat.trend}</p>
+                </div>
+                <div className={`p-3 rounded-xl ${stat.iconBg}`}>
+                  <div className={`bg-gradient-to-br ${stat.gradient} text-white p-3 rounded-xl`}>{stat.icon}</div>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
       <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
         <div className="flex items-center justify-between mb-6">

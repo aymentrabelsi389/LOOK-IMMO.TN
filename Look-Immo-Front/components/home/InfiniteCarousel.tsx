@@ -153,6 +153,7 @@ const InfiniteCarousel = <T extends { id: string }>({
   return (
     <div
       className="relative overflow-hidden py-4"
+      style={{ contain: 'layout style', willChange: 'transform' }}
       onMouseEnter={() => !isMobile && setIsPaused(true)}
       onMouseLeave={() => !isMobile && setIsPaused(false)}
     >
@@ -162,6 +163,8 @@ const InfiniteCarousel = <T extends { id: string }>({
         style={{
           transform: `translateX(-${currentIndex * (100 / visibleCount)}%)`,
           transition: isSwiping || !transitionEnabled ? 'none' : 'transform 500ms ease-in-out',
+          willChange: 'transform',
+          backfaceVisibility: 'hidden',
         }}
         onTransitionEnd={handleTransitionEnd}
         onTouchStart={handleTouchStart}

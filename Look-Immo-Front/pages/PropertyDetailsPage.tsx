@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   MapPin, Star, Share2, Heart, Square, BedDouble, Bath, Home as HomeIcon,
   Flame, Wind, Waves, Trees, Car as CarIcon, Shield, Check, X,
@@ -108,7 +108,6 @@ const PropertyDetailsPage = () => {
   const [appointmentSubmitted, setAppointmentSubmitted] = useState(false);
   const [contactTab, setContactTab] = useState<'message' | 'appointment'>('message');
 
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLightbox, setShowLightbox] = useState(false);
   const [pointerStartX, setPointerStartX] = useState<number | null>(null);
 
@@ -142,19 +141,6 @@ const PropertyDetailsPage = () => {
     }
   }, [propertyId]);
 
-  // Auto-scroll thumbnails when image index changes
-  useEffect(() => {
-    if (scrollContainerRef.current) {
-      const thumbnails = scrollContainerRef.current.children;
-      if (thumbnails[currentImageIndex]) {
-        thumbnails[currentImageIndex].scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-          inline: 'center'
-        });
-      }
-    }
-  }, [currentImageIndex]);
 
   // Map Updater Component
   const MapUpdater = ({ center }: { center: [number, number] }) => {
@@ -258,7 +244,7 @@ const PropertyDetailsPage = () => {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
         />
       )}
-      <div className="bg-gray-50 min-h-screen">
+      <div className="bg-gray-50 min-h-screen animate-fade-in">
         {/* Breadcrumb Header */}
         <div className="bg-white shadow-sm border-b z-[60] px-4 py-3">
           <div className="max-w-7xl mx-auto flex items-center gap-3">
@@ -283,7 +269,8 @@ const PropertyDetailsPage = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Main Content - Left Side */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Image Gallery with Slider */}
+              {/* Image Gallery with Slider — enters first, no delay */}
+              <div className="opacity-0 animate-fade-in-up" >
               <PropertyGallery
                 images={property.images}
                 title={property.title}
@@ -302,8 +289,10 @@ const PropertyDetailsPage = () => {
                   parking:     property.features.parking,
                 }}
               />
+              </div>
 
-              {/* Property Header */}
+              {/* Property Header + Price — delay 100ms */}
+              <div className="opacity-0 animate-fade-in-up delay-100" >
               <div className="bg-white rounded-2xl p-6 shadow-sm">
                 <div className="flex flex-col sm:flex-row justify-between items-start mb-6 gap-4">
                   <div className="flex-1 w-full overflow-hidden">
@@ -401,8 +390,10 @@ const PropertyDetailsPage = () => {
                   )}
                 </div>
               </div>
+              </div>
 
-              {/* Property Specs */}
+              {/* Property Specs — delay 200ms */}
+              <div className="opacity-0 animate-fade-in-up delay-200" >
               <div className="bg-white rounded-2xl p-6 shadow-sm">
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 font-serif">Caractéristiques Principales</h2>
                 {property.type === 'land' ? (
@@ -457,10 +448,12 @@ const PropertyDetailsPage = () => {
                   </div>
                 )}
               </div>
+              </div>
 
-              {/* Caractéristiques */}
+              {/* Caractéristiques — delay 300ms */}
               {property.type !== 'land' && (
-                <div className="bg-white rounded-2xl p-6 shadow-sm">
+                <div className="opacity-0 animate-fade-in-up delay-300">
+                  <div className="bg-white rounded-2xl p-6 shadow-sm">
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">Caractéristiques</h2>
                   <div className="grid grid-cols-2 gap-4">
                     {[
@@ -482,16 +475,20 @@ const PropertyDetailsPage = () => {
                       </div>
                     ))}
                   </div>
+                  </div>
                 </div>
               )}
 
-              {/* Description */}
+              {/* Description — delay 350ms */}
+              <div className="opacity-0 animate-fade-in-up delay-350" >
               <div className="bg-white rounded-2xl p-6 shadow-sm">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">Description</h2>
                 <p className="text-gray-700 leading-relaxed text-lg whitespace-pre-wrap">{property.description}</p>
               </div>
+              </div>
 
-              {/* Avis Clients - New Section */}
+              {/* Avis Clients — delay 400ms */}
+              <div className="opacity-0 animate-fade-in-up delay-400" >
               <div className="bg-white rounded-2xl p-6 shadow-sm">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
                   <span className="bg-yellow-100 text-yellow-600 p-2 rounded-lg mr-3">
@@ -559,8 +556,10 @@ const PropertyDetailsPage = () => {
                   </div>
                 </div>
               </div>
+              </div>
 
-              {/* Map Section */}
+              {/* Map Section — delay 450ms */}
+              <div className="opacity-0 animate-fade-in-up delay-500" >
               <div className="bg-white rounded-2xl p-6 shadow-sm">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">Localisation du Bien</h2>
                 <div className="rounded-xl overflow-hidden h-[300px] md:h-96 border border-gray-200 relative z-0">
@@ -587,10 +586,11 @@ const PropertyDetailsPage = () => {
                   </MapContainer>
                 </div>
               </div>
+              </div>
             </div>
 
-            {/* Right Sidebar - Contact & Appointment */}
-            <div className="lg:col-span-1 space-y-6">
+            {/* Right Sidebar — delay 150ms */}
+            <div className="lg:col-span-1 space-y-6 opacity-0 animate-fade-in-up delay-150" >
               {/* Contact Panel */}
               <div className="bg-white rounded-2xl shadow-lg sticky top-24 max-h-[calc(100vh-7rem)] overflow-y-auto">
                 {/* Tabs Header */}
@@ -826,24 +826,24 @@ const PropertyDetailsPage = () => {
 
       {/* Fullscreen Lightbox Modal */}
       {showLightbox && (
-        <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md animate-fade-in" onClick={() => setShowLightbox(false)}>
+        <div className="fixed inset-0 z-[200] bg-black/95 backdrop-blur-md animate-fade-in flex flex-col" onClick={() => setShowLightbox(false)}>
           {/* Header Content */}
-          <div className="absolute top-0 left-0 right-0 p-6 flex justify-between items-center z-10 bg-gradient-to-b from-black/60 to-transparent">
+          <div className="flex-shrink-0 p-4 sm:p-6 flex justify-between items-center z-10 bg-gradient-to-b from-black/60 to-transparent">
             <div className="flex flex-col text-left">
-              <span className="text-white font-bold text-lg tracking-tight">Vue Plein Écran</span>
+              <span className="text-white font-bold text-base sm:text-lg tracking-tight">Vue Plein Écran</span>
               <span className="text-white/60 text-xs font-medium uppercase tracking-widest">{currentImageIndex + 1} SUR {property.images.length}</span>
             </div>
             <button
               onClick={() => setShowLightbox(false)}
               className="p-3 text-white bg-white/10 hover:bg-white/20 rounded-full transition-all duration-300 transform hover:rotate-90 group"
             >
-              <X size={32} />
+              <X size={24} />
             </button>
           </div>
 
-          {/* Main Image Stage with Pointer-based Swipe Gestures */}
+          {/* Main Image Stage - fills remaining space */}
           <div
-            className="absolute inset-y-20 inset-x-2 md:inset-y-28 md:inset-x-16 flex items-center justify-center select-none touch-pan-y"
+            className="flex-1 relative flex items-center justify-center overflow-hidden select-none touch-pan-y"
             onClick={(e) => e.stopPropagation()}
             onPointerDown={handlePointerDown}
             onPointerUp={handlePointerUp}
@@ -866,7 +866,7 @@ const PropertyDetailsPage = () => {
                 currentImageIndex,
                 property.images.length
               )}
-              className="max-w-full max-h-full object-contain shadow-2xl animate-zoom-in rounded-sm pointer-events-none"
+              className="w-full h-full object-contain shadow-2xl animate-zoom-in pointer-events-none"
             />
 
             {/* Large Navigation Arrows */}
@@ -874,23 +874,25 @@ const PropertyDetailsPage = () => {
               <>
                 <button
                   onClick={() => setCurrentImageIndex((currentImageIndex - 1 + property.images.length) % property.images.length)}
-                  className="absolute left-0 md:left-4 top-1/2 -translate-y-1/2 p-4 text-white/50 hover:text-white bg-white/0 hover:bg-white/10 rounded-full transition-all transform hover:scale-110 active:scale-95 z-10"
+                  className="absolute left-0 sm:left-4 top-1/2 -translate-y-1/2 p-3 sm:p-4 text-white/60 hover:text-white bg-black/20 hover:bg-black/40 rounded-full transition-all transform hover:scale-110 active:scale-95 z-10"
                 >
-                  <ChevronLeft size={48} />
+                  <ChevronLeft size={32} />
                 </button>
                 <button
                   onClick={() => setCurrentImageIndex((currentImageIndex + 1) % property.images.length)}
-                  className="absolute right-0 md:right-4 top-1/2 -translate-y-1/2 p-4 text-white/50 hover:text-white bg-white/0 hover:bg-white/10 rounded-full transition-all transform hover:scale-110 active:scale-95 z-10"
+                  className="absolute right-0 sm:right-4 top-1/2 -translate-y-1/2 p-3 sm:p-4 text-white/60 hover:text-white bg-black/20 hover:bg-black/40 rounded-full transition-all transform hover:scale-110 active:scale-95 z-10"
                 >
-                  <ChevronRight size={48} />
+                  <ChevronRight size={32} />
                 </button>
               </>
             )}
           </div>
 
           {/* Caption Overlay */}
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-6 py-3 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-white/90 text-sm font-medium text-center whitespace-nowrap z-10">
-            {property.title}
+          <div className="flex-shrink-0 py-4 px-6 flex justify-center z-10">
+            <span className="px-6 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-white/90 text-sm font-medium text-center whitespace-nowrap">
+              {property.title}
+            </span>
           </div>
         </div>
       )}

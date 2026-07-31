@@ -4,6 +4,7 @@ import { X, ExternalLink, Copy, MapPin, Building2, Maximize2, BedDouble, Trash2 
 import { Property, ClientDemand } from '@/types';
 import Price from '../Price';
 import { getImageSrc, getLQIP } from '@/utils/imageUtils';
+import { createPortal } from 'react-dom';
 
 interface PropertyMatchModalProps {
   isOpen: boolean;
@@ -21,7 +22,7 @@ const PropertyMatchModal = ({ isOpen, onClose, demand, matches, onIgnoreMatch }:
     alert('Lien copié dans le presse-papier !');
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-brand-dark/80 z-[100] flex items-center justify-center p-2 md:p-4 backdrop-blur-md animate-fade-in">
       <div className="bg-white rounded-2xl md:rounded-3xl shadow-2xl max-w-4xl w-full max-h-[95vh] md:max-h-[90vh] overflow-hidden flex flex-col animate-scale-in">
         {/* Header */}
@@ -195,7 +196,8 @@ const PropertyMatchModal = ({ isOpen, onClose, demand, matches, onIgnoreMatch }:
           ))}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

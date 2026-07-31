@@ -1,4 +1,5 @@
 import React, { useState, useMemo, memo } from 'react';
+import { createPortal } from 'react-dom';
 import {
   GripVertical, MapPin, Star, Edit, Trash2, Search, Plus,
   ChevronRight, X, Image as ImageIcon, List, ChevronDown,
@@ -693,7 +694,7 @@ const PropertiesManagement = ({
         onLocationChange={handleLocationChange}
       />
 
-      {deleteConfirmId && (
+      {deleteConfirmId && createPortal(
         <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
           <div className="bg-white rounded-3xl w-full max-w-md p-8 text-center animate-bounce-in shadow-2xl">
             <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -706,11 +707,11 @@ const PropertiesManagement = ({
               <button onClick={confirmDelete} className="flex-1 px-4 py-4 bg-red-500 text-white font-bold rounded-2xl hover:bg-red-600 transition shadow-lg shadow-red-500/20">Supprimer</button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
-      {/* Appointment History Modal */}
-      {historyProperty && (() => {
+      {historyProperty && createPortal((() => {
         const historyPropertyApts = appointments.filter(a => a.propertyId === historyProperty.id);
         const filteredHistoryApts = historyStatusFilter === 'all'
           ? historyPropertyApts
@@ -722,7 +723,7 @@ const PropertiesManagement = ({
 
         return (
           <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
-            <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-2xl animate-scale-in">
+            <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-xl animate-scale-in">
               {/* Header */}
               <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
                 <div className="flex items-center gap-3">
@@ -817,35 +818,38 @@ const PropertiesManagement = ({
                     return (
                       <div
                         key={apt.id}
-                        className={`p-5 rounded-2xl border bg-white shadow-sm transition-all flex flex-col gap-3.5 hover:shadow-md ${
-                          apt.status === 'pending' ? 'border-yellow-100 bg-yellow-50/10' : 'border-gray-100'
+                        className={`p-5 rounded-2xl border bg-white shadow-sm transition-all flex flex-col gap-3 hover:shadow-md ${
+                          apt.status === 'pending' ? 'border-yellow-200 bg-yellow-50/20' : 
+                          apt.status === 'accepted' ? 'border-green-100' :
+                          apt.status === 'rejected' ? 'border-red-100' :
+                          'border-gray-100'
                         }`}
                       >
-                        {/* Row 1: Client Card info */}
+                        {/* Row 1: Client info + Status badge */}
                         <div className="flex justify-between items-start gap-4">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="w-10 h-10 rounded-xl bg-gray-100 border border-gray-200 text-gray-500 flex items-center justify-center font-black text-xs shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-gray-100 border border-gray-200 text-gray-600 flex items-center justify-center font-black text-sm shrink-0">
                               {clientName.charAt(0).toUpperCase()}
                             </div>
                             <div className="min-w-0">
                               <h4 className="font-bold text-gray-900 text-sm leading-tight truncate">{clientName}</h4>
-                              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-[10px] text-gray-400 font-bold uppercase tracking-wider min-w-0">
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-[10px] text-gray-400 font-medium min-w-0">
                                 {email && (
-                                  <span className="flex items-center gap-1 min-w-0 max-w-[140px] xs:max-w-[180px] sm:max-w-none" title={email}>
+                                  <span className="flex items-center gap-1 min-w-0 max-w-[160px] sm:max-w-none" title={email}>
                                     <Mail size={10} className="text-emerald-500 shrink-0" />
                                     <span className="truncate">{email}</span>
                                   </span>
                                 )}
                                 {phone && (
-                                  <span className="flex items-center gap-1 shrink-0">
+                                  <a href={`tel:${phone}`} className="flex items-center gap-1 shrink-0 hover:text-emerald-600 transition-colors">
                                     <Phone size={10} className="text-emerald-500" /> {phone}
-                                  </span>
+                                  </a>
                                 )}
                               </div>
                             </div>
                           </div>
                           
-                          {/* Styled Status Badge */}
+                          {/* Status Badge */}
                           <div className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider whitespace-nowrap border shrink-0 ${
                             apt.status === 'accepted' ? 'bg-green-50 text-green-700 border-green-200' :
                             apt.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
@@ -856,45 +860,41 @@ const PropertiesManagement = ({
                         </div>
 
                         {/* Row 2: Date, Time & Meeting Type */}
-                        <div className="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-gray-50 text-[10px] font-black text-gray-500 uppercase tracking-widest bg-gray-50/50 p-2 rounded-xl border border-gray-100/30">
-                          <div className="flex items-center gap-3">
-                            <span className="flex items-center gap-1.5 text-gray-600">
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-gray-100">
+                          <div className="flex items-center gap-4">
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-gray-600">
                               <Calendar size={13} className="text-emerald-500" /> {formatDate(apt.date)}
                             </span>
-                            <span className="flex items-center gap-1.5 text-gray-400">
+                            <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-400">
                               <Clock size={13} /> {apt.time}
                             </span>
                           </div>
-                          
-                          {/* Simple Text for Meeting Type */}
-                          <span className="text-[10px] font-bold text-gray-400 normal-case">
-                            Type : {apt.meetingType === 'visite' ? 'Visite sur place' : apt.meetingType === 'appel' ? 'Appel téléphonique' : 'Réunion en agence'}
+                          <span className="text-[10px] font-bold text-gray-400 bg-gray-50 border border-gray-100 px-2 py-1 rounded-lg">
+                            {apt.meetingType === 'visite' ? '🏠 Visite sur place' : apt.meetingType === 'appel' ? '📞 Appel téléphonique' : '🏢 Réunion en agence'}
                           </span>
                         </div>
 
                         {/* Row 3: Client notes */}
                         {cleanNotes && (
-                          <div className="text-xs text-gray-600 bg-gray-50/80 rounded-xl p-3 border border-gray-100/60 italic flex items-start gap-2 leading-relaxed">
+                          <div className="text-xs text-gray-600 bg-gray-50 rounded-xl p-3 border border-gray-100 italic flex items-start gap-2 leading-relaxed">
                             <MessageSquare size={13} className="text-emerald-500/80 mt-0.5 flex-shrink-0" />
                             <span>"{cleanNotes}"</span>
                           </div>
                         )}
 
                         {/* Row 4: Quick Actions */}
-                        <div className="flex items-center justify-end gap-2 pt-1">
+                        <div className="flex items-center justify-end gap-2">
                           {apt.status === 'pending' && (
                             <>
                               <button
                                 onClick={() => handleUpdateStatus(apt.id, 'accepted')}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold text-xs shadow-sm shadow-green-100"
-                                title="Confirmer le rendez-vous"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold text-xs shadow-sm shadow-green-100 active:scale-95"
                               >
                                 <Check size={13} /> Confirmer
                               </button>
                               <button
                                 onClick={() => handleUpdateStatus(apt.id, 'rejected')}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-bold text-xs shadow-sm shadow-red-100"
-                                title="Refuser le rendez-vous"
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-bold text-xs shadow-sm shadow-red-100 active:scale-95"
                               >
                                 <X size={13} /> Refuser
                               </button>
@@ -903,7 +903,7 @@ const PropertiesManagement = ({
                           
                           <button
                             onClick={() => handleDeleteAppointment(apt.id)}
-                            className="p-1.5 bg-white border border-gray-200 text-gray-400 rounded-lg hover:text-red-500 hover:border-red-200 hover:bg-red-50/30 transition shrink-0 ml-auto"
+                            className="p-1.5 bg-white border border-gray-200 text-gray-400 rounded-lg hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition shrink-0 ml-auto active:scale-95"
                             title="Supprimer définitivement"
                           >
                             <Trash2 size={13} />
@@ -927,7 +927,7 @@ const PropertiesManagement = ({
             </div>
           </div>
         );
-      })()}
+      })(), document.body)}
     </div>
   );
 };

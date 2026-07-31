@@ -5,6 +5,7 @@ import {
   Clock, TrendingUp, AlertCircle, Trash2, Check, MessageSquare
 } from 'lucide-react';
 import { Appointment, Property, User } from '@/types';
+import { createPortal } from 'react-dom';
 
 interface AppointmentsCalendarModalProps {
   onClose: () => void;
@@ -108,7 +109,7 @@ const AppointmentsCalendarModal = ({
     setShowDayPanel(true);
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-[100] bg-gray-900/50 backdrop-blur-sm flex items-center justify-center p-0 sm:p-4">
       <div className="bg-gray-50 w-full max-w-[1400px] h-full sm:h-[92vh] sm:rounded-2xl shadow-2xl flex flex-col overflow-hidden">
 
@@ -457,7 +458,8 @@ const AppointmentsCalendarModal = ({
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

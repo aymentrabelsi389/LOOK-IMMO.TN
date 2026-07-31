@@ -20,6 +20,7 @@ import { useData } from '@/context/DataContext';
 import { getImageSrc, buildSrcSet, buildPropertyImageAlt } from '@/utils/imageUtils';
 import { formatPropertyType } from '@/utils/propertyUtils';
 import Breadcrumb from '@/components/ui/Breadcrumb';
+import { ScrollReveal } from '@/components/ui/ScrollReveal';
 
 const PropertyDetailsPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -392,9 +393,9 @@ const PropertyDetailsPage = () => {
               </div>
               </div>
 
-              {/* Property Specs — delay 200ms */}
-              <div className="opacity-0 animate-fade-in-up delay-200" >
-              <div className="bg-white rounded-2xl p-6 shadow-sm">
+              {/* Property Specs */}
+              <ScrollReveal delay={100}>
+                <div className="bg-white rounded-2xl p-6 shadow-sm">
                 <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6 font-serif">Caractéristiques Principales</h2>
                 {property.type === 'land' ? (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
@@ -447,12 +448,12 @@ const PropertyDetailsPage = () => {
                     </div>
                   </div>
                 )}
-              </div>
-              </div>
+                </div>
+              </ScrollReveal>
 
-              {/* Caractéristiques — delay 300ms */}
+              {/* Caractéristiques */}
               {property.type !== 'land' && (
-                <div className="opacity-0 animate-fade-in-up delay-300">
+                <ScrollReveal>
                   <div className="bg-white rounded-2xl p-6 shadow-sm">
                   <h2 className="text-2xl font-bold text-gray-900 mb-6">Caractéristiques</h2>
                   <div className="grid grid-cols-2 gap-4">
@@ -476,20 +477,20 @@ const PropertyDetailsPage = () => {
                     ))}
                   </div>
                   </div>
-                </div>
+                </ScrollReveal>
               )}
 
-              {/* Description — delay 350ms */}
-              <div className="opacity-0 animate-fade-in-up delay-350" >
-              <div className="bg-white rounded-2xl p-6 shadow-sm">
+              {/* Description */}
+              <ScrollReveal>
+                <div className="bg-white rounded-2xl p-6 shadow-sm">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">Description</h2>
                 <p className="text-gray-700 leading-relaxed text-lg whitespace-pre-wrap">{property.description}</p>
-              </div>
-              </div>
+                </div>
+              </ScrollReveal>
 
-              {/* Avis Clients — delay 400ms */}
-              <div className="opacity-0 animate-fade-in-up delay-400" >
-              <div className="bg-white rounded-2xl p-6 shadow-sm">
+              {/* Avis Clients */}
+              <ScrollReveal>
+                <div className="bg-white rounded-2xl p-6 shadow-sm">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center">
                   <span className="bg-yellow-100 text-yellow-600 p-2 rounded-lg mr-3">
                     <Star size={24} fill="currentColor" />
@@ -555,12 +556,12 @@ const PropertyDetailsPage = () => {
                     )}
                   </div>
                 </div>
-              </div>
-              </div>
+                </div>
+              </ScrollReveal>
 
-              {/* Map Section — delay 450ms */}
-              <div className="opacity-0 animate-fade-in-up delay-500" >
-              <div className="bg-white rounded-2xl p-6 shadow-sm">
+              {/* Map Section */}
+              <ScrollReveal>
+                <div className="bg-white rounded-2xl p-6 shadow-sm">
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">Localisation du Bien</h2>
                 <div className="rounded-xl overflow-hidden h-[300px] md:h-96 border border-gray-200 relative z-0">
                   <MapContainer
@@ -585,8 +586,8 @@ const PropertyDetailsPage = () => {
                     <MapUpdater center={[property.location.lat, property.location.lng]} />
                   </MapContainer>
                 </div>
-              </div>
-              </div>
+                </div>
+              </ScrollReveal>
             </div>
 
             {/* Right Sidebar — delay 150ms */}
@@ -730,7 +731,8 @@ const PropertyDetailsPage = () => {
 
               {/* Similar Properties (Right Sidebar) */}
               {similarProperties.length > 0 && (
-                <div className="bg-white rounded-2xl p-6 shadow-sm mt-6">
+                <ScrollReveal>
+                  <div className="bg-white rounded-2xl p-6 shadow-sm mt-6">
                   <h2 className="text-xl font-bold text-gray-900 mb-4">Propriétés Similaires</h2>
                   <div className="flex flex-col gap-6">
                     {similarProperties.slice(0, 3).map(prop => (
@@ -818,6 +820,7 @@ const PropertyDetailsPage = () => {
                     ))}
                   </div>
                 </div>
+              </ScrollReveal>
               )}
             </div>
           </div>

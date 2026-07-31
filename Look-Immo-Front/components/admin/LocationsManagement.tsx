@@ -23,6 +23,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { locationsAPI } from '@/services/api';
 import Pagination from '../ui/Pagination';
+import { createPortal } from 'react-dom';
 
 interface SortableLocationRowProps {
   loc: any;
@@ -387,7 +388,7 @@ const LocationsManagement = ({
       {/* Modals */}
 
       {/* Modal Ajout/Modification */}
-      {showLocationModal && (
+      {showLocationModal && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4 animate-fade-in" onClick={() => setShowLocationModal(false)}>
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col scale-100 animate-fade-in-up" onClick={e => e.stopPropagation()}>
             <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
@@ -424,11 +425,12 @@ const LocationsManagement = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Confirmation Suppression */}
-      {showDeleteConfirm && (
+      {showDeleteConfirm && createPortal(
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4" onClick={() => setShowDeleteConfirm(false)}>
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-8 text-center animate-fade-in-up" onClick={e => e.stopPropagation()}>
             <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500">
@@ -445,7 +447,8 @@ const LocationsManagement = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

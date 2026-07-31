@@ -12,6 +12,7 @@ import { getImageSrc, getLQIP } from '@/utils/imageUtils';
 import { useUsersManagement } from './users/hooks/useUsersManagement';
 import CustomDropdown from '../ui/CustomDropdown';
 import Pagination from '../ui/Pagination';
+import { createPortal } from 'react-dom';
 
 interface UsersManagementProps {
   users: User[];
@@ -329,7 +330,7 @@ const UsersManagement = ({
         const userMessagesCount = messages.filter(m => m.email === selectedUser.email).length;
         const userAppointmentsCount = appointments.filter(a => a.userId === selectedUser.id || a.clientEmail === selectedUser.email).length;
 
-        return (
+        return createPortal(
           <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={closeProfile}>
             <div className="bg-white rounded-3xl shadow-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto flex flex-col scale-100 animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
               <div className="bg-gradient-to-br from-brand-dark to-blue-900 p-8 md:p-12 text-white relative">
@@ -551,11 +552,12 @@ const UsersManagement = ({
                 </div>
               </div>
             </div>
-          </div>
+          </div>,
+          document.body
         );
       })()}
 
-      {showDeleteConfirm && (
+      {showDeleteConfirm && createPortal(
         <div className="fixed inset-0 bg-black/60 z-[110] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setShowDeleteConfirm(false)}>
           <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-8 text-center animate-fade-in-up" onClick={e => e.stopPropagation()}>
             <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-6 text-red-500">
@@ -574,7 +576,8 @@ const UsersManagement = ({
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

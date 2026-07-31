@@ -87,7 +87,7 @@ const ContactPage = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Hero Header */}
       <div className="bg-gradient-to-r from-brand-dark to-blue-900 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4">
+        <div className="max-w-7xl mx-auto px-4 animate-fade-in-up">
           <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">Contactez-Nous</h1>
           <p className="text-xl text-gray-200">
             Nous sommes là pour répondre à toutes vos questions et vous accompagner dans votre projet immobilier.
@@ -99,7 +99,7 @@ const ContactPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Contact Form */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 animate-fade-in-up delay-100 opacity-0">
             <div className="bg-white rounded-2xl p-8 md:p-10 shadow-xl border border-gray-100">
               <h2 className="text-2xl font-bold text-brand-dark mb-8">Envoyez-nous un message</h2>
               
@@ -231,7 +231,7 @@ const ContactPage = () => {
           </div>
 
           {/* Sidebar Info */}
-          <div className="space-y-6">
+          <div className="space-y-6 animate-fade-in-up delay-150 opacity-0">
             {/* Coordinates */}
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
               <h3 className="font-bold text-xl text-brand-dark mb-6">Nos Coordonnées</h3>
@@ -305,7 +305,7 @@ const ContactPage = () => {
         </div>
 
         {/* Bottom Section: Map & About */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12 animate-fade-in-up delay-250 opacity-0">
           <div className="lg:col-span-2">
             <div id="notre-localisation" className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 h-[400px] flex flex-col">
               <h3 className="font-bold text-xl text-brand-dark mb-6">Notre Localisation</h3>

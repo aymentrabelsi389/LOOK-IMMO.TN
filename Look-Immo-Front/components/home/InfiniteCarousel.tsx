@@ -192,7 +192,7 @@ const InfiniteCarousel = <T extends { id: string }>({
           <button
             type="button"
             onClick={handlePrev}
-            className="absolute left-2 top-[40%] -translate-y-1/2 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white hover:scale-110 transition-all cursor-pointer"
+            className="absolute left-2 top-[40%] -translate-y-1/2 z-10 w-10 h-10 bg-white/90 rounded-full shadow-md flex items-center justify-center hover:bg-white hover:scale-110 transition-all cursor-pointer"
             aria-label="Previous"
           >
             <ChevronLeft size={24} className="text-gray-700" />
@@ -200,7 +200,7 @@ const InfiniteCarousel = <T extends { id: string }>({
           <button
             type="button"
             onClick={handleNext}
-            className="absolute right-2 top-[40%] -translate-y-1/2 z-10 w-10 h-10 bg-white/90 backdrop-blur-sm rounded-full shadow-lg flex items-center justify-center hover:bg-white hover:scale-110 transition-all cursor-pointer"
+            className="absolute right-2 top-[40%] -translate-y-1/2 z-10 w-10 h-10 bg-white/90 rounded-full shadow-md flex items-center justify-center hover:bg-white hover:scale-110 transition-all cursor-pointer"
             aria-label="Next"
           >
             <ChevronRight size={24} className="text-gray-700" />

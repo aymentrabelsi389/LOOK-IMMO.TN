@@ -9,6 +9,7 @@ import { Message } from '@/types';
 import { messagesAPI } from '@/services/api';
 import CustomDropdown from '../ui/CustomDropdown';
 import Pagination from '../ui/Pagination';
+import { createPortal } from 'react-dom';
 
 interface MessagesManagementProps {
   messages: Message[];
@@ -306,7 +307,7 @@ const MessagesManagement = ({
     </div>
 
       {/* Message Detail Modal */}
-      {selectedMessage && (
+      {selectedMessage && createPortal(
         <div className="fixed inset-0 bg-brand-dark/80 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in" onClick={() => { setSelectedMessage(null); setConfirmDelete(false); }}>
           <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden animate-scale-in" onClick={(e) => e.stopPropagation()}>
             <div className="p-8 border-b border-gray-100 bg-gradient-to-br from-gray-50 to-white relative">
@@ -407,7 +408,8 @@ const MessagesManagement = ({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

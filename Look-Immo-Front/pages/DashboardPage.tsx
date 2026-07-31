@@ -18,6 +18,7 @@ import { useData } from '@/context/DataContext';
 import { notify } from '@/services/notificationStore';
 import { useConfirm } from '@/context/ConfirmContext';
 import { getImageSrc, getLQIP } from '@/utils/imageUtils';
+import { createPortal } from 'react-dom';
 import { useAdmin } from '@/hooks/useAdmin';
 
 const DashboardPage = () => {
@@ -1048,7 +1049,7 @@ const DashboardPage = () => {
 
 
       {/* Add Appointment Modal */}
-      {showAptModal && (
+      {showAptModal && createPortal(
         <div className="fixed inset-0 bg-brand-dark/60 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in" onClick={() => setShowAptModal(false)}>
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col transform transition-all duration-300 border border-gray-100/50 scale-100 animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 flex-shrink-0">
@@ -1240,11 +1241,12 @@ const DashboardPage = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Add Demand Modal */}
-      {showDemandModal && (
+      {showDemandModal && createPortal(
         <div className="fixed inset-0 bg-brand-dark/60 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in" onClick={() => setShowDemandModal(false)}>
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col transform transition-all duration-300 border border-gray-100/50 scale-100 animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-orange-50/50 flex-shrink-0">
@@ -1349,11 +1351,12 @@ const DashboardPage = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Edit Appointment Modal */}
-      {editingAppointment && (
+      {editingAppointment && createPortal(
         <div className="fixed inset-0 bg-brand-dark/60 z-[100] flex items-center justify-center p-4 backdrop-blur-md animate-fade-in" onClick={() => setEditingAppointment(null)}>
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col transform transition-all duration-300 border border-gray-100/50 scale-100 animate-in zoom-in-95" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 flex-shrink-0">
@@ -1579,7 +1582,8 @@ const DashboardPage = () => {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>

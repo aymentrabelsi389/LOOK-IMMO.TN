@@ -10,6 +10,7 @@ import { blogAPI } from '@/services/api';
 import { useConfirm } from '@/context/ConfirmContext';
 import CustomDropdown from '../ui/CustomDropdown';
 import Pagination from '../ui/Pagination';
+import { createPortal } from 'react-dom';
 
 interface BlogManagementProps {
   blogPosts: BlogPost[];
@@ -329,7 +330,7 @@ const BlogManagement = ({
       </div>
 
       {/* Add/Edit Modal */}
-      {showModal && (
+      {showModal && createPortal(
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setShowModal(false)}>
           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col scale-100 animate-fade-in-up" onClick={e => e.stopPropagation()}>
             <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white/80 backdrop-blur-md z-10">
@@ -408,7 +409,8 @@ const BlogManagement = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

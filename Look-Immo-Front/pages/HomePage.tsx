@@ -9,7 +9,6 @@ import { useSEO } from '@/hooks/useSEO';
 import { useUI } from '@/context/UIContext';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useData } from '@/context/DataContext';
-import { ScrollReveal } from '@/components/ui/ScrollReveal';
 
 import hero1 from '../photo-1613490493576-7fde63acd811.webp';
 import hero2 from '../photo-1512917774080-9991f1c4c750.webp';
@@ -197,52 +196,44 @@ const HomePage = () => {
         </div>
       </div>
 
-      <ScrollReveal>
-        <FeaturedPropertiesSection
-          properties={properties}
-          onSelectProperty={onSelectProperty}
-          userRole={userRole}
-          onToggleFavorite={onToggleFavorite}
-          user={user}
-          isLoading={isLoading}
-          onViewAll={() => {
-            onSearch({
-              query: '',
-              listingType: 'all',
-              propertyType: 'all',
-              minPrice: 0,
-              maxPrice: 5000000,
-              minBedrooms: 0,
-              minArea: 0
-            });
-            onNavigate('listings');
-          }}
-        />
-      </ScrollReveal>
-      
-      <ScrollReveal>
-        <NewPropertiesSection
-          properties={properties}
-          onSelectProperty={onSelectProperty}
-          userRole={userRole}
-          onToggleFavorite={onToggleFavorite}
-          user={user}
-          isLoading={isLoading}
-        />
-      </ScrollReveal>
+      <FeaturedPropertiesSection
+        properties={properties}
+        onSelectProperty={onSelectProperty}
+        userRole={userRole}
+        onToggleFavorite={onToggleFavorite}
+        user={user}
+        isLoading={isLoading}
+        onViewAll={() => {
+          onSearch({
+            query: '',
+            listingType: 'all',
+            propertyType: 'all',
+            minPrice: 0,
+            maxPrice: 5000000,
+            minBedrooms: 0,
+            minArea: 0
+          });
+          onNavigate('listings');
+        }}
+      />
 
-      <ScrollReveal>
-        <PromotionLandsSection
-          onSelectProperty={onSelectProperty}
-          userRole={userRole}
-          onToggleFavorite={onToggleFavorite}
-          user={user}
-        />
-      </ScrollReveal>
+      <NewPropertiesSection
+        properties={properties}
+        onSelectProperty={onSelectProperty}
+        userRole={userRole}
+        onToggleFavorite={onToggleFavorite}
+        user={user}
+        isLoading={isLoading}
+      />
 
-      <ScrollReveal>
-        <NewsSection blogPosts={blogPosts} onSelectPost={onSelectPost} />
-      </ScrollReveal>
+      <PromotionLandsSection
+        onSelectProperty={onSelectProperty}
+        userRole={userRole}
+        onToggleFavorite={onToggleFavorite}
+        user={user}
+      />
+
+      <NewsSection blogPosts={blogPosts} onSelectPost={onSelectPost} />
     </div>
   );
 };

@@ -9,6 +9,7 @@ import { Property } from '@/types';
 import { CustomDatePicker } from '../ui/DateTimePicker';
 import { useFinancesManagement } from './finances/hooks/useFinancesManagement';
 import { useClickOutside } from '@/hooks/useClickOutside';
+import { createPortal } from 'react-dom';
 
 
 // ── Custom styled dropdown (consistent with other admin panels) ──────────────
@@ -732,7 +733,7 @@ const FinancesManagement = ({ properties, showNotification }: FinancesManagement
     </div>
 
       {/* Add / Edit Transaction Modal */}
-      {isModalOpen && (
+      {isModalOpen && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in print:hidden">
           <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] animate-scale-up">
             
@@ -903,7 +904,8 @@ const FinancesManagement = ({ properties, showNotification }: FinancesManagement
 
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

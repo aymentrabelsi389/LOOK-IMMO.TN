@@ -7,6 +7,7 @@ import PropertyMatchModal from './PropertyMatchModal';
 import { useDemandsManagement } from './demands/hooks/useDemandsManagement';
 import CustomDropdown from '../ui/CustomDropdown';
 import { StatusDropdown } from './demands/StatusDropdown';
+import { createPortal } from 'react-dom';
 
 interface DemandsManagementProps {
   clientDemands?: ClientDemand[];
@@ -468,7 +469,7 @@ const DemandsManagement = ({
         />
       )}
 
-      {editingDemand && (
+      {editingDemand && createPortal(
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setEditingDemand(null)}>
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden flex flex-col animate-scale-in" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
@@ -627,7 +628,8 @@ const DemandsManagement = ({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

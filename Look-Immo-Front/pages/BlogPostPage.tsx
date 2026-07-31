@@ -101,7 +101,7 @@ const BlogPostPage = () => {
         <div className="relative h-[380px] overflow-hidden">
           <img src={post.image} alt={post.title} className="w-full h-full object-cover" />
           <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-black/10" />
-          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 pb-20">
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-4 pb-20 animate-fade-in-up">
             <span className="inline-block text-white text-sm font-bold px-5 py-1.5 rounded-full mb-6 bg-[#06B6D4]">{post.category}</span>
             <h1 className="text-4xl md:text-5xl font-bold text-white max-w-4xl leading-tight mb-6">{post.title}</h1>
             <div className="flex items-center text-white/90 text-sm space-x-4">
@@ -112,7 +112,7 @@ const BlogPostPage = () => {
           </div>
         </div>
 
-        <div className="max-w-[850px] mx-auto px-4 relative -mt-10">
+        <div className="max-w-[850px] mx-auto px-4 relative -mt-10 animate-fade-in-up delay-150 opacity-0">
           <button onClick={onBack} className="flex items-center text-gray-500 hover:text-[#06B6D4] transition mb-6 text-sm">
             <ChevronRight size={18} className="rotate-180 mr-1" /> Retour au blog
           </button>

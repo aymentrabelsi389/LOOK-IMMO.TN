@@ -3,6 +3,7 @@ import {
   X, Calendar, Clock, Building2, MessageSquare, Phone, Mail, Trash2, Check, History
 } from 'lucide-react';
 import { Appointment, User, Property } from '@/types';
+import { createPortal } from 'react-dom';
 
 interface ClientAppointmentsHistoryModalProps {
   onClose: () => void;
@@ -107,7 +108,7 @@ const ClientAppointmentsHistoryModal: React.FC<ClientAppointmentsHistoryModalPro
     await onDelete(id);
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm transition-opacity duration-300">
       <div className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[85vh] border border-gray-100 animate-scale-in overflow-hidden">
         {/* Header */}
@@ -257,7 +258,8 @@ const ClientAppointmentsHistoryModal: React.FC<ClientAppointmentsHistoryModalPro
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

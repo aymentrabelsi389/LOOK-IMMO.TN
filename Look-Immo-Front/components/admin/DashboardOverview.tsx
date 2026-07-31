@@ -5,6 +5,7 @@ import {
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer 
 } from 'recharts';
+import AnimatedCounter from '@/components/ui/AnimatedCounter';
 
 interface DashboardOverviewProps {
   dashboardStats: any;
@@ -71,7 +72,9 @@ const DashboardOverview = ({
             <div className="relative flex items-start justify-between">
               <div className="flex-1">
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{stat.label}</p>
-                <h3 className="text-3xl font-bold text-gray-900 mb-1">{stat.val}</h3>
+                <h3 className="text-3xl font-bold text-gray-900 mb-1">
+                  <AnimatedCounter value={stat.val} />
+                </h3>
                 <p className="text-xs text-gray-400 font-medium">{stat.trend}</p>
               </div>
               <div className={`p-3 rounded-xl ${stat.iconBg} text-transparent bg-clip-text bg-gradient-to-br ${stat.gradient} group-hover:scale-110 transition-transform duration-300`}>

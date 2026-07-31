@@ -45,7 +45,6 @@ export function usePropertyModal({
       });
     } catch (err) {
       console.error("Failed to upload document:", err);
-      alert("Erreur lors de l'upload du document. Veuillez réessayer.");
     }
   };
 

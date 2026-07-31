@@ -91,6 +91,66 @@ const DashboardPage = () => {
   // Additional props for the Add-Appointment modal
   const [addAdditionalProps, setAddAdditionalProps] = useState<string[]>([]);
 
+  // ── Validation states ──
+  const [aptErrors, setAptErrors] = useState<Record<string, string>>({});
+  const [demandErrors, setDemandErrors] = useState<Record<string, string>>({});
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
+
+  // Helper: trigger vibration on mobile when validation fails
+  const vibrateError = () => {
+    if (typeof navigator !== 'undefined' && navigator.vibrate) {
+      navigator.vibrate([80, 40, 80]);
+    }
+  };
+
+  // Helper: focus first invalid field inside a form
+  const focusFirstError = (fieldIds: string[]) => {
+    for (const id of fieldIds) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.focus();
+        break;
+      }
+    }
+  };
+
+  const validateAptForm = (): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    if (!aptForm.clientName || aptForm.clientName.trim().length < 2)
+      errs.clientName = 'Le nom du client est obligatoire.';
+    if (!aptForm.clientPhone || aptForm.clientPhone.trim().length === 0)
+      errs.clientPhone = 'Veuillez renseigner un numéro de téléphone.';
+    if (!aptForm.date)
+      errs.date = 'Veuillez saisir une date.';
+    if (!aptForm.time)
+      errs.time = "L'heure est obligatoire.";
+    setAptErrors(errs);
+    return errs;
+  };
+
+  const validateDemandForm = (): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    if (!demandForm.clientName || (demandForm.clientName as string).trim().length < 2)
+      errs.clientName = 'Le nom du client est obligatoire.';
+    if (!demandForm.description || (demandForm.description as string).trim().length === 0)
+      errs.description = 'La description est obligatoire.';
+    if (!demandForm.location || (demandForm.location as string).trim().length === 0)
+      errs.location = 'La localisation est obligatoire.';
+    setDemandErrors(errs);
+    return errs;
+  };
+
+  const validateEditForm = (): Record<string, string> => {
+    const errs: Record<string, string> = {};
+    if (!editForm.date)
+      errs.date = 'Veuillez saisir une date.';
+    if (!editForm.time)
+      errs.time = "L'heure est obligatoire.";
+    setEditErrors(errs);
+    return errs;
+  };
+
   const openEditAppointment = (apt: Appointment) => {
     setEditingAppointment(apt);
 
@@ -117,6 +177,13 @@ const DashboardPage = () => {
 
   const saveEditAppointment = (e: React.FormEvent) => {
     e.preventDefault();
+    const errs = validateEditForm();
+    if (Object.keys(errs).length > 0) {
+      vibrateError();
+      notify.error('Veuillez corriger les champs en rouge.');
+      focusFirstError(['edit-apt-date', 'edit-apt-time']);
+      return;
+    }
     if (editingAppointment) {
       const serializedNotes = formatNotes(editAdditionalProps, editForm.message);
       onUpdateAppointment(editingAppointment.id, {
@@ -127,6 +194,7 @@ const DashboardPage = () => {
       } as any);
       setEditingAppointment(null);
       setEditAdditionalProps([]);
+      setEditErrors({});
     }
   };
 
@@ -303,10 +371,18 @@ const DashboardPage = () => {
 
   const handleAddDemand = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errs = validateDemandForm();
+    if (Object.keys(errs).length > 0) {
+      vibrateError();
+      notify.error('Veuillez corriger les champs en rouge.');
+      focusFirstError(['demand-client-name', 'demand-description', 'demand-location']);
+      return;
+    }
     try {
       const newDemand = await clientDemandsAPI.create(demandForm);
       setClientDemands(prev => [newDemand, ...prev]);
       setShowDemandModal(false);
+      setDemandErrors({});
       setDemandForm({ clientName: '', phone: '', description: '', location: '', type: 'appartement', budget: 0, priority: 'medium', status: 'searching' });
       notify.success('Demande client ajoutée avec succès.');
 
@@ -316,7 +392,6 @@ const DashboardPage = () => {
       }
     } catch (err) {
       console.error("Failed to add demand:", err);
-      notify.error('Erreur lors de la création de la demande.');
     }
   };
 
@@ -324,6 +399,13 @@ const DashboardPage = () => {
 
   const handleAddApt = async (e: React.FormEvent) => {
     e.preventDefault();
+    const errs = validateAptForm();
+    if (Object.keys(errs).length > 0) {
+      vibrateError();
+      notify.error('Veuillez corriger les champs en rouge.');
+      focusFirstError(['apt-client-name', 'apt-client-phone', 'apt-date', 'apt-time']);
+      return;
+    }
     try {
       const serializedNotes = formatNotes(addAdditionalProps, aptForm.message || '');
       const payload = { ...aptForm, message: serializedNotes, notes: serializedNotes };
@@ -331,6 +413,7 @@ const DashboardPage = () => {
       // Push to parent state immediately (before socket fires)
       onAddAppointment?.(newApt);
       setShowAptModal(false);
+      setAptErrors({});
       // Reset form
       setAptForm({
         clientName: '', clientPhone: '', source: 'other', meetingType: 'visite', date: '', time: '', message: '', propertyId: ''
@@ -338,7 +421,6 @@ const DashboardPage = () => {
       setAddAdditionalProps([]);
     } catch (err) {
       console.error(err);
-      alert('Erreur lors de la création du rendez-vous');
     }
   };
 
@@ -1066,29 +1148,69 @@ const DashboardPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="apt-client-name" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Nom Client *</label>
-                  <input id="apt-client-name" required type="text" value={aptForm.clientName || ''} onChange={e => setAptForm({ ...aptForm, clientName: e.target.value })} placeholder="Nom du client" className="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-brand-teal/20 focus:border-brand-teal focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm" />
+                  <input
+                    id="apt-client-name"
+                    type="text"
+                    value={aptForm.clientName || ''}
+                    onChange={e => {
+                      setAptForm({ ...aptForm, clientName: e.target.value });
+                      if (e.target.value.trim().length >= 2) setAptErrors(prev => ({ ...prev, clientName: '' }));
+                    }}
+                    placeholder="Nom du client"
+                    className={`w-full px-4 py-2.5 border rounded-2xl focus:ring-2 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm ${
+                      aptErrors.clientName
+                        ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                        : 'border-gray-200 focus:ring-brand-teal/20 focus:border-brand-teal'
+                    }`}
+                  />
+                  {aptErrors.clientName && <p className="text-red-500 text-xs mt-1 font-medium">{aptErrors.clientName}</p>}
                 </div>
                 <div>
-                  <label htmlFor="apt-client-phone" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Téléphone</label>
-                  <input id="apt-client-phone" type="text" value={aptForm.clientPhone || ''} onChange={e => setAptForm({ ...aptForm, clientPhone: e.target.value })} placeholder="Téléphone" className="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-brand-teal/20 focus:border-brand-teal focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm" />
+                  <label htmlFor="apt-client-phone" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Téléphone *</label>
+                  <input
+                    id="apt-client-phone"
+                    type="text"
+                    value={aptForm.clientPhone || ''}
+                    onChange={e => {
+                      setAptForm({ ...aptForm, clientPhone: e.target.value });
+                      if (e.target.value.trim().length > 0) setAptErrors(prev => ({ ...prev, clientPhone: '' }));
+                    }}
+                    placeholder="Téléphone"
+                    className={`w-full px-4 py-2.5 border rounded-2xl focus:ring-2 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm ${
+                      aptErrors.clientPhone
+                        ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                        : 'border-gray-200 focus:ring-brand-teal/20 focus:border-brand-teal'
+                    }`}
+                  />
+                  {aptErrors.clientPhone && <p className="text-red-500 text-xs mt-1 font-medium">{aptErrors.clientPhone}</p>}
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Date *</label>
+                  <label htmlFor="apt-date" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Date *</label>
                   <CustomDatePicker
                     value={aptForm.date || ''}
-                    onChange={val => setAptForm({ ...aptForm, date: val })}
+                    onChange={val => {
+                      setAptForm({ ...aptForm, date: val });
+                      if (val) setAptErrors(prev => ({ ...prev, date: '' }));
+                    }}
+                    error={!!aptErrors.date}
                     required
                   />
+                  {aptErrors.date && <p className="text-red-500 text-xs mt-1 font-medium">{aptErrors.date}</p>}
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Heure *</label>
+                  <label htmlFor="apt-time" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Heure *</label>
                   <CustomTimePicker
                     value={aptForm.time || ''}
-                    onChange={val => setAptForm({ ...aptForm, time: val })}
+                    onChange={val => {
+                      setAptForm({ ...aptForm, time: val });
+                      if (val) setAptErrors(prev => ({ ...prev, time: '' }));
+                    }}
+                    error={!!aptErrors.time}
                     required
                   />
+                  {aptErrors.time && <p className="text-red-500 text-xs mt-1 font-medium">{aptErrors.time}</p>}
                 </div>
               </div>
 
@@ -1096,27 +1218,27 @@ const DashboardPage = () => {
               <div>
                 <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Propriétés à visiter</label>
                 {/* Selected pills */}
-                {(aptForm.propertyId || addAdditionalProps.some(Boolean)) && (
+                  {(aptForm.propertyId || addAdditionalProps.some(Boolean)) && (
                   <div className="flex flex-wrap gap-2 mb-2">
                     {aptForm.propertyId && (() => {
                       const prop = properties.find(p => p.id === aptForm.propertyId);
                       const priceStr = prop?.price ? prop.price.toLocaleString('fr-TN') + ' DT' : null;
                       return (
-                        <span className="inline-flex items-center gap-2 pl-1.5 pr-2 py-1 bg-brand-teal/10 text-brand-teal text-xs font-bold rounded-full border border-brand-teal/20">
+                        <span className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 bg-brand-teal/10 text-brand-teal text-xs font-bold rounded-full border border-brand-teal/20 max-w-full min-w-0 overflow-hidden">
                           {prop?.images?.[0] ? (
                             <img
                               src={getImageSrc(prop.images[0], 'thumb')}
                               alt=""
-                              className="w-7 h-7 rounded-full object-cover flex-shrink-0 border-2 border-brand-teal/30"
+                              className="w-6 h-6 rounded-full object-cover flex-shrink-0 border-2 border-brand-teal/30"
                             />
                           ) : (
-                            <span className="w-7 h-7 rounded-full bg-brand-teal/20 flex items-center justify-center text-sm flex-shrink-0">🏠</span>
+                            <span className="w-6 h-6 rounded-full bg-brand-teal/20 flex items-center justify-center text-xs flex-shrink-0">🏠</span>
                           )}
-                          <span className="flex flex-col leading-tight">
-                            <span>{prop?.title || 'Propriété'}</span>
-                            {priceStr && <span className="text-[10px] font-semibold text-brand-teal/70">{priceStr}</span>}
+                          <span className="flex flex-col leading-tight min-w-0">
+                            <span className="truncate max-w-[110px]">{prop?.title || 'Propriété'}</span>
+                            {priceStr && <span className="text-[10px] font-semibold text-brand-teal/70 truncate">{priceStr}</span>}
                           </span>
-                          <button type="button" onClick={() => setAptForm({ ...aptForm, propertyId: '' })} className="ml-0.5 hover:bg-brand-teal/20 rounded-full p-0.5 transition"><X size={11} /></button>
+                          <button type="button" onClick={() => setAptForm({ ...aptForm, propertyId: '' })} className="ml-0.5 hover:bg-brand-teal/20 rounded-full p-0.5 transition flex-shrink-0"><X size={11} /></button>
                         </span>
                       );
                     })()}
@@ -1124,21 +1246,21 @@ const DashboardPage = () => {
                       const prop = properties.find(p => p.id === pid);
                       const priceStr = prop?.price ? prop.price.toLocaleString('fr-TN') + ' DT' : null;
                       return (
-                        <span key={i} className="inline-flex items-center gap-2 pl-1.5 pr-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full border border-gray-200">
+                        <span key={i} className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full border border-gray-200 max-w-full min-w-0 overflow-hidden">
                           {prop?.images?.[0] ? (
                             <img
                               src={getImageSrc(prop.images[0], 'thumb')}
                               alt=""
-                              className="w-7 h-7 rounded-full object-cover flex-shrink-0 border-2 border-gray-300"
+                              className="w-6 h-6 rounded-full object-cover flex-shrink-0 border-2 border-gray-300"
                             />
                           ) : (
-                            <span className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-sm flex-shrink-0">🏠</span>
+                            <span className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs flex-shrink-0">🏠</span>
                           )}
-                          <span className="flex flex-col leading-tight">
-                            <span>{prop?.title || 'Propriété'}</span>
-                            {priceStr && <span className="text-[10px] font-semibold text-gray-400">{priceStr}</span>}
+                          <span className="flex flex-col leading-tight min-w-0">
+                            <span className="truncate max-w-[110px]">{prop?.title || 'Propriété'}</span>
+                            {priceStr && <span className="text-[10px] font-semibold text-gray-400 truncate">{priceStr}</span>}
                           </span>
-                          <button type="button" onClick={() => setAddAdditionalProps(prev => prev.filter((_, idx) => idx !== i))} className="ml-0.5 hover:bg-gray-200 rounded-full p-0.5 transition"><X size={11} /></button>
+                          <button type="button" onClick={() => setAddAdditionalProps(prev => prev.filter((_, idx) => idx !== i))} className="ml-0.5 hover:bg-gray-200 rounded-full p-0.5 transition flex-shrink-0"><X size={11} /></button>
                         </span>
                       );
                     })}
@@ -1263,7 +1385,22 @@ const DashboardPage = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="demand-client-name" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Nom Client *</label>
-                  <input id="demand-client-name" required type="text" value={demandForm.clientName} onChange={e => setDemandForm({ ...demandForm, clientName: e.target.value })} placeholder="Nom du client" className="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm" />
+                  <input
+                    id="demand-client-name"
+                    type="text"
+                    value={demandForm.clientName}
+                    onChange={e => {
+                      setDemandForm({ ...demandForm, clientName: e.target.value });
+                      if ((e.target.value as string).trim().length >= 2) setDemandErrors(prev => ({ ...prev, clientName: '' }));
+                    }}
+                    placeholder="Nom du client"
+                    className={`w-full px-4 py-2.5 border rounded-2xl focus:ring-2 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm ${
+                      demandErrors.clientName
+                        ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                        : 'border-gray-200 focus:ring-orange-500/20 focus:border-orange-500'
+                    }`}
+                  />
+                  {demandErrors.clientName && <p className="text-red-500 text-xs mt-1 font-medium">{demandErrors.clientName}</p>}
                 </div>
                 <div>
                   <label htmlFor="demand-phone" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Téléphone</label>
@@ -1271,14 +1408,44 @@ const DashboardPage = () => {
                 </div>
               </div>
               <div>
-                <label htmlFor="demand-description" className="block text-xs font-bold text-gray-505 mb-1.5 uppercase tracking-wider">Description / Recherche *</label>
-                <textarea id="demand-description" required value={demandForm.description} onChange={e => setDemandForm({ ...demandForm, description: e.target.value })} rows={2} className="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm" placeholder="Ex: Cherche villa avec piscine..."></textarea>
+                <label htmlFor="demand-description" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Description / Recherche *</label>
+                <textarea
+                  id="demand-description"
+                  value={demandForm.description}
+                  onChange={e => {
+                    setDemandForm({ ...demandForm, description: e.target.value });
+                    if (e.target.value.trim().length > 0) setDemandErrors(prev => ({ ...prev, description: '' }));
+                  }}
+                  rows={2}
+                  placeholder="Ex: Cherche villa avec piscine..."
+                  className={`w-full px-4 py-2.5 border rounded-2xl focus:ring-2 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm ${
+                    demandErrors.description
+                      ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                      : 'border-gray-200 focus:ring-orange-500/20 focus:border-orange-500'
+                  }`}
+                />
+                {demandErrors.description && <p className="text-red-500 text-xs mt-1 font-medium">{demandErrors.description}</p>}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="demand-location" className="block text-xs font-bold text-gray-505 mb-1.5 uppercase tracking-wider">Localisation *</label>
-                  <input id="demand-location" required type="text" value={demandForm.location} onChange={e => setDemandForm({ ...demandForm, location: e.target.value })} placeholder="Ex: La Marsa, Tunis..." className="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm" />
+                  <label htmlFor="demand-location" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Localisation *</label>
+                  <input
+                    id="demand-location"
+                    type="text"
+                    value={demandForm.location}
+                    onChange={e => {
+                      setDemandForm({ ...demandForm, location: e.target.value });
+                      if (e.target.value.trim().length > 0) setDemandErrors(prev => ({ ...prev, location: '' }));
+                    }}
+                    placeholder="Ex: La Marsa, Tunis..."
+                    className={`w-full px-4 py-2.5 border rounded-2xl focus:ring-2 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm ${
+                      demandErrors.location
+                        ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                        : 'border-gray-200 focus:ring-orange-500/20 focus:border-orange-500'
+                    }`}
+                  />
+                  {demandErrors.location && <p className="text-red-500 text-xs mt-1 font-medium">{demandErrors.location}</p>}
                 </div>
                 <div>
                   <label htmlFor="demand-budget" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Budget Max (DT)</label>
@@ -1374,21 +1541,31 @@ const DashboardPage = () => {
               <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Date</label>
+                  <label htmlFor="edit-apt-date" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Date *</label>
                   <CustomDatePicker
                     value={editForm.date}
-                    onChange={val => setEditForm({ ...editForm, date: val })}
+                    onChange={val => {
+                      setEditForm({ ...editForm, date: val });
+                      if (val) setEditErrors(prev => ({ ...prev, date: '' }));
+                    }}
+                    error={!!editErrors.date}
                     required
                   />
+                  {editErrors.date && <p className="text-red-500 text-xs mt-1 font-medium">{editErrors.date}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Heure</label>
+                  <label htmlFor="edit-apt-time" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Heure *</label>
                   <CustomTimePicker
                     value={editForm.time}
-                    onChange={val => setEditForm({ ...editForm, time: val })}
+                    onChange={val => {
+                      setEditForm({ ...editForm, time: val });
+                      if (val) setEditErrors(prev => ({ ...prev, time: '' }));
+                    }}
+                    error={!!editErrors.time}
                     required
                   />
+                  {editErrors.time && <p className="text-red-500 text-xs mt-1 font-medium">{editErrors.time}</p>}
                 </div>
               </div>
 
@@ -1402,21 +1579,21 @@ const DashboardPage = () => {
                       const prop = properties.find(p => p.id === editForm.propertyId);
                       const priceStr = prop?.price ? prop.price.toLocaleString('fr-TN') + ' DT' : null;
                       return (
-                        <span className="inline-flex items-center gap-2 pl-1.5 pr-2 py-1 bg-brand-teal/10 text-brand-teal text-xs font-bold rounded-full border border-brand-teal/20">
+                        <span className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 bg-brand-teal/10 text-brand-teal text-xs font-bold rounded-full border border-brand-teal/20 max-w-full min-w-0 overflow-hidden">
                           {prop?.images?.[0] ? (
                             <img
                               src={getImageSrc(prop.images[0], 'thumb')}
                               alt=""
-                              className="w-7 h-7 rounded-full object-cover flex-shrink-0 border-2 border-brand-teal/30"
+                              className="w-6 h-6 rounded-full object-cover flex-shrink-0 border-2 border-brand-teal/30"
                             />
                           ) : (
-                            <span className="w-7 h-7 rounded-full bg-brand-teal/20 flex items-center justify-center text-sm flex-shrink-0">🏠</span>
+                            <span className="w-6 h-6 rounded-full bg-brand-teal/20 flex items-center justify-center text-xs flex-shrink-0">🏠</span>
                           )}
-                          <span className="flex flex-col leading-tight">
-                            <span>{prop?.title || 'Propriété'}</span>
-                            {priceStr && <span className="text-[10px] font-semibold text-brand-teal/70">{priceStr}</span>}
+                          <span className="flex flex-col leading-tight min-w-0">
+                            <span className="truncate max-w-[110px]">{prop?.title || 'Propriété'}</span>
+                            {priceStr && <span className="text-[10px] font-semibold text-brand-teal/70 truncate">{priceStr}</span>}
                           </span>
-                          <button type="button" onClick={() => setEditForm({ ...editForm, propertyId: '' })} className="ml-0.5 hover:bg-brand-teal/20 rounded-full p-0.5 transition"><X size={11} /></button>
+                          <button type="button" onClick={() => setEditForm({ ...editForm, propertyId: '' })} className="ml-0.5 hover:bg-brand-teal/20 rounded-full p-0.5 transition flex-shrink-0"><X size={11} /></button>
                         </span>
                       );
                     })()}
@@ -1424,21 +1601,21 @@ const DashboardPage = () => {
                       const prop = properties.find(p => p.id === pid);
                       const priceStr = prop?.price ? prop.price.toLocaleString('fr-TN') + ' DT' : null;
                       return (
-                        <span key={i} className="inline-flex items-center gap-2 pl-1.5 pr-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full border border-gray-200">
+                        <span key={i} className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 bg-gray-100 text-gray-600 text-xs font-bold rounded-full border border-gray-200 max-w-full min-w-0 overflow-hidden">
                           {prop?.images?.[0] ? (
                             <img
                               src={getImageSrc(prop.images[0], 'thumb')}
                               alt=""
-                              className="w-7 h-7 rounded-full object-cover flex-shrink-0 border-2 border-gray-300"
+                              className="w-6 h-6 rounded-full object-cover flex-shrink-0 border-2 border-gray-300"
                             />
                           ) : (
-                            <span className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center text-sm flex-shrink-0">🏠</span>
+                            <span className="w-6 h-6 rounded-full bg-gray-200 flex items-center justify-center text-xs flex-shrink-0">🏠</span>
                           )}
-                          <span className="flex flex-col leading-tight">
-                            <span>{prop?.title || 'Propriété'}</span>
-                            {priceStr && <span className="text-[10px] font-semibold text-gray-400">{priceStr}</span>}
+                          <span className="flex flex-col leading-tight min-w-0">
+                            <span className="truncate max-w-[110px]">{prop?.title || 'Propriété'}</span>
+                            {priceStr && <span className="text-[10px] font-semibold text-gray-400 truncate">{priceStr}</span>}
                           </span>
-                          <button type="button" onClick={() => setEditAdditionalProps(prev => prev.filter((_, idx) => idx !== i))} className="ml-0.5 hover:bg-gray-200 rounded-full p-0.5 transition"><X size={11} /></button>
+                          <button type="button" onClick={() => setEditAdditionalProps(prev => prev.filter((_, idx) => idx !== i))} className="ml-0.5 hover:bg-gray-200 rounded-full p-0.5 transition flex-shrink-0"><X size={11} /></button>
                         </span>
                       );
                     })}

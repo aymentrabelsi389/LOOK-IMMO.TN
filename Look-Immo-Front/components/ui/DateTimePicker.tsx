@@ -7,9 +7,10 @@ interface DatePickerProps {
   onChange: (date: string) => void;
   required?: boolean;
   allowPastDates?: boolean;
+  error?: boolean;
 }
 
-export const CustomDatePicker: React.FC<DatePickerProps> = ({ value, onChange, required, allowPastDates = false }) => {
+export const CustomDatePicker: React.FC<DatePickerProps> = ({ value, onChange, required, allowPastDates = false, error }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -58,12 +59,16 @@ export const CustomDatePicker: React.FC<DatePickerProps> = ({ value, onChange, r
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all text-left shadow-sm cursor-pointer"
+        className={`w-full flex items-center justify-between px-4 py-3 bg-white border rounded-xl focus:outline-none focus:ring-2 transition-all text-left shadow-sm cursor-pointer ${
+          error
+            ? 'border-red-400 ring-2 ring-red-100 hover:border-red-500'
+            : 'border-gray-200 hover:border-blue-500 focus:ring-blue-50'
+        }`}
       >
         <span className={value ? "text-gray-900 font-semibold text-sm whitespace-nowrap" : "text-gray-400 text-sm whitespace-nowrap"}>
           {formatDisplayDate(value)}
         </span>
-        <CalendarDays size={18} className="text-gray-400" />
+        <CalendarDays size={18} className={error ? 'text-red-400' : 'text-gray-400'} />
       </button>
       
       {/* Hidden native input for required validation */}
@@ -136,9 +141,10 @@ interface TimePickerProps {
   value: string;
   onChange: (time: string) => void;
   required?: boolean;
+  error?: boolean;
 }
 
-export const CustomTimePicker: React.FC<TimePickerProps> = ({ value, onChange, required }) => {
+export const CustomTimePicker: React.FC<TimePickerProps> = ({ value, onChange, required, error }) => {
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   
@@ -184,12 +190,16 @@ export const CustomTimePicker: React.FC<TimePickerProps> = ({ value, onChange, r
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-4 py-3 bg-white border border-gray-200 rounded-xl hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-50 transition-all text-left shadow-sm cursor-pointer"
+        className={`w-full flex items-center justify-between px-4 py-3 bg-white border rounded-xl focus:outline-none focus:ring-2 transition-all text-left shadow-sm cursor-pointer ${
+          error
+            ? 'border-red-400 ring-2 ring-red-100 hover:border-red-500'
+            : 'border-gray-200 hover:border-blue-500 focus:ring-blue-50'
+        }`}
       >
         <span className={value ? "text-gray-900 font-semibold text-sm" : "text-gray-400 text-sm"}>
           {value || '-- Sélectionner --'}
         </span>
-        <div className="flex items-center gap-1.5 text-gray-400">
+        <div className={`flex items-center gap-1.5 ${error ? 'text-red-400' : 'text-gray-400'}`}>
           <Clock size={16} />
           <ChevronDown size={16} className={`transition-transform duration-300 ${isOpen ? 'rotate-180 text-blue-500' : ''}`} />
         </div>

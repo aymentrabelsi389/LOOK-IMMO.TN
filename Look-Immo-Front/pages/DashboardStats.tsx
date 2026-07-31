@@ -5,6 +5,7 @@ import {
 import {
   User as UserIcon, Home as HomeIcon, Calendar, Eye
 } from 'lucide-react';
+import AnimatedCounter from '@/components/ui/AnimatedCounter';
 
 
 interface DashboardStatsProps {
@@ -38,7 +39,9 @@ const DashboardStats = ({ stats, propertiesCount, onTabChange }: DashboardStatsP
               <div className="relative flex items-start justify-between">
                 <div className="flex-1">
                   <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">{stat.label}</p>
-                  <h3 className="text-3xl font-bold text-gray-900 mb-1">{stat.val}</h3>
+                  <h3 className="text-3xl font-bold text-gray-900 mb-1">
+                    <AnimatedCounter value={stat.val} />
+                  </h3>
                   <p className="text-xs text-gray-400 font-medium">{stat.trend}</p>
                 </div>
                 <div className={`p-3 rounded-xl ${stat.iconBg}`}>

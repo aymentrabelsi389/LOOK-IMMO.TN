@@ -63,6 +63,113 @@ const silentUrls = [
   '/favorites/check/',
 ];
 
+const getFormattedErrorMessage = (errorData: any, fallback: string): string => {
+  if (errorData?.error === 'Validation failed' && errorData.details && Array.isArray(errorData.details)) {
+    const fieldTranslations: Record<string, string> = {
+      'clientName': 'Nom du client',
+      'clientPhone': 'Téléphone du client',
+      'clientEmail': 'Email du client',
+      'date': 'Date',
+      'time': 'Heure',
+      'email': 'Email',
+      'password': 'Mot de passe',
+      'name': 'Nom complet',
+      'phone': 'Téléphone',
+      'title': 'Titre',
+      'price': 'Prix',
+      'description': 'Description',
+      'message': 'Message',
+      'subject': 'Sujet',
+      'fullName': 'Nom complet',
+      'address': 'Adresse',
+      'contactEmail': 'Email de contact',
+      'phoneNumber': 'Numéro de téléphone',
+      'notes': 'Notes',
+      'source': 'Source',
+      'meetingType': 'Type de rendez-vous',
+      'status': 'Statut',
+      'propertyId': 'Propriété',
+      'code': 'Code de vérification'
+    };
+
+    const detailsStr = errorData.details
+      .map((detail: any) => {
+        const rawField = detail.path.replace(/^(body|query|params)\./, '');
+        const fieldName = fieldTranslations[rawField] || rawField;
+        
+        let msg = detail.message || '';
+        
+        if (msg === 'Required' || msg.toLowerCase().includes('required')) {
+          return `Le champ "${fieldName}" est obligatoire`;
+        }
+        if (msg.toLowerCase().includes('invalid email') || msg.toLowerCase().includes('must be a valid email')) {
+          return `L'adresse email dans "${fieldName}" n'est pas valide`;
+        }
+        if (msg.toLowerCase().includes('invalid phone') || msg.toLowerCase().includes('phone number contains invalid')) {
+          return `Le numéro de téléphone dans "${fieldName}" n'est pas valide`;
+        }
+        if (msg.toLowerCase().includes('must be a valid date')) {
+          return `La date dans "${fieldName}" n'est pas valide`;
+        }
+        if (msg.toLowerCase().includes('time must be')) {
+          return `L'heure dans "${fieldName}" doit être au format HH:MM`;
+        }
+        if (msg.toLowerCase().includes('at least one letter')) {
+          return `Le champ "${fieldName}" doit contenir au moins une lettre`;
+        }
+        if (msg.toLowerCase().includes('at least one number')) {
+          return `Le champ "${fieldName}" doit contenir au moins un chiffre`;
+        }
+        
+        if (msg.toLowerCase().includes('at least')) {
+          const match = msg.match(/\d+/);
+          if (match) {
+            return `Le champ "${fieldName}" doit contenir au moins ${match[0]} caractères`;
+          }
+        }
+        if (msg.toLowerCase().includes('exceed')) {
+          const match = msg.match(/\d+/);
+          if (match) {
+            return `Le champ "${fieldName}" ne peut pas dépasser ${match[0]} caractères`;
+          }
+        }
+        
+        msg = msg.replace('Must be', 'Doit être')
+                 .replace('is required', 'est requis')
+                 .replace('cannot be empty', 'ne peut pas être vide');
+                 
+        return `Le champ "${fieldName}": ${msg}`;
+      })
+      .join(', ');
+
+    return `Erreur de validation: ${detailsStr}`;
+  }
+  
+  if (typeof errorData?.error === 'string') {
+    const errorTranslations: Record<string, string> = {
+      'Email already registered': 'Cet e-mail est déjà enregistré.',
+      'Email and password are required': 'L\'e-mail et le mot de passe sont obligatoires.',
+      'Authentication required': 'Authentification requise.',
+      'Invalid or expired token': 'Session expirée ou invalide. Veuillez vous reconnecter.',
+      'Validation failed': 'La validation du formulaire a échoué.',
+      'Failed to login': 'Échec de la connexion.',
+      'Failed to register user': 'Échec de l\'inscription.',
+      'User not found': 'Utilisateur non trouvé.',
+      'No refresh token': 'Session expirée.',
+      'Invalid refresh token structure': 'Session invalide.',
+      'Compromise detected. Session revoked.': 'Alerte sécurité : Session révoquée.',
+      'Refresh token not found': 'Session introuvable.',
+      'Expired refresh token': 'Session expirée. Veuillez vous reconnecter.',
+      'Email is required': 'L\'adresse e-mail est obligatoire.'
+    };
+    if (errorTranslations[errorData.error]) {
+      return errorTranslations[errorData.error];
+    }
+  }
+
+  return errorData?.error || fallback;
+};
+
 const handleApiError = (url: string, errorMsg: string) => {
   const isSilent =
     silentUrls.some(s => url.includes(s)) ||
@@ -120,7 +227,7 @@ const apiFetch = async (url: string, options: RequestInit = {}): Promise<Respons
 
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        const errorMsg = errorData.error || `Request failed with status ${res.status}`;
+        const errorMsg = getFormattedErrorMessage(errorData, `Request failed with status ${res.status}`);
         handleApiError(url, errorMsg);
         throw new Error(errorMsg);
     }
@@ -162,7 +269,7 @@ const apiFetchMultipart = async (url: string, options: RequestInit = {}): Promis
 
     if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
-        const errorMsg = errorData.error || `Upload failed with status ${res.status}`;
+        const errorMsg = getFormattedErrorMessage(errorData, `Upload failed with status ${res.status}`);
         handleApiError(url, errorMsg);
         throw new Error(errorMsg);
     }
@@ -180,8 +287,8 @@ export const authAPI = {
             body: JSON.stringify(data),
         });
 
-        const result = await res.json();
-        if (!res.ok) throw new Error(result.error || 'Registration failed');
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(getFormattedErrorMessage(result, 'Registration failed'));
         if (result.accessToken) setStoredToken(result.accessToken);
         return result.user;
     },
@@ -194,8 +301,8 @@ export const authAPI = {
             body: JSON.stringify(data),
         });
 
-        const result = await res.json();
-        if (!res.ok) throw new Error(result.error || 'Login failed');
+        const result = await res.json().catch(() => ({}));
+        if (!res.ok) throw new Error(getFormattedErrorMessage(result, 'Login failed'));
         if (result.accessToken) setStoredToken(result.accessToken);
         return result.user;
     },

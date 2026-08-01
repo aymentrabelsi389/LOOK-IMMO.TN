@@ -128,7 +128,7 @@ jobs:
             
             # --- 1. DEPLOY API BACKEND ---
             cd Look-Immo-API
-            npm ci --include=dev
+            npm install --no-audit --no-fund --prefer-offline
             npx prisma generate
             npm run build
             
@@ -137,7 +137,7 @@ jobs:
             
             # --- 2. DEPLOY FRONTEND ---
             cd ../Look-Immo-Front
-            npm ci
+            npm install --no-audit --no-fund --prefer-offline
             npm run build
             
             # --- 3. RELOAD PM2 WITH ZERO DOWNTIME ---

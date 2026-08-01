@@ -119,7 +119,7 @@ jobs:
             echo "🚀 Starting Deployment on branch: ${{ github.ref_name }}..."
             
             # Navigate to workspace
-            cd /var/www/look-immo-api
+            cd /var/www/LOOK-IMMO.TN
             
             # Fetch latest changes
             git fetch --all

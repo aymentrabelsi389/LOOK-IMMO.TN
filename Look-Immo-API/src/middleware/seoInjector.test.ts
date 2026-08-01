@@ -3,6 +3,19 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../utils/prisma';
 import fs from 'fs';
 
+jest.mock('../utils/logger', () => ({
+    logger: {
+        info:  jest.fn(),
+        warn:  jest.fn(),
+        error: jest.fn(),
+        debug: jest.fn(),
+    },
+}));
+
+jest.mock('../utils/requestContext', () => ({
+    getRequestContext: jest.fn(() => ({})),
+}));
+
 jest.mock('../utils/prisma', () => ({
     prisma: {
         property: {
@@ -18,6 +31,7 @@ jest.mock('fs', () => ({
     existsSync: jest.fn(),
     readFileSync: jest.fn(),
 }));
+
 
 describe('seoInjector middleware', () => {
     let mockReq: Partial<Request>;

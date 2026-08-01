@@ -129,19 +129,19 @@ app.get('/blog-post/:id', seoInjector);
 app.use('/api', routes);
 
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Test error route for Sentry verification (non-production only)
 if (!isProd) {
-    app.get('/api/test-error', (req, res) => {
+    app.get('/api/test-error', (_req, _res) => {
         throw new Error('Test Sentry Backend Error Spike');
     });
 }
 
 // 404 handler
-app.use((req, res) => {
+app.use((_req, res) => {
     res.status(404).json({ error: 'Route not found' });
 });
 
@@ -152,7 +152,7 @@ if (process.env.SENTRY_DSN) {
 
 // ─── Error Handler ────────────────────────────────────────────────────────────
 // In production: log full error server-side but return generic message to client
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
     logger.error(err.message, { stack: err.stack, path: req.path, method: req.method });
     const message = isProd ? 'Internal server error' : (err.message || 'Internal server error');
     res.status(500).json({ error: message });

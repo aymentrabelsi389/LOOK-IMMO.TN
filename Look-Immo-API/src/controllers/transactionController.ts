@@ -19,7 +19,7 @@ export const getTransactions = async (req: Request, res: Response) => {
 
     res.setHeader('X-Total-Count', String(total));
     res.json(transactions);
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to fetch transactions' });
   }
 };
@@ -40,7 +40,7 @@ export const createTransaction = async (req: Request, res: Response) => {
       }
     });
     res.status(201).json(newTx);
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to create transaction' });
   }
 };
@@ -67,7 +67,7 @@ export const updateTransaction = async (req: Request, res: Response) => {
     });
     
     res.json(updated);
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to update transaction' });
   }
 };
@@ -79,7 +79,7 @@ export const deleteTransaction = async (req: Request, res: Response) => {
       where: { id },
     });
     res.json({ success: true });
-  } catch (error) {
+  } catch (_error) {
     res.status(500).json({ error: 'Failed to delete transaction' });
   }
 };

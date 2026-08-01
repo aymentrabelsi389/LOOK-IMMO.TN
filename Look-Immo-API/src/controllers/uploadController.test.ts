@@ -1,7 +1,6 @@
 import { downloadFile } from './uploadController';
 import { Request, Response } from 'express';
 import fs from 'fs';
-import path from 'path';
 
 jest.mock('fs');
 jest.mock('../utils/upload', () => ({ uploadFileToStorage: jest.fn() }));

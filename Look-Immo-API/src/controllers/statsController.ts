@@ -30,7 +30,7 @@ export const trackVisit = async (req: Request, res: Response): Promise<void> => 
             },
         });
         res.json({ success: true });
-    } catch (error) {
+    } catch (_error) {
         // Silent error for tracking
         res.status(500).json({ error: 'Failed to track visit' });
     }

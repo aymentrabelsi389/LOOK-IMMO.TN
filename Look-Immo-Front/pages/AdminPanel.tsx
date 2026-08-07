@@ -247,7 +247,7 @@ const AdminPanel = () => {
         unreadRatingsCount={ratings.filter(r => !r.viewedByAdmin).length}
         activeDemandsMatchesCount={activeDemandsMatchesCount}
       />
-      <div className="flex-1 md:ml-72 flex flex-col min-h-screen min-w-0 w-full overflow-hidden">
+      <div className="flex-1 md:ml-72 flex flex-col h-screen min-w-0 w-full overflow-hidden">
         <AdminHeader
           title={getPageTitle(activeTab)} user={user}
           sidebarOpen={sidebarOpen} setSidebarOpen={setSidebarOpen}

@@ -105,6 +105,18 @@ const PropertySearchSheet: React.FC<PropertySearchSheetProps> = ({ isOpen, onClo
   const navigate = useNavigate();
   const { siteSettings } = useData();
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isFullyClosed, setIsFullyClosed] = useState(!isOpen);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsFullyClosed(false);
+    } else {
+      const timer = setTimeout(() => {
+        setIsFullyClosed(true);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   // Build popular searches: use discoveryLinks from settings (same as footer "Découvrir") + property types
   const popularSearches = (() => {
@@ -226,7 +238,7 @@ const PropertySearchSheet: React.FC<PropertySearchSheetProps> = ({ isOpen, onClo
   return (
     <div className={`fixed inset-0 z-[100] flex items-end justify-center lg:hidden ${
       isOpen ? 'pointer-events-auto' : 'pointer-events-none'
-    }`}>
+    } ${isFullyClosed ? 'hidden' : ''}`}>
       {/* Backdrop */}
       <div
         onClick={handleClose}

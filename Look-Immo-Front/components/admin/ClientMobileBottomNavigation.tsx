@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, Search, User, Building, Coins } from 'lucide-react';
 import { useUI } from '@/context/UIContext';
@@ -12,27 +12,27 @@ const ClientMobileBottomNavigation = () => {
   const currentPath = location.pathname;
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollY = useRef(0);
 
-  // Scroll to hide logic
+  // Scroll to hide logic — uses a ref so the listener is only registered once
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      if (Math.abs(currentScrollY - lastScrollY) < 10) return;
+      if (Math.abs(currentScrollY - lastScrollY.current) < 10) return;
 
       if (currentScrollY < 80) {
         setIsVisible(true);
-      } else if (currentScrollY > lastScrollY) {
+      } else if (currentScrollY > lastScrollY.current) {
         setIsVisible(false); // Scrolling down
       } else {
         setIsVisible(true); // Scrolling up
       }
-      setLastScrollY(currentScrollY);
+      lastScrollY.current = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  }, []);
 
   // Active state helpers
   const isActive = (type: 'home' | 'vente' | 'location' | 'compte') => {

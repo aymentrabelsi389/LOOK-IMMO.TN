@@ -102,7 +102,7 @@ jobs:
           npm run build
 
   deploy:
-    name: Continuous Deployment (Zero-Downtime)
+    name: Continuous Deployment (Docker Compose)
     needs: [backend-checks, frontend-checks]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
@@ -116,33 +116,46 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ secrets.SSH_PORT || 22 }}
           script: |
-            echo "🚀 Starting Deployment on branch: ${{ github.ref_name }}..."
-            
-            # Navigate to workspace
+            set -e
+            echo "🚀 Starting Docker deployment on branch: ${{ github.ref_name }}..."
+
+            # ── 1. Pull latest code ────────────────────────────────────────────
             cd /var/www/LOOK-IMMO.TN
-            
-            # Fetch latest changes
             git fetch --all
             git checkout ${{ github.ref_name }}
             git pull origin ${{ github.ref_name }}
-            
-            # --- 1. DEPLOY API BACKEND ---
-            cd Look-Immo-API
-            npm install --no-audit --no-fund --prefer-offline
-            npx prisma generate
-            npm run build
-            
-            # Run database migrations
-            npx prisma migrate deploy
-            
-            # --- 2. DEPLOY FRONTEND ---
-            cd ../Look-Immo-Front
-            npm install --no-audit --no-fund --prefer-offline
-            npm run build
-            
-            # --- 3. RELOAD PM2 WITH ZERO DOWNTIME ---
-            cd ../Look-Immo-API
-            # PM2 reload uses Graceful Shutdown logic in src/index.ts to handle connections smoothly
-            pm2 reload ecosystem.config.js --env production
-            
+
+            # ── 2. Rebuild containers (no layer cache = always picks up changes)
+            # Only backend & frontend are rebuilt; db and redis keep running.
+            echo "🔨 Building backend and frontend images..."
+            docker compose build --no-cache backend frontend
+
+            # ── 3. Recreate only the rebuilt containers with zero data loss ────
+            # --force-recreate ensures the new image is used even if the config
+            # didn't change. db/redis are untouched.
+            echo "♻️  Recreating backend and frontend containers..."
+            docker compose up -d --force-recreate --no-deps backend frontend
+
+            # ── 4. Wait for backend health (migrations run inside CMD) ─────────
+            # The Dockerfile CMD runs: npx prisma migrate deploy && node dist/index.js
+            # so migrations are applied automatically before the server starts.
+            echo "⏳ Waiting for backend to become healthy..."
+            for i in $(seq 1 30); do
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' look-immo-backend 2>/dev/null || echo "starting")
+              echo "  Attempt $i/30 — status: $STATUS"
+              if [ "$STATUS" = "healthy" ]; then
+                echo "✅ Backend is healthy!"
+                break
+              fi
+              if [ "$i" = "30" ]; then
+                echo "❌ Backend did not become healthy in time. Printing logs..."
+                docker compose logs --tail=50 backend
+                exit 1
+              fi
+              sleep 3
+            done
+
+            # ── 5. Verify frontend is running ──────────────────────────────────
+            docker compose ps frontend
+
             echo "✅ Deployment finished successfully!"

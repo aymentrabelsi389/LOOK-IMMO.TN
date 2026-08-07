@@ -35,6 +35,7 @@ ENV PORT=5000
 RUN apt-get update && apt-get install -y --no-install-recommends \
     openssl \
     ca-certificates \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy package files and Prisma schema (needed for migrate deploy at startup)

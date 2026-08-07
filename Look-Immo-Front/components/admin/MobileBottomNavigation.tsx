@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Home, LayoutDashboard, Plus, Bell, User } from 'lucide-react';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -15,27 +15,30 @@ const MobileBottomNavigation = () => {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollY = useRef(0);
 
-  // Scroll to hide logic
+  // Scroll to hide logic — uses a ref so the listener is only registered once
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      if (Math.abs(currentScrollY - lastScrollY) < 10) return;
+      if (Math.abs(currentScrollY - lastScrollY.current) < 10) return;
 
       if (currentScrollY < 80) {
         setIsVisible(true);
-      } else if (currentScrollY > lastScrollY) {
+      } else if (currentScrollY > lastScrollY.current) {
         setIsVisible(false); // Scrolling down
       } else {
         setIsVisible(true); // Scrolling up
       }
-      setLastScrollY(currentScrollY);
+      lastScrollY.current = currentScrollY;
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [lastScrollY]);
+  }, []);
+
+  // Always show the nav bar when a sheet is open so it doesn't disappear behind sheets
+  const navVisible = isVisible || isNotifOpen || isQuickCreateOpen;
 
   // Active route helpers
   const isActive = (path: string) => {
@@ -103,7 +106,7 @@ const MobileBottomNavigation = () => {
   return (
     <>
       <nav className={`fixed bottom-0 left-0 right-0 z-50 bg-[#0C1F32]/95 backdrop-blur-lg border-t border-white/10 shadow-[0_-8px_30px_rgba(0,0,0,0.3)] rounded-t-[20px] lg:hidden pb-[env(safe-area-inset-bottom)] transition-transform duration-300 ease-in-out transform ${
-        isVisible ? 'translate-y-0' : 'translate-y-[130%]'
+        navVisible ? 'translate-y-0' : 'translate-y-[130%]'
       }`}>
         <div className="h-[64px] flex items-center justify-around w-full relative px-4">
           

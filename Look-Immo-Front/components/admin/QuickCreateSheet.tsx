@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Home, Calendar, ClipboardList, X } from 'lucide-react';
 
@@ -9,6 +9,18 @@ interface QuickCreateSheetProps {
 
 const QuickCreateSheet: React.FC<QuickCreateSheetProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
+  const [isFullyClosed, setIsFullyClosed] = useState(!isOpen);
+
+  useEffect(() => {
+    if (isOpen) {
+      setIsFullyClosed(false);
+    } else {
+      const timer = setTimeout(() => {
+        setIsFullyClosed(true);
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
 
   // Lock body scroll when drawer is open
   useEffect(() => {
@@ -66,7 +78,7 @@ const QuickCreateSheet: React.FC<QuickCreateSheetProps> = ({ isOpen, onClose }) 
   return (
     <div className={`fixed inset-0 z-[100] flex items-end justify-center lg:hidden ${
       isOpen ? 'pointer-events-auto' : 'pointer-events-none'
-    }`}>
+    } ${isFullyClosed ? 'hidden' : ''}`}>
       {/* Backdrop overlay */}
       <div 
         onClick={handleClose}

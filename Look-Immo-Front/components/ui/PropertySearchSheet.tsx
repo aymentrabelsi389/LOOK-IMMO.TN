@@ -35,16 +35,12 @@ const DEFAULT_POPULAR_SEARCHES = [
   { label: 'Villa', icon: '🏡' },
   { label: 'Appartement', icon: '🏢' },
   { label: 'Terrain', icon: '🌿' },
-  { label: 'Penthouse', icon: '✨' },
-  { label: 'Bureau', icon: '💼' },
 ];
 
 const PROPERTY_TYPE_SEARCHES = [
   { label: 'Villa', icon: '🏡' },
   { label: 'Appartement', icon: '🏢' },
   { label: 'Terrain', icon: '🌿' },
-  { label: 'Penthouse', icon: '✨' },
-  { label: 'Bureau', icon: '💼' },
 ];
 
 // Keyword → API category/type mappings for natural-language search

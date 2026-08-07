@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Clock, ChevronDown } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Clock, ChevronDown, X } from 'lucide-react';
 import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface DatePickerProps {
@@ -193,13 +193,25 @@ export const CustomTimePicker: React.FC<TimePickerProps> = ({ value, onChange, r
         className={`w-full flex items-center justify-between px-4 py-3 bg-white border rounded-xl focus:outline-none focus:ring-2 transition-all text-left shadow-sm cursor-pointer ${
           error
             ? 'border-red-400 ring-2 ring-red-100 hover:border-red-500'
-            : 'border-gray-200 hover:border-blue-500 focus:ring-blue-50'
+            : value
+            ? 'border-gray-200 hover:border-blue-500 focus:ring-blue-50'
+            : 'border-amber-200 bg-amber-50/30 hover:border-amber-400 focus:ring-amber-50'
         }`}
       >
-        <span className={value ? "text-gray-900 font-semibold text-sm" : "text-gray-400 text-sm"}>
-          {value || '-- Sélectionner --'}
+        <span className={value ? "text-gray-900 font-semibold text-sm" : "text-amber-500 text-sm font-medium"}>
+          {value || 'À définir...'}
         </span>
-        <div className={`flex items-center gap-1.5 ${error ? 'text-red-400' : 'text-gray-400'}`}>
+        <div className={`flex items-center gap-1.5 ${error ? 'text-red-400' : value ? 'text-gray-400' : 'text-amber-400'}`}>
+          {value && (
+            <button
+              type="button"
+              onClick={e => { e.stopPropagation(); onChange(''); }}
+              className="hover:bg-gray-100 rounded-full p-0.5 transition-colors"
+              title="Effacer l'heure"
+            >
+              <X size={13} className="text-gray-400" />
+            </button>
+          )}
           <Clock size={16} />
           <ChevronDown size={16} className={`transition-transform duration-300 ${isOpen ? 'rotate-180 text-blue-500' : ''}`} />
         </div>
@@ -217,6 +229,8 @@ export const CustomTimePicker: React.FC<TimePickerProps> = ({ value, onChange, r
               <div className="flex items-center gap-1 bg-gray-50 p-1.5 border border-gray-200 rounded-xl flex-1 justify-center">
                 <input
                   type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   maxLength={2}
                   value={customHour}
                   onChange={(e) => {
@@ -237,6 +251,8 @@ export const CustomTimePicker: React.FC<TimePickerProps> = ({ value, onChange, r
                 <input
                   id="custom-minute-input"
                   type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   maxLength={2}
                   value={customMinute}
                   onChange={(e) => {

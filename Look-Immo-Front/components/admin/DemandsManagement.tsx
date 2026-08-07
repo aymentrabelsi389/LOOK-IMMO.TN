@@ -223,6 +223,15 @@ const DemandsManagement = ({
                               <span className="px-2.5 py-1 bg-gray-100 text-gray-600 rounded-lg text-[9px] font-black uppercase tracking-wider">
                                 {demand.type}
                               </span>
+                              {demand.contractType && (
+                                <span className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider ${
+                                  demand.contractType === 'rent'
+                                    ? 'bg-blue-50 text-blue-700 border border-blue-100'
+                                    : 'bg-orange-50 text-orange-700 border border-orange-100'
+                                }`}>
+                                  {demand.contractType === 'rent' ? '🏠 Location' : '🔑 Achat'}
+                                </span>
+                              )}
                               {demand.priority === 'high' && (
                                 <span className="px-2.5 py-1 bg-red-50 text-red-700 border border-red-100 rounded-lg text-[9px] font-black uppercase tracking-wider">
                                   🔥 Urgent
@@ -336,7 +345,11 @@ const DemandsManagement = ({
                       <div className="grid grid-cols-2 gap-2 text-[10px] uppercase font-black tracking-wider">
                         <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
                           <span className="text-gray-400 block mb-0.5 text-[8px]">Type & Lieu</span>
-                          <span className="text-gray-900">{demand.type} • {demand.location}</span>
+                          <span className="text-gray-900">
+                            {demand.type}
+                            {demand.contractType && ` (${demand.contractType === 'rent' ? 'Loc.' : 'Vente'})`}
+                            {` • ${demand.location}`}
+                          </span>
                         </div>
                         <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
                           <span className="text-gray-400 block mb-0.5 text-[8px]">Budget</span>
@@ -545,6 +558,27 @@ const DemandsManagement = ({
                     placeholder="Ex: 500 000"
                     className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium transition-all"
                   />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Type de transaction *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: 'sale', label: '🔑 Achat', active: 'bg-blue-50 border-blue-400 text-blue-700 shadow-sm shadow-blue-100', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-blue-200 hover:bg-blue-50/50' },
+                    { value: 'rent', label: '🏠 Location', active: 'bg-blue-50 border-blue-400 text-blue-700 shadow-sm shadow-blue-100', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-blue-200 hover:bg-blue-50/50' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setEditingDemand({ ...editingDemand, contractType: opt.value as any })}
+                      className={`py-2.5 rounded-2xl border-2 text-xs font-bold transition-all duration-200 text-center ${
+                        editingDemand.contractType === opt.value ? opt.active : opt.inactive
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 

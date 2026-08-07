@@ -10,11 +10,18 @@ const dateString = z.string().refine(
     { message: "Must be a valid date string (e.g. 2024-06-15)" }
 );
 
-// HH:MM time validator
+// HH:MM time validator (optional — empty string or undefined means time not yet set)
 const timeString = z.string().regex(
     /^\d{1,2}:\d{2}$/,
     "Time must be in HH:MM format (e.g. 14:30)"
 );
+const optionalTimeString = z.string()
+    .refine(
+        (val) => val === '' || /^\d{1,2}:\d{2}$/.test(val),
+        { message: 'L\'heure dans "Heure" doit être au format HH:MM' }
+    )
+    .optional()
+    .or(z.literal(''));
 
 // Schema for creating a new appointment (public route)
 export const createAppointmentSchema = z.object({
@@ -32,7 +39,7 @@ export const createAppointmentSchema = z.object({
 
         date: dateString,
 
-        time: timeString,
+        time: optionalTimeString,
 
         propertyId: z.string().optional().nullable(),
 

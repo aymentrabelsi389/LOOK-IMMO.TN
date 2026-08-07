@@ -85,7 +85,9 @@ const DashboardPage = () => {
     time: '',
     message: '',
     propertyId: '',
-    status: ''
+    status: '',
+    clientName: '',
+    clientPhone: ''
   });
 
   // Additional props for the Add-Appointment modal
@@ -119,12 +121,13 @@ const DashboardPage = () => {
     const errs: Record<string, string> = {};
     if (!aptForm.clientName || aptForm.clientName.trim().length < 2)
       errs.clientName = 'Le nom du client est obligatoire.';
-    if (!aptForm.clientPhone || aptForm.clientPhone.trim().length === 0)
+    if (!aptForm.clientPhone || aptForm.clientPhone.replace(/\D/g, '').length === 0)
       errs.clientPhone = 'Veuillez renseigner un numéro de téléphone.';
+    else if (aptForm.clientPhone.replace(/\D/g, '').length < 8)
+      errs.clientPhone = 'Le numéro doit contenir au moins 8 chiffres.';
     if (!aptForm.date)
       errs.date = 'Veuillez saisir une date.';
-    if (!aptForm.time)
-      errs.time = "L'heure est obligatoire.";
+
     setAptErrors(errs);
     return errs;
   };
@@ -143,10 +146,15 @@ const DashboardPage = () => {
 
   const validateEditForm = (): Record<string, string> => {
     const errs: Record<string, string> = {};
+    if (!editForm.clientName || editForm.clientName.trim().length < 2)
+      errs.clientName = 'Le nom du client est obligatoire.';
+    if (!editForm.clientPhone || editForm.clientPhone.replace(/\D/g, '').length === 0)
+      errs.clientPhone = 'Veuillez renseigner un numéro de téléphone.';
+    else if (editForm.clientPhone.replace(/\D/g, '').length < 8)
+      errs.clientPhone = 'Le numéro doit contenir au moins 8 chiffres.';
     if (!editForm.date)
       errs.date = 'Veuillez saisir une date.';
-    if (!editForm.time)
-      errs.time = "L'heure est obligatoire.";
+
     setEditErrors(errs);
     return errs;
   };
@@ -171,7 +179,9 @@ const DashboardPage = () => {
       time: apt.time || '',
       message: userNotes,
       propertyId: apt.propertyId || '',
-      status: apt.status || 'pending'
+      status: apt.status || 'pending',
+      clientName: apt.clientName || apt.userName || '',
+      clientPhone: apt.clientPhone || apt.userPhone || ''
     });
   };
 
@@ -181,7 +191,7 @@ const DashboardPage = () => {
     if (Object.keys(errs).length > 0) {
       vibrateError();
       notify.error('Veuillez corriger les champs en rouge.');
-      focusFirstError(['edit-apt-date', 'edit-apt-time']);
+      focusFirstError(['edit-apt-client-name', 'edit-apt-client-phone', 'edit-apt-date', 'edit-apt-time']);
       return;
     }
     if (editingAppointment) {
@@ -201,7 +211,7 @@ const DashboardPage = () => {
   // Client Demands State
   const [clientDemands, setClientDemands] = useState<ClientDemand[]>([]);
   const [demandForm, setDemandForm] = useState<Partial<ClientDemand>>({
-    clientName: '', phone: '', description: '', location: '', type: 'appartement', budget: 0, priority: 'medium', status: 'searching'
+    clientName: '', phone: '', description: '', location: '', type: 'appartement', contractType: 'sale', budget: 0, priority: 'medium', status: 'searching'
   });
   const [showDemandModal, setShowDemandModal] = useState(false);
 
@@ -221,7 +231,7 @@ const DashboardPage = () => {
       navigate(location.pathname, { replace: true, state: { ...location.state, action: undefined } });
     } else if (location.state && (location.state as any).action === 'new-demand') {
       setDemandForm({
-        clientName: '', phone: '', description: '', location: '', type: 'appartement', budget: 0, priority: 'medium', status: 'searching'
+        clientName: '', phone: '', description: '', location: '', type: 'appartement', contractType: 'sale', budget: 0, priority: 'medium', status: 'searching'
       });
       setShowDemandModal(true);
       // Clear the action so it doesn't trigger again on subsequent updates
@@ -320,12 +330,33 @@ const DashboardPage = () => {
     const areaMatch = demand.description.match(/(\d+)\s*m[2²]/);
     const requestedArea = areaMatch ? parseInt(areaMatch[1]) : null;
 
+    // Budget tolerance depends on contract type:
+    // sale → max 15% over budget | rent → max 25% over budget
+    const budgetUpperFactor = demand.contractType === 'rent' ? 1.25 : 1.15;
+
     let count = 0;
     for (const property of properties) {
       if (ignoredIds.has(property.id)) continue;
+      // Hard exclude: if demand has contractType set, only match properties with the same listing type
+      if (demand.contractType && property.listingType && demand.contractType !== property.listingType) continue;
+
+      // Hard budget filter using contract-type-aware upper bound
+      if (demand.budget && demand.budget > 0) {
+        const lowerBound = demand.budget * 0.7;
+        const upperBound = demand.budget * budgetUpperFactor;
+        if (property.price < lowerBound || property.price > upperBound) continue;
+      }
 
       let score = 0;
-      // 1. Type Match
+
+      // 0. Contract Type Match (Rent / Sale) — 20 points
+      if (demand.contractType && property.listingType) {
+        if (demand.contractType === property.listingType) {
+          score += 20;
+        }
+      }
+
+      // 1. Property Type Match — 40 points
       if (allowedTypes.includes(property.type)) {
         score += 40;
       } else {
@@ -333,17 +364,26 @@ const DashboardPage = () => {
         if (demand.type === 'villa' && property.type === 'apartment') score += 5;
       }
 
-      // 2. Budget Match
+      // 2. Budget Match — 30 points (tiers adjusted per contract type)
       if (demand.budget && demand.budget > 0) {
         const priceDiff = (property.price - demand.budget) / demand.budget;
-        if (priceDiff <= 0) score += 30;
-        else if (priceDiff <= 0.1) score += 20;
-        else if (priceDiff <= 0.2) score += 10;
+        if (demand.contractType === 'rent') {
+          // Rent: up to 25% over — more tolerant
+          if (priceDiff <= 0) score += 30;
+          else if (priceDiff <= 0.1) score += 20;
+          else if (priceDiff <= 0.2) score += 15;
+          else score += 10; // 20–25%
+        } else {
+          // Sale: up to 15% over — stricter
+          if (priceDiff <= 0) score += 30;
+          else if (priceDiff <= 0.1) score += 20;
+          else score += 10; // 10–15%
+        }
       } else {
         score += 15;
       }
 
-      // 3. Location Match
+      // 3. Location Match — 20 points
       const propCity = (property.location?.city || '').toLowerCase();
       const propAddr = (property.location?.address || '').toLowerCase();
       if (propCity && (propCity.includes(demandLoc) || demandLoc.includes(propCity))) {
@@ -352,14 +392,14 @@ const DashboardPage = () => {
         score += 12;
       }
 
-      // 4. Area Match
+      // 4. Area Match — 10 points
       if (requestedArea && property.features?.area) {
         const areaDiff = Math.abs(property.features.area - requestedArea) / requestedArea;
         if (areaDiff <= 0.2) score += 10;
         else if (areaDiff <= 0.4) score += 5;
       }
 
-      // 5. Priority
+      // 5. Priority Bonus — 5 points
       if (demand.priority === 'high') score += 5;
 
       if (score >= 45) {
@@ -383,7 +423,7 @@ const DashboardPage = () => {
       setClientDemands(prev => [newDemand, ...prev]);
       setShowDemandModal(false);
       setDemandErrors({});
-      setDemandForm({ clientName: '', phone: '', description: '', location: '', type: 'appartement', budget: 0, priority: 'medium', status: 'searching' });
+      setDemandForm({ clientName: '', phone: '', description: '', location: '', type: 'appartement', contractType: 'sale', budget: 0, priority: 'medium', status: 'searching' });
       notify.success('Demande client ajoutée avec succès.');
 
       const matchingCount = getMatchesCountForDemand(newDemand);
@@ -614,10 +654,17 @@ const DashboardPage = () => {
                           );
                         })()}
                       </p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <Clock size={12} className="text-brand-teal" />
-                        <p className="text-xs text-brand-teal font-bold">{apt.time}</p>
-                      </div>
+                      {apt.time ? (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <Clock size={12} className="text-brand-teal" />
+                          <p className="text-xs text-brand-teal font-bold">{apt.time}</p>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 mt-0.5">
+                          <Clock size={12} className="text-amber-500" />
+                          <span className="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Heure non fixée</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
@@ -1169,13 +1216,16 @@ const DashboardPage = () => {
                   <label htmlFor="apt-client-phone" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Téléphone *</label>
                   <input
                     id="apt-client-phone"
-                    type="text"
+                    type="tel"
+                    inputMode="tel"
                     value={aptForm.clientPhone || ''}
                     onChange={e => {
-                      setAptForm({ ...aptForm, clientPhone: e.target.value });
-                      if (e.target.value.trim().length > 0) setAptErrors(prev => ({ ...prev, clientPhone: '' }));
+                      const val = e.target.value.replace(/[^0-9+\s\-().]/g, '');
+                      setAptForm({ ...aptForm, clientPhone: val });
+                      if (val.replace(/\D/g, '').length >= 8) setAptErrors(prev => ({ ...prev, clientPhone: '' }));
                     }}
-                    placeholder="Téléphone"
+                    placeholder="Ex: 21 234 567"
+                    maxLength={20}
                     className={`w-full px-4 py-2.5 border rounded-2xl focus:ring-2 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm ${
                       aptErrors.clientPhone
                         ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
@@ -1200,7 +1250,7 @@ const DashboardPage = () => {
                   {aptErrors.date && <p className="text-red-500 text-xs mt-1 font-medium">{aptErrors.date}</p>}
                 </div>
                 <div>
-                  <label htmlFor="apt-time" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Heure *</label>
+                  <label htmlFor="apt-time" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Heure <span className="font-normal normal-case text-gray-400">(optionnel)</span></label>
                   <CustomTimePicker
                     value={aptForm.time || ''}
                     onChange={val => {
@@ -1208,7 +1258,6 @@ const DashboardPage = () => {
                       if (val) setAptErrors(prev => ({ ...prev, time: '' }));
                     }}
                     error={!!aptErrors.time}
-                    required
                   />
                   {aptErrors.time && <p className="text-red-500 text-xs mt-1 font-medium">{aptErrors.time}</p>}
                 </div>
@@ -1229,6 +1278,10 @@ const DashboardPage = () => {
                             <img
                               src={getImageSrc(prop.images[0], 'thumb')}
                               alt=""
+                              width={24}
+                              height={24}
+                              loading="eager"
+                              decoding="sync"
                               className="w-6 h-6 rounded-full object-cover flex-shrink-0 border-2 border-brand-teal/30"
                             />
                           ) : (
@@ -1251,6 +1304,10 @@ const DashboardPage = () => {
                             <img
                               src={getImageSrc(prop.images[0], 'thumb')}
                               alt=""
+                              width={24}
+                              height={24}
+                              loading="eager"
+                              decoding="sync"
                               className="w-6 h-6 rounded-full object-cover flex-shrink-0 border-2 border-gray-300"
                             />
                           ) : (
@@ -1326,16 +1383,17 @@ const DashboardPage = () => {
                           </span>
                           
                           {/* Property Thumbnail */}
-                          <div 
-                            className="w-9 h-7 rounded-md overflow-hidden flex-shrink-0 relative bg-gray-100 border border-gray-100/70 shadow-sm"
-                            style={{
-                              backgroundImage: p.images && p.images[0] && getLQIP(p.images[0]) ? `url(${getLQIP(p.images[0])})` : undefined,
-                              backgroundSize: 'cover',
-                              backgroundPosition: 'center',
-                            }}
-                          >
+                          <div className="w-9 h-7 rounded-md overflow-hidden flex-shrink-0 relative bg-gray-100 border border-gray-100/70 shadow-sm">
                             {p.images && p.images[0] ? (
-                              <img src={getImageSrc(p.images[0], 'thumb')} alt="" className="w-full h-full object-cover" />
+                              <img
+                                src={getImageSrc(p.images[0], 'thumb')}
+                                alt=""
+                                width={36}
+                                height={28}
+                                loading="eager"
+                                decoding="sync"
+                                className="w-full h-full object-cover"
+                              />
                             ) : (
                               <div className="w-full h-full flex items-center justify-center text-gray-300 text-[10px]">🏠</div>
                             )}
@@ -1466,6 +1524,26 @@ const DashboardPage = () => {
               </div>
 
               <div>
+                <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Type de transaction *</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: 'sale', label: '🔑 Achat', active: 'bg-orange-50 border-orange-400 text-orange-700 shadow-sm shadow-orange-100', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-orange-200 hover:bg-orange-50/50' },
+                    { value: 'rent', label: '🏠 Location', active: 'bg-orange-50 border-orange-400 text-orange-700 shadow-sm shadow-orange-100', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-orange-200 hover:bg-orange-50/50' },
+                  ].map(opt => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setDemandForm({ ...demandForm, contractType: opt.value as any })}
+                      className={`py-2.5 rounded-2xl border-2 text-xs font-bold transition-all duration-200 text-center ${demandForm.contractType === opt.value ? opt.active : opt.inactive
+                        }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
                 <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Type de bien *</label>
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
                   {[
@@ -1541,6 +1619,49 @@ const DashboardPage = () => {
               <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
+                  <label htmlFor="edit-apt-client-name" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Nom Client *</label>
+                  <input
+                    id="edit-apt-client-name"
+                    type="text"
+                    value={editForm.clientName || ''}
+                    onChange={e => {
+                      setEditForm({ ...editForm, clientName: e.target.value });
+                      if (e.target.value.trim().length >= 2) setEditErrors(prev => ({ ...prev, clientName: '' }));
+                    }}
+                    placeholder="Nom du client"
+                    className={`w-full px-4 py-2.5 border rounded-2xl focus:ring-2 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm ${
+                      editErrors.clientName
+                        ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                        : 'border-gray-200 focus:ring-brand-teal/20 focus:border-brand-teal'
+                    }`}
+                  />
+                  {editErrors.clientName && <p className="text-red-500 text-xs mt-1 font-medium">{editErrors.clientName}</p>}
+                </div>
+                <div>
+                  <label htmlFor="edit-apt-client-phone" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Téléphone *</label>
+                  <input
+                    id="edit-apt-client-phone"
+                    type="tel"
+                    inputMode="tel"
+                    value={editForm.clientPhone || ''}
+                    onChange={e => {
+                      const val = e.target.value.replace(/[^0-9+\s\-().]/g, '');
+                      setEditForm({ ...editForm, clientPhone: val });
+                      if (val.replace(/\D/g, '').length >= 8) setEditErrors(prev => ({ ...prev, clientPhone: '' }));
+                    }}
+                    placeholder="Ex: 21 234 567"
+                    maxLength={20}
+                    className={`w-full px-4 py-2.5 border rounded-2xl focus:ring-2 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm ${
+                      editErrors.clientPhone
+                        ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
+                        : 'border-gray-200 focus:ring-brand-teal/20 focus:border-brand-teal'
+                    }`}
+                  />
+                  {editErrors.clientPhone && <p className="text-red-500 text-xs mt-1 font-medium">{editErrors.clientPhone}</p>}
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
                   <label htmlFor="edit-apt-date" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Date *</label>
                   <CustomDatePicker
                     value={editForm.date}
@@ -1555,7 +1676,7 @@ const DashboardPage = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="edit-apt-time" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Heure *</label>
+                  <label htmlFor="edit-apt-time" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">Heure <span className="font-normal normal-case text-gray-400">(optionnel)</span></label>
                   <CustomTimePicker
                     value={editForm.time}
                     onChange={val => {
@@ -1563,7 +1684,6 @@ const DashboardPage = () => {
                       if (val) setEditErrors(prev => ({ ...prev, time: '' }));
                     }}
                     error={!!editErrors.time}
-                    required
                   />
                   {editErrors.time && <p className="text-red-500 text-xs mt-1 font-medium">{editErrors.time}</p>}
                 </div>

@@ -32,7 +32,6 @@ export const createNotification = async (data: CreateNotificationInput) => {
       }
     });
 
-    // Expose virtual `isRead` in JSON responses or we can let the controller do it.
     // Real-time broadcast
     if (notification.userId) {
       emitToUser(notification.userId, 'notification:new', notification);
@@ -67,16 +66,30 @@ export const checkPropertyMatchesAndNotify = async (property: any) => {
     };
 
     for (const demand of demands) {
-      // Strict Budget Filter: Property price must be ±30% of client demand budget
+      // Hard exclude: if demand has contractType set, skip properties with a different listing type.
+      // On the backend, property.type is 'rent' | 'sale' (the listing/contract type).
+      if ((demand as any).contractType && property.type) {
+        if ((demand as any).contractType !== property.type) continue;
+      }
+
+      // Budget tolerance: sale → max 15% over budget | rent → max 25% over budget
       if (demand.budget && demand.budget > 0) {
+        const upperFactor = (demand as any).contractType === 'rent' ? 1.25 : 1.15;
         const lowerBound = demand.budget * 0.7;
-        const upperBound = demand.budget * 1.3;
+        const upperBound = demand.budget * upperFactor;
         if (property.price < lowerBound || property.price > upperBound) {
           continue;
         }
       }
 
       let score = 0;
+
+      // 0. Contract Type Match (Rent / Sale) — 20 points
+      if ((demand as any).contractType && property.type) {
+        if ((demand as any).contractType === property.type) {
+          score += 20;
+        }
+      }
 
       // 1. Type Match (Critical: 40 points)
       const allowedTypes = typeMapping[demand.type] || [];
@@ -91,14 +104,17 @@ export const checkPropertyMatchesAndNotify = async (property: any) => {
       // 2. Budget Match (Critical: 30 points)
       if (demand.budget && demand.budget > 0) {
         const priceDiff = (property.price - demand.budget) / demand.budget;
-        if (priceDiff <= 0) {
-          score += 30; // Within budget
-        } else if (priceDiff <= 0.1) {
-          score += 20; // Up to 10% over
-        } else if (priceDiff <= 0.2) {
-          score += 15; // Up to 20% over
+        if ((demand as any).contractType === 'rent') {
+          // Rent: up to 25% over — more tolerant
+          if (priceDiff <= 0) score += 30;            // Within budget
+          else if (priceDiff <= 0.1) score += 20;     // Up to 10% over
+          else if (priceDiff <= 0.2) score += 15;     // Up to 20% over
+          else score += 10;                            // 20–25% over
         } else {
-          score += 10; // Up to 30% over
+          // Sale: up to 15% over — stricter
+          if (priceDiff <= 0) score += 30;             // Within budget
+          else if (priceDiff <= 0.1) score += 20;      // Up to 10% over
+          else score += 10;                             // 10–15% over
         }
       } else {
         score += 15;
@@ -125,7 +141,7 @@ export const checkPropertyMatchesAndNotify = async (property: any) => {
         else if (areaDiff <= 0.4) score += 5;
       }
 
-      // 5. Priority Bonus
+      // 5. Priority Bonus (5 points)
       if (demand.priority === 'high') score += 5;
 
       // If it qualifies as a match (score >= 45)
@@ -135,7 +151,7 @@ export const checkPropertyMatchesAndNotify = async (property: any) => {
           title: 'Nouvelle Correspondance',
           message: `Le bien "${property.title}" correspond à la demande de ${demand.clientName}.`,
           icon: 'Sparkles',
-          link: '/admin', // Navigate to admin to open demands and highlight property
+          link: '/admin',
           userId: null, // Send to all admins/agents
           metadata: {
             demandId: demand.id,

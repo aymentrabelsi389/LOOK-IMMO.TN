@@ -45,7 +45,7 @@ export const getAppointments = async (req: Request, res: Response): Promise<void
                 where: { id: userId },
                 select: { phone: true }
             }) : null;
-            
+
             if (userRecord?.phone) {
                 conditions.push({ clientPhone: userRecord.phone });
             }
@@ -118,8 +118,9 @@ export const createAppointment = async (req: Request, res: Response): Promise<vo
     try {
         const { clientName, clientEmail, clientPhone, date, time, propertyId, notes, source, meetingType } = req.body;
 
-        if (!clientName || !date || !time) {
-            res.status(400).json({ error: 'Client name, date, and time are required' });
+        // time is optional — appointments can be saved without a confirmed time
+        if (!clientName || !date) {
+            res.status(400).json({ error: 'Client name and date are required' });
             return;
         }
 
@@ -141,7 +142,7 @@ export const createAppointment = async (req: Request, res: Response): Promise<vo
                 clientEmail,
                 clientPhone,
                 date: new Date(date),
-                time,
+                time: time || null,
                 propertyId: propertyId || null,
                 notes,
                 source: source || 'other',
@@ -163,14 +164,15 @@ export const createAppointment = async (req: Request, res: Response): Promise<vo
         // Send appointment booking notifications
         try {
             const formattedDate = new Date(date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
-            
+            const timeLabel = time ? ` à ${time}` : ' (heure à définir)';
+
             // Create notification for admins/agents
             await createNotification({
                 type: 'appointment_new',
                 title: 'Nouveau Rendez-vous',
-                message: `Nouveau rendez-vous planifié pour le ${formattedDate} à ${time}.`,
+                message: `Nouveau rendez-vous planifié pour le ${formattedDate}${timeLabel}.`,
                 icon: 'Calendar',
-                link: '/admin', // Will point to appointments management
+                link: '/admin',
                 userId: null,
                 metadata: { appointmentId: appointment.id }
             });
@@ -188,12 +190,12 @@ export const createAppointment = async (req: Request, res: Response): Promise<vo
                 });
                 if (clientUser) {
                     emitToUser(clientUser.id, 'appointment_new', appointment);
-                    
+
                     // Create notification for the client user
                     await createNotification({
                         type: 'appointment_new',
                         title: 'Rendez-vous Confirmé',
-                        message: `Votre demande de rendez-vous pour le ${formattedDate} à ${time} a été reçue.`,
+                        message: `Votre demande de rendez-vous pour le ${formattedDate}${timeLabel} a été reçue.`,
                         icon: 'Calendar',
                         link: '/dashboard',
                         userId: clientUser.id,
@@ -257,7 +259,8 @@ export const updateAppointment = async (req: AuthRequest, res: Response): Promis
                 ...(status && { status }),
                 ...(notes !== undefined && { notes }),
                 ...(date && { date: new Date(date) }),
-                ...(time && { time }),
+                // Allow explicitly clearing time by passing empty string
+                ...(time !== undefined && { time: time || null }),
                 ...(source && { source }),
                 ...(meetingType && { meetingType }),
                 ...(propertyId !== undefined && { propertyId }),

@@ -20,7 +20,7 @@ export const getProperties = async (req: Request, res: Response): Promise<void> 
 
         const {
             type, category, city, minPrice, maxPrice, status, search, ownerId,
-            minBedrooms, minArea, isHotDeal,
+            minBedrooms, minArea, isHotDeal, excludeSold,
             page = '1', limit = '24', noLimit
         } = req.query;
 
@@ -34,7 +34,12 @@ export const getProperties = async (req: Request, res: Response): Promise<void> 
             ...(type && type !== 'all' ? { type: type as any } : {}),
             ...(category && category !== 'all' ? { category: category as string } : {}),
             ...(city && city !== 'all' ? { city: { contains: city as string, mode: 'insensitive' as any } } : {}),
-            ...(status && status !== 'all' ? { status: status as any } : {}),
+            // If a specific status filter is provided use it; if excludeSold=true hide sold/rented (public listing)
+            ...(status && status !== 'all'
+                ? { status: status as any }
+                : excludeSold === 'true'
+                    ? { status: { notIn: ['sold', 'rented'] } }
+                    : {}),
             ...(ownerId ? { ownerId: ownerId as string } : {}),
             ...(minPrice ? { price: { gte: parseFloat(minPrice as string) } } : {}),
             ...(maxPrice ? { price: { lte: parseFloat(maxPrice as string) } } : {}),
@@ -223,10 +228,17 @@ export const createProperty = async (req: AuthRequest, res: Response): Promise<v
         // demand volume. Fire-and-forget with its own error handling instead.
         (async () => {
             try {
+                const feats = property.features ? (property.features as any) : {};
+                const details: string[] = [];
+                if (feats.bedrooms) details.push(`${feats.bedrooms} ch`);
+                if (feats.bathrooms) details.push(`${feats.bathrooms} sdb`);
+                if (feats.area) details.push(`${feats.area} m²`);
+                const detailsStr = details.length > 0 ? ` (${details.join(', ')})` : '';
+
                 await createNotification({
                     type: 'property_add',
                     title: 'Nouvelle Propriété',
-                    message: `Une nouvelle propriété a été ajoutée : ${property.title}`,
+                    message: `Une nouvelle propriété a été ajoutée : ${property.title}${detailsStr}`,
                     icon: 'Home',
                     link: `/property/${property.id}`,
                     userId: null, // Send to all admins/agents

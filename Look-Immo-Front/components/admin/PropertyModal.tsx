@@ -43,6 +43,8 @@ interface PropertyModalProps {
   removeImage: (index: number) => void;
   onImagesReorder: (newImages: string[]) => void;
   onLocationChange: (lat: number, lng: number) => void;
+  errors?: { title?: boolean; price?: boolean; city?: boolean };
+  clearError?: (field: 'title' | 'price' | 'city') => void;
 }
 
 const getDownloadUrl = (url: string) => {
@@ -132,7 +134,9 @@ const PropertyModal = ({
   handleImageUpload,
   removeImage,
   onImagesReorder,
-  onLocationChange
+  onLocationChange,
+  errors,
+  clearError
 }: PropertyModalProps) => {
   const mgmt = usePropertyModal({ formData, setFormData, onImagesReorder });
   const {
@@ -180,7 +184,8 @@ const PropertyModal = ({
               type="button"
               onClick={() => {
                 if (!formData.features) return;
-                const { [fieldName]: _removed, ...newFeatures } = formData.features;
+                const newFeatures = { ...formData.features };
+                delete newFeatures[fieldName];
                 setFormData({ ...formData, features: newFeatures });
               }}
               className="text-red-500 hover:text-red-600 transition-colors p-1"
@@ -300,8 +305,15 @@ const PropertyModal = ({
                     required
                     type="text"
                     value={formData.title || ''}
-                    onChange={e => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all shadow-sm placeholder-gray-400 font-medium"
+                    onChange={e => {
+                      setFormData({ ...formData, title: e.target.value });
+                      if (clearError) clearError('title');
+                    }}
+                    className={`w-full bg-white border rounded-xl px-4 py-3.5 text-gray-900 text-sm focus:outline-none transition-all shadow-sm placeholder-gray-400 font-medium ${
+                      errors?.title 
+                        ? 'border-red-500 ring-2 ring-red-100 focus:border-red-500' 
+                        : 'border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50'
+                    }`}
                     placeholder="Ex: Villa moderne S+4 suites"
                   />
                 </div>
@@ -311,9 +323,14 @@ const PropertyModal = ({
                     <span className="mr-2 text-lg">📞</span> Téléphone du propriétaire
                   </label>
                   <input
-                    type="text"
+                    type="tel"
+                    inputMode="tel"
+                    pattern="[0-9+\-\s()]*"
                     value={formData.ownerPhone || ''}
-                    onChange={e => setFormData({ ...formData, ownerPhone: e.target.value })}
+                    onChange={e => {
+                      const val = e.target.value.replace(/[^0-9+\-\s()]/g, '');
+                      setFormData({ ...formData, ownerPhone: val });
+                    }}
                     className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all shadow-sm placeholder-gray-400 font-medium"
                     placeholder="Ex: +216 99 999 999"
                   />
@@ -327,12 +344,19 @@ const PropertyModal = ({
                     <input
                       required
                       type="text"
+                      inputMode="numeric"
+                      pattern="[0-9\s]*"
                       value={formData.price ? formData.price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ") : ''}
                       onChange={e => {
                         const val = e.target.value.replace(/\D/g, '');
                         setFormData({ ...formData, price: val ? Number(val) : 0 });
+                        if (clearError) clearError('price');
                       }}
-                      className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all shadow-sm font-bold"
+                      className={`w-full bg-white border rounded-xl px-4 py-3.5 text-gray-900 text-sm focus:outline-none transition-all shadow-sm font-bold ${
+                        errors?.price 
+                          ? 'border-red-500 ring-2 ring-red-100 focus:border-red-500' 
+                          : 'border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-50'
+                      }`}
                       placeholder="1 200 000"
                     />
                   </div>
@@ -340,20 +364,20 @@ const PropertyModal = ({
                     <label className="text-sm font-bold text-gray-700 mb-2 flex items-center">
                       <span className="mr-2 text-lg">🔄</span> Type
                     </label>
-                    <div className="grid grid-cols-2 gap-3 p-1 bg-gray-50 rounded-xl border border-gray-150 h-[48px] items-center">
+                    <div className="grid grid-cols-2 gap-1.5 p-1 bg-gray-50 rounded-xl border border-gray-150 h-[48px] items-center">
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, listingType: 'sale' })}
-                        className={`py-2 rounded-lg text-sm font-bold transition-all h-[38px] flex items-center justify-center ${formData.listingType === 'sale' || !formData.listingType ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-white hover:text-gray-700'}`}
+                        className={`py-2 rounded-lg text-xs font-bold transition-all h-[38px] flex items-center justify-center whitespace-nowrap ${formData.listingType === 'sale' || !formData.listingType ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-white hover:text-gray-700'}`}
                       >
-                        Ventes
+                        Vente
                       </button>
                       <button
                         type="button"
                         onClick={() => setFormData({ ...formData, listingType: 'rent' })}
-                        className={`py-2 rounded-lg text-sm font-bold transition-all h-[38px] flex items-center justify-center ${formData.listingType === 'rent' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-white hover:text-gray-700'}`}
+                        className={`py-2 rounded-lg text-xs font-bold transition-all h-[38px] flex items-center justify-center whitespace-nowrap ${formData.listingType === 'rent' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-white hover:text-gray-700'}`}
                       >
-                        Locations
+                        Location
                       </button>
                     </div>
                   </div>
@@ -363,18 +387,18 @@ const PropertyModal = ({
                   <label className="text-sm font-bold text-gray-700 mb-3 flex items-center">
                     <span className="mr-2 text-lg">📊</span> Type de prix
                   </label>
-                  <div className="grid grid-cols-2 gap-3 p-1 bg-gray-50 rounded-xl border border-gray-100">
+                  <div className="grid grid-cols-2 gap-1.5 p-1 bg-gray-50 rounded-xl border border-gray-100">
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, priceType: 'total' })}
-                      className={`py-2.5 rounded-lg text-sm font-bold transition-all ${formData.priceType === 'total' || !formData.priceType ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-white hover:text-gray-700'}`}
+                      className={`py-2.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${formData.priceType === 'total' || !formData.priceType ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-white hover:text-gray-700'}`}
                     >
                       Prix total
                     </button>
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, priceType: 'per_m2' })}
-                      className={`py-2.5 rounded-lg text-sm font-bold transition-all ${formData.priceType === 'per_m2' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-white hover:text-gray-700'}`}
+                      className={`py-2.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${formData.priceType === 'per_m2' ? 'bg-blue-600 text-white shadow-md' : 'text-gray-500 hover:bg-white hover:text-gray-700'}`}
                     >
                       Prix/m²
                     </button>
@@ -505,7 +529,12 @@ const PropertyModal = ({
                     <input
                       type="number"
                       value={formData.features?.area || ''}
-                      onChange={e => setFormData({ ...formData, features: { ...formData.features!, area: Number(e.target.value) } })}
+                      onChange={e => {
+                        const val = e.target.value;
+                        const features = { ...formData.features! };
+                        if (val === '' || val === null) { delete features.area; } else { features.area = Number(val); }
+                        setFormData({ ...formData, features });
+                      }}
                       className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all shadow-sm"
                     />
                   </div>
@@ -546,7 +575,12 @@ const PropertyModal = ({
                         <input
                           type="number"
                           value={formData.features?.bedrooms || ''}
-                          onChange={e => setFormData({ ...formData, features: { ...formData.features!, bedrooms: Number(e.target.value) } })}
+                          onChange={e => {
+                            const val = e.target.value;
+                            const features = { ...formData.features! };
+                            if (val === '' || val === null) { delete features.bedrooms; } else { features.bedrooms = Number(val); }
+                            setFormData({ ...formData, features });
+                          }}
                           className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all shadow-sm"
                         />
                       </div>
@@ -557,7 +591,12 @@ const PropertyModal = ({
                         <input
                           type="number"
                           value={formData.features?.bathrooms || ''}
-                          onChange={e => setFormData({ ...formData, features: { ...formData.features!, bathrooms: Number(e.target.value) } })}
+                          onChange={e => {
+                            const val = e.target.value;
+                            const features = { ...formData.features! };
+                            if (val === '' || val === null) { delete features.bathrooms; } else { features.bathrooms = Number(val); }
+                            setFormData({ ...formData, features });
+                          }}
                           className="w-full bg-white border border-gray-200 rounded-xl px-4 py-3.5 text-gray-900 text-sm focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all shadow-sm"
                         />
                       </div>
@@ -606,6 +645,40 @@ const PropertyModal = ({
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Status */}
+              <div>
+                <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Statut de la propriété</h4>
+                <div className="grid grid-cols-3 gap-3">
+                  {[
+                    { value: 'available', label: 'Disponible', emoji: '✅', bg: 'bg-emerald-500', ring: 'ring-emerald-300', light: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+                    { value: 'sold', label: 'Vendu', emoji: '🔴', bg: 'bg-red-500', ring: 'ring-red-300', light: 'bg-red-50 border-red-200 text-red-700' },
+                    { value: 'rented', label: 'Loué', emoji: '🟠', bg: 'bg-orange-500', ring: 'ring-orange-300', light: 'bg-orange-50 border-orange-200 text-orange-700' },
+                  ].map(opt => {
+                    const isSelected = (formData.status || 'available') === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => setFormData({ ...formData, status: opt.value as any })}
+                        className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 font-bold text-sm transition-all ${
+                          isSelected
+                            ? `${opt.light} border-current shadow-md ring-2 ${opt.ring}`
+                            : 'border-gray-200 bg-white text-gray-400 hover:border-gray-300 hover:text-gray-600'
+                        }`}
+                      >
+                        <span className="text-lg">{opt.emoji}</span>
+                        <span className="text-xs font-extrabold">{opt.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {(formData.status === 'sold' || formData.status === 'rented') && (
+                  <p className="mt-2 text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 font-semibold">
+                    ⚠️ Cette propriété sera masquée dans les annonces publiques.
+                  </p>
+                )}
               </div>
 
               {/* Options */}
@@ -811,12 +884,12 @@ const PropertyModal = ({
           <button
             type="submit"
             onClick={handleSave}
-            className="px-10 py-3.5 bg-blue-600 text-white font-bold rounded-xl shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:shadow-blue-500/40 transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center"
+            className="px-10 py-3.5 bg-blue-600 text-white font-bold rounded-xl shadow-xl shadow-blue-500/20 hover:bg-blue-700 hover:shadow-blue-500/40 transition-all transform hover:-translate-y-0.5 active:scale-95 flex items-center justify-center whitespace-nowrap"
           >
             {isEditing ? (
-              <><RefreshCw size={18} className="mr-2" /> Mettre à jour</>
+              <><RefreshCw size={18} className="mr-2 shrink-0" /> Mettre à jour</>
             ) : (
-              <><Plus size={18} className="mr-2" /> Enregistrer</>
+              <><Plus size={18} className="mr-2 shrink-0" /> Enregistrer</>
             )}
           </button>
         </div>

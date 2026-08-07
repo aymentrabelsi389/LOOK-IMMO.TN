@@ -111,6 +111,7 @@ export function useDemandsManagement({
         description: editingDemand.description,
         location: editingDemand.location,
         type: editingDemand.type,
+        contractType: editingDemand.contractType,
         budget: editingDemand.budget,
         priority: editingDemand.priority,
         status: editingDemand.status
@@ -159,17 +160,28 @@ export function useDemandsManagement({
       const matches = properties
         .filter(property => {
           if (ignoredIds.has(property.id)) return false;
+          // Hard exclude: if demand has contractType set, only match properties with the same listing type
+          if (demand.contractType && property.listingType && demand.contractType !== property.listingType) return false;
+          // Budget tolerance: sale → max 15% over | rent → max 25% over
           if (demand.budget && demand.budget > 0) {
+            const upperFactor = demand.contractType === 'rent' ? 1.25 : 1.15;
             const lowerBound = demand.budget * 0.7;
-            const upperBound = demand.budget * 1.3;
-            if (property.price < lowerBound || property.price > upperBound) {
-              return false;
-            }
+            const upperBound = demand.budget * upperFactor;
+            if (property.price < lowerBound || property.price > upperBound) return false;
           }
           return true;
         })
         .map(property => {
           let score = 0;
+
+          // 0. Contract Type Match (Rent / Sale) — 20 points
+          if (demand.contractType && property.listingType) {
+            if (demand.contractType === property.listingType) {
+              score += 20;
+            }
+          }
+
+          // 1. Property Type Match — 40 points
           const allowedTypes = typeMapping[demand.type] || [];
           if (allowedTypes.includes(property.type)) {
             score += 40;
@@ -178,21 +190,26 @@ export function useDemandsManagement({
             if (demand.type === 'villa' && property.type === 'apartment') score += 5;
           }
 
+          // 2. Budget Match — 30 points (tiers adjusted per contract type)
           if (demand.budget && demand.budget > 0) {
             const priceDiff = (property.price - demand.budget) / demand.budget;
-            if (priceDiff <= 0) {
-              score += 30;
-            } else if (priceDiff <= 0.1) {
-              score += 20;
-            } else if (priceDiff <= 0.2) {
-              score += 15;
+            if (demand.contractType === 'rent') {
+              // Rent: up to 25% over — more tolerant
+              if (priceDiff <= 0) score += 30;
+              else if (priceDiff <= 0.1) score += 20;
+              else if (priceDiff <= 0.2) score += 15;
+              else score += 10; // 20–25%
             } else {
-              score += 10;
+              // Sale: up to 15% over — stricter
+              if (priceDiff <= 0) score += 30;
+              else if (priceDiff <= 0.1) score += 20;
+              else score += 10; // 10–15%
             }
           } else {
             score += 15;
           }
 
+          // 3. Location Match — 20 points
           const demandLoc = demand.location.toLowerCase();
           const propCity = (property.location?.city || '').toLowerCase();
           const propAddr = (property.location?.address || '').toLowerCase();
@@ -203,6 +220,7 @@ export function useDemandsManagement({
             score += 12;
           }
 
+          // 4. Area Match — 10 points
           const areaMatch = demand.description.match(/(\d+)\s*m[2²]/);
           if (areaMatch && property.features?.area) {
             const requestedArea = parseInt(areaMatch[1]);
@@ -211,6 +229,7 @@ export function useDemandsManagement({
             else if (areaDiff <= 0.4) score += 5;
           }
 
+          // 5. Priority Bonus — 5 points
           if (demand.priority === 'high') score += 5;
 
           return { property, score };

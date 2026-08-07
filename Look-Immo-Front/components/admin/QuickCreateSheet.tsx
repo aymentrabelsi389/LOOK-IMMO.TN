@@ -100,29 +100,18 @@ const QuickCreateSheet: React.FC<QuickCreateSheetProps> = ({ isOpen, onClose }) 
         <div className="p-4 space-y-3">
           {/* Primary Action: Full Width Card (Centered Layout) */}
           <button
-            onClick={() => handleAction('property')}
+            onClick={() => handleAction('appointment')}
             className="w-full flex flex-col items-center justify-center p-5 bg-white/[0.04] hover:bg-white/[0.08] active:bg-white/[0.1] border border-white/5 rounded-2xl transition-all duration-200 active:scale-[0.98] outline-none group shadow-sm pointer-events-auto"
           >
-            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-emerald-500/10 text-emerald-400 group-hover:scale-105 transition-transform duration-200 mb-2.5">
-              <Home size={22} className="stroke-[2.2]" />
+            <div className="w-12 h-12 rounded-full flex items-center justify-center bg-brand-teal/10 text-brand-teal group-hover:scale-105 transition-transform duration-200 mb-2.5">
+              <Calendar size={22} className="stroke-[2.2]" />
             </div>
-            <h4 className="text-white font-bold text-sm tracking-wide">Nouvelle propriété</h4>
+            <h4 className="text-white font-bold text-sm tracking-wide">Rendez-vous</h4>
           </button>
 
           {/* Secondary Actions: Grid of 2 Equal columns (Centered Layout) */}
           <div className="grid grid-cols-2 gap-3">
-            {/* Left Card: Appointment */}
-            <button
-              onClick={() => handleAction('appointment')}
-              className="flex flex-col items-center justify-center text-center p-4 bg-white/[0.03] hover:bg-white/[0.07] active:bg-white/[0.09] border border-white/5 rounded-2xl transition-all duration-200 active:scale-[0.98] outline-none group shadow-sm pointer-events-auto"
-            >
-              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-brand-teal/10 text-brand-teal group-hover:scale-105 transition-transform duration-200 mb-2">
-                <Calendar size={18} className="stroke-[2.2]" />
-              </div>
-              <h4 className="text-white font-bold text-xs tracking-wide">Rendez-vous</h4>
-            </button>
-
-            {/* Right Card: Client Demand */}
+            {/* Left Card: Client Demand */}
             <button
               onClick={() => handleAction('demand')}
               className="flex flex-col items-center justify-center text-center p-4 bg-white/[0.03] hover:bg-white/[0.07] active:bg-white/[0.09] border border-white/5 rounded-2xl transition-all duration-200 active:scale-[0.98] outline-none group shadow-sm pointer-events-auto"
@@ -131,6 +120,17 @@ const QuickCreateSheet: React.FC<QuickCreateSheetProps> = ({ isOpen, onClose }) 
                 <ClipboardList size={18} className="stroke-[2.2]" />
               </div>
               <h4 className="text-white font-bold text-xs tracking-wide">Demande client</h4>
+            </button>
+
+            {/* Right Card: Property */}
+            <button
+              onClick={() => handleAction('property')}
+              className="flex flex-col items-center justify-center text-center p-4 bg-white/[0.03] hover:bg-white/[0.07] active:bg-white/[0.09] border border-white/5 rounded-2xl transition-all duration-200 active:scale-[0.98] outline-none group shadow-sm pointer-events-auto"
+            >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center bg-emerald-500/10 text-emerald-400 group-hover:scale-105 transition-transform duration-200 mb-2">
+                <Home size={18} className="stroke-[2.2]" />
+              </div>
+              <h4 className="text-white font-bold text-xs tracking-wide">Nouvelle propriété</h4>
             </button>
           </div>
         </div>

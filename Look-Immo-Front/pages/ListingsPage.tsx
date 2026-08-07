@@ -70,6 +70,7 @@ const ListingsPage = () => {
     const params: Record<string, string | number | undefined> = {
       page: currentPage,
       limit: LISTINGS_PER_PAGE,
+      excludeSold: 'true', // Always hide sold/rented properties from public listing
     };
     if (filters.query) params.search = filters.query;
     if (filters.listingType !== 'all') params.type = filters.listingType;

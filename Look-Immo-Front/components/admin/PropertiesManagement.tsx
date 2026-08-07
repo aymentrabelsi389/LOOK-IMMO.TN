@@ -40,11 +40,12 @@ interface SortablePropertyItemProps {
   p: Property;
   openEditModal: (p: Property) => Promise<void>;
   handleDelete: (id: string) => void;
+  handleQuickStatusChange: (id: string, status: 'available' | 'sold' | 'rented') => void;
   openHistoryModal: React.Dispatch<React.SetStateAction<Property | null>>;
   index: number;
 }
 
-const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, openHistoryModal, index }: SortablePropertyItemProps) => {
+const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, handleQuickStatusChange, openHistoryModal, index }: SortablePropertyItemProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: p.id });
   const [activePlanMenu, setActivePlanMenu] = useState(false);
   const [activePaperMenu, setActivePaperMenu] = useState(false);
@@ -235,6 +236,33 @@ const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, openHistory
 
         {/* Action Button Row */}
         <div className="flex items-center gap-2 mt-1">
+          {/* Quick Status Toggle */}
+          <button
+            type="button"
+            onClick={() => handleQuickStatusChange(
+              p.id,
+              p.status === 'available'
+                ? (p.listingType === 'rent' ? 'rented' : 'sold')
+                : 'available'
+            )}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border font-bold text-[10px] transition-all active:scale-[0.98] ${
+              p.status === 'available'
+                ? p.listingType === 'rent'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600'
+                  : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600'
+                : p.status === 'rented'
+                  ? 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'
+                  : 'bg-red-50 border-red-200 text-red-700 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'
+            }`}
+            title={
+              p.status === 'available'
+                ? p.listingType === 'rent' ? 'Marquer comme loué' : 'Marquer comme vendu'
+                : 'Marquer comme disponible'
+            }
+          >
+            <span>{p.status === 'available' ? '✅' : p.status === 'rented' ? '🟠' : '🔴'}</span>
+            <span>{p.status === 'available' ? 'Dispo' : p.status === 'rented' ? 'Loué' : 'Vendu'}</span>
+          </button>
           <button 
             onClick={() => openEditModal(p)} 
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-bold text-xs shadow-md shadow-blue-200 active:scale-[0.98]"
@@ -418,7 +446,34 @@ const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, openHistory
       </div>
 
       {/* Desktop Actions */}
-      <div className="hidden md:flex md:items-center md:justify-end md:gap-2.5 md:w-32 md:px-4 md:py-4 shrink-0">
+      <div className="hidden md:flex md:items-center md:justify-end md:gap-2.5 md:w-44 md:px-4 md:py-4 shrink-0">
+        {/* Quick Status Toggle */}
+        <button
+          type="button"
+          onClick={() => handleQuickStatusChange(
+            p.id,
+            p.status === 'available'
+              ? (p.listingType === 'rent' ? 'rented' : 'sold')
+              : 'available'
+          )}
+          title={
+            p.status === 'available'
+              ? p.listingType === 'rent' ? 'Marquer comme loué' : 'Marquer comme vendu'
+              : 'Marquer comme disponible'
+          }
+          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border font-bold text-[10px] transition-all active:scale-95 shrink-0 ${
+            p.status === 'available'
+              ? p.listingType === 'rent'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600'
+                : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600'
+              : p.status === 'rented'
+                ? 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'
+                : 'bg-red-50 border-red-200 text-red-700 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'
+          }`}
+        >
+          <span className="text-xs">{p.status === 'available' ? '✅' : p.status === 'rented' ? '🟠' : '🔴'}</span>
+          <span className="hidden lg:inline">{p.status === 'available' ? 'Dispo' : p.status === 'rented' ? 'Loué' : 'Vendu'}</span>
+        </button>
         <button 
           onClick={() => openEditModal(p)} 
           className="w-9 h-9 flex items-center justify-center bg-blue-50 border border-blue-100 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm font-bold active:scale-95 shrink-0"
@@ -511,6 +566,8 @@ const PropertiesManagement = ({
     propertyCityFilter, setPropertyCityFilter,
     propertySearchQuery, setPropertySearchQuery,
     propertyTypeFilter, setPropertyTypeFilter,
+    propertyStatusFilter, setPropertyStatusFilter,
+    propertyListingTypeFilter, setPropertyListingTypeFilter,
     propertyCurrentPage, setPropertyCurrentPage,
     isAdminShowAll, setIsAdminShowAll,
     propertiesPerPage,
@@ -519,9 +576,12 @@ const PropertiesManagement = ({
     typeOptions,
     formData, setFormData,
     gpsInput, setGpsInput,
+    formErrors,
+    clearError,
     openAddModal,
     openEditModal,
     handleDelete,
+    handleQuickStatusChange,
     confirmDelete,
     handleSave,
     handleImageUpload,
@@ -577,6 +637,33 @@ const PropertiesManagement = ({
               placeholder="Tous les types"
             />
           </div>
+          {/* Status Filter */}
+          <div className="relative w-full sm:w-44">
+            <CustomDropdown
+              value={propertyStatusFilter}
+              onChange={(v) => setPropertyStatusFilter(v as 'all' | 'available' | 'sold' | 'rented')}
+              options={[
+                { value: 'all', label: 'Tous les statuts' },
+                { value: 'available', label: '✅ Disponible' },
+                { value: 'sold', label: '🔴 Vendu' },
+                { value: 'rented', label: '🟠 Loué' },
+              ]}
+              placeholder="Tous les statuts"
+            />
+          </div>
+          {/* Listing Type Filter (Sale / Rent) */}
+          <div className="relative w-full sm:w-44">
+            <CustomDropdown
+              value={propertyListingTypeFilter}
+              onChange={(v) => setPropertyListingTypeFilter(v as 'all' | 'sale' | 'rent')}
+              options={[
+                { value: 'all', label: 'Toutes les offres' },
+                { value: 'sale', label: '🔵 À Vendre' },
+                { value: 'rent', label: '🟢 À Louer' },
+              ]}
+              placeholder="Toutes les offres"
+            />
+          </div>
 
           <button 
             onClick={openAddModal} 
@@ -618,7 +705,7 @@ const PropertiesManagement = ({
               <div className="w-44 px-4 shrink-0">Prix</div>
               <div className="w-48 px-4 shrink-0">Infos</div>
               <div className="w-36 px-4 text-center shrink-0">Rendez-vous</div>
-              <div className="w-32 px-4 text-right shrink-0">Actions</div>
+              <div className="w-44 px-4 text-right shrink-0">Actions</div>
             </div>
             
             <SortableContext items={paginatedProperties.map(p => p.id)} strategy={verticalListSortingStrategy}>
@@ -634,6 +721,7 @@ const PropertiesManagement = ({
                     p={p}
                     openEditModal={openEditModal}
                     handleDelete={handleDelete}
+                    handleQuickStatusChange={handleQuickStatusChange}
                     openHistoryModal={setHistoryProperty}
                     index={index}
                   />
@@ -692,6 +780,8 @@ const PropertiesManagement = ({
         removeImage={removeImage}
         onImagesReorder={handleImagesReorder}
         onLocationChange={handleLocationChange}
+        errors={formErrors}
+        clearError={clearError}
       />
 
       {deleteConfirmId && createPortal(

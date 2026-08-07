@@ -373,15 +373,15 @@ const PropertyDetailsPage = () => {
                 </div>
 
                 {/* Price */}
-                <div className={`bg-gradient-to-r from-brand-dark to-blue-900 text-white p-4 sm:p-6 rounded-xl flex flex-col sm:flex-row items-center ${property.priceType === 'per_m2' && property.features.area > 0 ? 'justify-between' : 'justify-center'} shadow-inner gap-4 sm:gap-0`}>
-                  <div className={`flex flex-col items-center ${property.priceType === 'per_m2' && property.features.area > 0 ? 'sm:items-start' : 'sm:items-center'}`}>
+                <div className={`bg-gradient-to-r from-brand-dark to-blue-900 text-white p-4 sm:p-6 rounded-xl flex flex-col sm:flex-row items-center ${property.priceType === 'per_m2' && property.features?.area && property.features.area > 0 ? 'justify-between' : 'justify-center'} shadow-inner gap-4 sm:gap-0`}>
+                  <div className={`flex flex-col items-center ${property.priceType === 'per_m2' && property.features?.area && property.features.area > 0 ? 'sm:items-start' : 'sm:items-center'}`}>
                     <span className="text-xs sm:text-sm text-blue-200/80 uppercase tracking-[0.1em] font-bold mb-1">Prix</span>
                     <span className="text-2xl sm:text-3xl lg:text-4xl font-bold whitespace-nowrap drop-shadow-md font-serif">
                       <Price amount={property.price} priceType={property.priceType} />
                       {property.listingType === 'rent' && <span className="ml-1 text-[0.6em] sm:text-[0.55em] font-medium">/ Mois</span>}
                     </span>
                   </div>
-                  {property.priceType === 'per_m2' && property.features.area > 0 && (
+                  {property.priceType === 'per_m2' && property.features?.area && property.features.area > 0 && (
                     <div className="flex flex-col items-center sm:items-end w-full sm:w-auto border-t sm:border-t-0 sm:border-l border-white/20 pt-4 sm:pt-0 sm:pl-6 animate-fade-in-up">
                       <span className="text-xs sm:text-sm text-blue-200/80 uppercase tracking-[0.1em] font-bold mb-1">Total estimé</span>
                       <span className="text-xl sm:text-2xl font-bold text-[#C6A75E] drop-shadow-md whitespace-nowrap">
@@ -800,7 +800,7 @@ const PropertyDetailsPage = () => {
                                   <span className="truncate max-w-[80px] font-bold uppercase tracking-wider">{prop.location.city}</span>
                                 </div>
 
-                                {prop.features.area > 0 && (
+                                {prop.features.area && prop.features.area > 0 && (
                                   <div className="flex items-center text-[10px] text-gray-500 bg-gray-50/60 px-2 py-1 rounded-lg border border-gray-100 shrink-0 font-sans">
                                     <Square size={10} className="mr-1 text-brand-teal" />
                                     <span className="font-bold uppercase tracking-wider">{prop.features.area} m²</span>

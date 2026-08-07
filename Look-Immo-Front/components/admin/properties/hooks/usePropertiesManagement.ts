@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DragEndEvent } from '@dnd-kit/core';
 import { arrayMove } from '@dnd-kit/sortable';
+import { useQueryClient } from '@tanstack/react-query';
 import { Property, PropertyType, Appointment, ClientDemand } from '@/types';
 import { propertiesAPI, uploadAPI, appointmentsAPI } from '@/services/api';
 import { useData } from '@/context/DataContext';
@@ -27,6 +28,7 @@ export function usePropertiesManagement({
   const navigate = useNavigate();
   const { appointments, setAppointments } = useData();
   const { confirm } = useConfirm();
+  const queryClient = useQueryClient();
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [historyProperty, setHistoryProperty] = useState<Property | null>(null);
@@ -78,6 +80,8 @@ export function usePropertiesManagement({
   const [propertyCityFilter, setPropertyCityFilter] = useState<string | 'all'>('all');
   const [propertySearchQuery, setPropertySearchQuery] = useState('');
   const [propertyTypeFilter, setPropertyTypeFilter] = useState<PropertyType | 'all'>('all');
+  const [propertyStatusFilter, setPropertyStatusFilter] = useState<'all' | 'available' | 'sold' | 'rented'>('all');
+  const [propertyListingTypeFilter, setPropertyListingTypeFilter] = useState<'all' | 'sale' | 'rent'>('all');
   const [propertyCurrentPage, setPropertyCurrentPage] = useState(1);
   const [isAdminShowAll, setIsAdminShowAll] = useState(false);
   const propertiesPerPage = 10;
@@ -119,14 +123,24 @@ export function usePropertiesManagement({
     title: '', price: 0, priceType: 'total', type: 'villa', listingType: 'sale', description: '',
     isNew: false, isFeatured: false, isHotDeal: false, status: 'available',
     location: { city: '', address: '', lat: 36.8065, lng: 10.1815 },
-    features: { bedrooms: 0, bathrooms: 0, area: 0, parking: false, pool: false, garden: false, heating: false, airConditioning: false, security: false },
+    features: { parking: false, pool: false, garden: false, heating: false, airConditioning: false, security: false },
     images: [],
     ownerPhone: ''
   };
   const [formData, setFormData] = useState<Partial<Property>>(initialPropertyState);
   const [gpsInput, setGpsInput] = useState('');
+  const [formErrors, setFormErrors] = useState<{ title?: boolean; price?: boolean; city?: boolean }>({});
+  const clearError = (field: 'title' | 'price' | 'city') => {
+    setFormErrors(prev => ({ ...prev, [field]: false }));
+  };
 
-  const openAddModal = () => { setIsEditing(false); setEditingId(null); setFormData(initialPropertyState); setShowModal(true); };
+  const openAddModal = () => { 
+    setIsEditing(false); 
+    setEditingId(null); 
+    setFormData(initialPropertyState); 
+    setFormErrors({});
+    setShowModal(true); 
+  };
 
   useEffect(() => {
     if (location.state && (location.state as { action?: string }).action === 'new-property') {
@@ -139,20 +153,41 @@ export function usePropertiesManagement({
     setIsEditing(true);
     setEditingId(p.id);
     setFormData({ ...p, isFeatured: p.isFeatured === true, isNew: p.isNew === true });
+    setFormErrors({});
     setShowModal(true);
     try {
       const fullProperty = await propertiesAPI.getById(p.id);
+      const cleanFeatures: Partial<Property['features']> = fullProperty.features ? { ...fullProperty.features } : {};
+      if (cleanFeatures.area === 0) delete cleanFeatures.area;
+      if (cleanFeatures.bedrooms === 0) delete cleanFeatures.bedrooms;
+      if (cleanFeatures.bathrooms === 0) delete cleanFeatures.bathrooms;
+      
       setFormData({
         ...fullProperty,
         isFeatured: fullProperty.isFeatured === true,
         isNew: fullProperty.isNew === true,
-        features: fullProperty.features || { bedrooms: 0, bathrooms: 0, area: 0, parking: false, pool: false, garden: false, heating: false, airConditioning: false, security: false },
+        features: {
+          parking: false, pool: false, garden: false, heating: false, airConditioning: false, security: false,
+          ...cleanFeatures
+        },
         images: fullProperty.images || [],
       });
     } catch (err) {
       console.error('Failed to load full property for edit:', err);
     }
   }, []);
+
+  const handleQuickStatusChange = async (id: string, newStatus: 'available' | 'sold' | 'rented') => {
+    try {
+      await propertiesAPI.update(id, { status: newStatus });
+      setProperties(prev => prev.map(p => p.id === id ? { ...p, status: newStatus } : p));
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
+      const label = newStatus === 'available' ? 'Disponible' : newStatus === 'sold' ? 'Vendu' : 'Loué';
+      showNotification('success', `Statut mis à jour : ${label}`);
+    } catch {
+      showNotification('error', 'Erreur lors de la mise à jour du statut');
+    }
+  };
 
   const handleDelete = (id: string) => { setDeleteConfirmId(id); };
 
@@ -161,6 +196,7 @@ export function usePropertiesManagement({
     try {
       await propertiesAPI.delete(deleteConfirmId);
       setProperties(prev => prev.filter(p => p.id !== deleteConfirmId));
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
       showNotification('success', 'Propriété supprimée');
     } catch {
       showNotification('error', 'Erreur de suppression');
@@ -170,9 +206,24 @@ export function usePropertiesManagement({
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.price || !formData.location?.city) {
+    const errors: { title?: boolean; price?: boolean; city?: boolean } = {};
+    if (!formData.title) errors.title = true;
+    if (!formData.price) errors.price = true;
+    if (!formData.location?.city) errors.city = true;
+
+    setFormErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
       showNotification('error', 'Veuillez remplir les champs obligatoires');
       return;
+    }
+
+    if (formData.ownerPhone) {
+      const phoneDigits = formData.ownerPhone.replace(/\D/g, '');
+      if (phoneDigits.length > 0 && phoneDigits.length < 8) {
+        showNotification('error', 'Le numéro de téléphone du propriétaire doit contenir au moins 8 chiffres');
+        return;
+      }
     }
 
     const payload = {
@@ -189,10 +240,12 @@ export function usePropertiesManagement({
       if (isEditing && editingId) {
         const updated = await propertiesAPI.update(editingId, payload);
         setProperties(prev => prev.map(p => p.id === editingId ? updated : p));
+        queryClient.invalidateQueries({ queryKey: ['properties'] });
         showNotification('success', 'Propriété mise à jour');
       } else {
         const newProperty = await propertiesAPI.create(payload);
         setProperties(prev => [newProperty, ...prev]);
+        queryClient.invalidateQueries({ queryKey: ['properties'] });
         showNotification('success', 'Propriété ajoutée');
 
         if (clientDemands && clientDemands.length > 0) {
@@ -365,9 +418,11 @@ export function usePropertiesManagement({
       const matchesSearch = p.title.toLowerCase().includes(propertySearchQuery.toLowerCase()) || city.toLowerCase().includes(propertySearchQuery.toLowerCase());
       const matchesType = propertyTypeFilter === 'all' || p.type === propertyTypeFilter;
       const matchesCity = propertyCityFilter === 'all' || city === propertyCityFilter;
-      return matchesSearch && matchesType && matchesCity;
+      const matchesStatus = propertyStatusFilter === 'all' || p.status === propertyStatusFilter;
+      const matchesListingType = propertyListingTypeFilter === 'all' || p.listingType === propertyListingTypeFilter;
+      return matchesSearch && matchesType && matchesCity && matchesStatus && matchesListingType;
     });
-  }, [properties, propertySearchQuery, propertyTypeFilter, propertyCityFilter]);
+  }, [properties, propertySearchQuery, propertyTypeFilter, propertyCityFilter, propertyStatusFilter, propertyListingTypeFilter]);
 
   const sortedProperties = useMemo(() => {
     return [...filteredProperties].sort((a, b) => (a.displayOrder || 999) - (b.displayOrder || 999));
@@ -385,8 +440,10 @@ export function usePropertiesManagement({
   const isDragReorderEnabled = useMemo(() => {
     return propertyCityFilter === 'all' &&
       propertyTypeFilter === 'all' &&
+      propertyStatusFilter === 'all' &&
+      propertyListingTypeFilter === 'all' &&
       propertySearchQuery.trim() === '';
-  }, [propertyCityFilter, propertyTypeFilter, propertySearchQuery]);
+  }, [propertyCityFilter, propertyTypeFilter, propertyStatusFilter, propertyListingTypeFilter, propertySearchQuery]);
 
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
@@ -426,6 +483,10 @@ export function usePropertiesManagement({
     setPropertySearchQuery,
     propertyTypeFilter,
     setPropertyTypeFilter,
+    propertyStatusFilter,
+    setPropertyStatusFilter,
+    propertyListingTypeFilter,
+    setPropertyListingTypeFilter,
     propertyCurrentPage,
     setPropertyCurrentPage,
     isAdminShowAll,
@@ -440,9 +501,12 @@ export function usePropertiesManagement({
     setFormData,
     gpsInput,
     setGpsInput,
+    formErrors,
+    clearError,
     openAddModal,
     openEditModal,
     handleDelete,
+    handleQuickStatusChange,
     confirmDelete,
     handleSave,
     handleImageUpload,

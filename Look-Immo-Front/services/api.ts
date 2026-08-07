@@ -89,7 +89,15 @@ const getFormattedErrorMessage = (errorData: any, fallback: string): string => {
       'meetingType': 'Type de rendez-vous',
       'status': 'Statut',
       'propertyId': 'Propriété',
-      'code': 'Code de vérification'
+      'code': 'Code de vérification',
+      'features.area': 'Surface',
+      'features.bedrooms': 'Chambres',
+      'features.bathrooms': 'Salles de bain',
+      'features.cos': 'COS',
+      'features.vocation': 'Vocation',
+      'ownerPhone': 'Téléphone du propriétaire',
+      'city': 'Ville',
+      'zone': 'Zone/Adresse'
     };
 
     const detailsStr = errorData.details
@@ -120,6 +128,9 @@ const getFormattedErrorMessage = (errorData: any, fallback: string): string => {
         if (msg.toLowerCase().includes('at least one number')) {
           return `Le champ "${fieldName}" doit contenir au moins un chiffre`;
         }
+        if (msg.toLowerCase().includes('must be positive') || msg.toLowerCase().includes('must be positive')) {
+          return `Le champ "${fieldName}" doit être supérieur à 0`;
+        }
         
         if (msg.toLowerCase().includes('at least')) {
           const match = msg.match(/\d+/);
@@ -136,7 +147,8 @@ const getFormattedErrorMessage = (errorData: any, fallback: string): string => {
         
         msg = msg.replace('Must be', 'Doit être')
                  .replace('is required', 'est requis')
-                 .replace('cannot be empty', 'ne peut pas être vide');
+                 .replace('cannot be empty', 'ne peut pas être vide')
+                 .replace('must be positive', 'doit être supérieur à 0');
                  
         return `Le champ "${fieldName}": ${msg}`;
       })

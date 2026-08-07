@@ -42,9 +42,9 @@ export interface Property {
     lng: number;
   };
   features: {
-    bedrooms: number;
-    bathrooms: number;
-    area: number; // sqft or m2
+    bedrooms?: number;
+    bathrooms?: number;
+    area?: number; // sqft or m2
     parking: boolean;
     pool: boolean;
     garden?: boolean;
@@ -161,6 +161,7 @@ export interface ClientDemand {
   description: string;
   location: string;
   type: 'appartement' | 'villa' | 'terrain' | 'bureau' | 'commerce';
+  contractType?: 'rent' | 'sale';
   budget?: number;
   priority: 'high' | 'medium' | 'low';
   status: 'searching' | 'contacted' | 'matched' | 'closed';

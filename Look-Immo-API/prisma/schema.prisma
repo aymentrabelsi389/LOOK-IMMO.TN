@@ -194,7 +194,7 @@ model Appointment {
   source      AppointmentSource      @default(other)
   meetingType AppointmentMeetingType @default(visite)
   date        DateTime
-  time        String
+  time        String?
   status      AppointmentStatus      @default(pending)
   notes       String?
   createdAt   DateTime               @default(now())
@@ -344,6 +344,7 @@ model ClientDemand {
   description        String
   location           String
   type               DemandPropertyType
+  contractType       PropertyType       @default(sale)
   budget             Float?
   priority           DemandPriority     @default(medium)
   status             DemandStatus       @default(searching)

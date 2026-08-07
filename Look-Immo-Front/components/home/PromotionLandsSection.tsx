@@ -33,7 +33,7 @@ const PromotionLandsSection = ({
   const devLands = (result?.data ?? [])
     .filter(p =>
       p.price <= 15000000 &&
-      p.features?.area >= 1000
+      (p.features?.area ?? 0) >= 1000
     )
     .sort((a, b) => {
       const orderA = a.displayOrder || 999999;

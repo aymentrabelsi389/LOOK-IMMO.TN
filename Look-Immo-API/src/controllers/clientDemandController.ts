@@ -6,13 +6,14 @@ import { logger } from '../utils/logger';
 // Get all client demands
 export const getClientDemands = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { status, type, search } = req.query;
+        const { status, type, contractType, search } = req.query;
         const page = Math.max(1, parseInt(req.query.page as string) || 1);
         const limit = Math.min(200, Math.max(1, parseInt(req.query.limit as string) || 100));
 
         const where = {
             ...(status && status !== 'all' ? { status: status as any } : {}),
             ...(type && type !== 'all' ? { type: type as any } : {}),
+            ...(contractType && contractType !== 'all' ? { contractType: contractType as any } : {}),
             ...(search
                 ? {
                     OR: [
@@ -45,7 +46,7 @@ export const getClientDemands = async (req: AuthRequest, res: Response): Promise
 // Create client demand
 export const createClientDemand = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
-        const { clientName, phone, description, location, type, budget, priority, status } = req.body;
+        const { clientName, phone, description, location, type, contractType, budget, priority, status } = req.body;
 
         if (!clientName || !description || !location || !type) {
             res.status(400).json({ error: 'Client name, description, location, and type are required' });
@@ -59,10 +60,11 @@ export const createClientDemand = async (req: AuthRequest, res: Response): Promi
                 description,
                 location,
                 type,
+                contractType: contractType || 'sale',
                 budget: budget ? parseFloat(budget) : null,
                 priority: priority || 'medium',
                 status: status || 'searching',
-            },
+            } as any,
         });
 
         res.status(201).json(demand);

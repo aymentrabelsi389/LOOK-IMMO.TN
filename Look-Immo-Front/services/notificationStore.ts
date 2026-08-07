@@ -54,29 +54,58 @@ const playAudio = (type: Toast['type']) => {
     const now = ctx.currentTime;
     
     if (type === 'success') {
-      // Rising arpeggio (C5 -> E5)
+      // Apple Pay-style double ascending chime: D5 → G5
+      // First chime: D5 (587.33 Hz)
       const osc1 = ctx.createOscillator();
-      const osc2 = ctx.createOscillator();
-      const gain = ctx.createGain();
-      
+      const gain1 = ctx.createGain();
       osc1.type = 'sine';
-      osc2.type = 'sine';
-      
-      osc1.frequency.setValueAtTime(523.25, now); // C5
-      osc2.frequency.setValueAtTime(659.25, now + 0.08); // E5
-      
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.04, now + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
-      
-      osc1.connect(gain);
-      osc2.connect(gain);
-      gain.connect(ctx.destination);
-      
+      osc1.frequency.setValueAtTime(587.33, now); // D5
+      gain1.gain.setValueAtTime(0, now);
+      gain1.gain.linearRampToValueAtTime(0.10, now + 0.015);
+      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
       osc1.start(now);
-      osc1.stop(now + 0.12);
-      osc2.start(now + 0.08);
-      osc2.stop(now + 0.3);
+      osc1.stop(now + 0.4);
+
+      // Harmonic overtone for D5 (adds warmth, like a real chime)
+      const osc1h = ctx.createOscillator();
+      const gain1h = ctx.createGain();
+      osc1h.type = 'sine';
+      osc1h.frequency.setValueAtTime(587.33 * 2, now); // D6 overtone
+      gain1h.gain.setValueAtTime(0, now);
+      gain1h.gain.linearRampToValueAtTime(0.025, now + 0.015);
+      gain1h.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
+      osc1h.connect(gain1h);
+      gain1h.connect(ctx.destination);
+      osc1h.start(now);
+      osc1h.stop(now + 0.28);
+
+      // Second chime: G5 (783.99 Hz) — offset by 0.18s
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(783.99, now + 0.18); // G5
+      gain2.gain.setValueAtTime(0, now + 0.18);
+      gain2.gain.linearRampToValueAtTime(0.12, now + 0.195);
+      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.18);
+      osc2.stop(now + 0.75);
+
+      // Harmonic overtone for G5
+      const osc2h = ctx.createOscillator();
+      const gain2h = ctx.createGain();
+      osc2h.type = 'sine';
+      osc2h.frequency.setValueAtTime(783.99 * 2, now + 0.18); // G6 overtone
+      gain2h.gain.setValueAtTime(0, now + 0.18);
+      gain2h.gain.linearRampToValueAtTime(0.030, now + 0.195);
+      gain2h.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
+      osc2h.connect(gain2h);
+      gain2h.connect(ctx.destination);
+      osc2h.start(now + 0.18);
+      osc2h.stop(now + 0.55);
     } else if (type === 'error') {
       // Warm low alert (D3 -> C3)
       const osc = ctx.createOscillator();

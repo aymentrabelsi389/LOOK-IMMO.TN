@@ -459,8 +459,10 @@ const DashboardPage = () => {
         clientName: '', clientPhone: '', source: 'other', meetingType: 'visite', date: '', time: '', message: '', propertyId: ''
       });
       setAddAdditionalProps([]);
+      notify.success('Rendez-vous ajouté avec succès ! 🗓️');
     } catch (err) {
       console.error(err);
+      notify.error('Erreur lors de l\'ajout du rendez-vous.');
     }
   };
 

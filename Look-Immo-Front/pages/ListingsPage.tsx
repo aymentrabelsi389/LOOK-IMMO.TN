@@ -36,6 +36,8 @@ const ListingsPage = () => {
   const [isListingTypeOpen, setIsListingTypeOpen] = useState(false);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [isFilterAnimating, setIsFilterAnimating] = useState(false);
+  const [isBottomNavVisible, setIsBottomNavVisible] = useState(true);
+  const lastScrollYRef = useRef(0);
   const [localMaxPrice, setLocalMaxPrice] = useState(filters.maxPrice);
 
   // Sync localMaxPrice when filters.maxPrice is reset or changed externally
@@ -53,6 +55,24 @@ const ListingsPage = () => {
 
     return () => clearTimeout(handler);
   }, [localMaxPrice]);
+
+  // Track scroll to mirror bottom nav visibility — same thresholds as ClientMobileBottomNavigation
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (Math.abs(currentScrollY - lastScrollYRef.current) < 10) return;
+      if (currentScrollY < 80) {
+        setIsBottomNavVisible(true);
+      } else if (currentScrollY > lastScrollYRef.current) {
+        setIsBottomNavVisible(false);
+      } else {
+        setIsBottomNavVisible(true);
+      }
+      lastScrollYRef.current = currentScrollY;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const openFilter = () => {
     setIsMobileFilterOpen(true);
@@ -412,7 +432,7 @@ const ListingsPage = () => {
     <div className="max-w-7xl mx-auto w-full px-4 py-6 md:py-8 pb-28 md:pb-8 bg-brand-light min-h-screen">
 
       {/* ── MOBILE: Floating Filter Button — positioned well above bottom nav (64px) with extra gap ── */}
-      <div className="md:hidden fixed bottom-[100px] left-1/2 -translate-x-1/2 z-40">
+      <div className={`md:hidden fixed left-1/2 -translate-x-1/2 z-40 transition-all duration-300 ease-in-out ${isBottomNavVisible ? 'bottom-[100px]' : 'bottom-[24px]'}`}>
         <button
           onClick={openFilter}
           className="flex items-center gap-2 px-5 py-3 bg-brand-dark text-white rounded-full shadow-2xl border border-brand-dark hover:bg-brand-teal transition-all duration-300 transform active:scale-95 whitespace-nowrap"

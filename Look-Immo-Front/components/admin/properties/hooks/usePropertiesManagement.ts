@@ -453,12 +453,21 @@ export function usePropertiesManagement({
     const newIndex = sortedProperties.findIndex(p => p.id === over.id);
     const newOrder = arrayMove(sortedProperties, oldIndex, newIndex);
     const updates = newOrder.map((p, i) => ({ id: p.id, displayOrder: i + 1 }));
-    setProperties(prev => prev.map(p => {
-      const up = updates.find(u => u.id === p.id);
-      return up ? { ...p, displayOrder: up.displayOrder } : p;
-    }));
+    
+    // Physically re-sort the array in state as well as updating displayOrder
+    setProperties(prev => {
+      const updated = prev.map(p => {
+        const up = updates.find(u => u.id === p.id);
+        return up ? { ...p, displayOrder: up.displayOrder } : p;
+      });
+      return [...updated].sort((a, b) => (a.displayOrder || 999) - (b.displayOrder || 999));
+    });
+
     try {
       await propertiesAPI.updateOrder(updates);
+      // Invalidate both global and listings/lands query caches to pull fresh order from database
+      await queryClient.invalidateQueries({ queryKey: ['properties'] });
+      await queryClient.invalidateQueries({ queryKey: ['promotionLands'] });
       showNotification('success', 'Ordre mis à jour');
     } catch {
       showNotification('error', 'Erreur de réorganisation');

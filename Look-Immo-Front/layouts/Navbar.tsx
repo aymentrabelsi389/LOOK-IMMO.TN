@@ -55,14 +55,20 @@ const Navbar = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { currency, setCurrency } = useCurrencyStore();
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
   const currencyDropdownRef = useRef<HTMLDivElement>(null);
 
+  const isContactPage = currentPage === "contact";
+
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
+
+      // Frosted-glass trigger (used on contact page)
+      setIsScrolled(currentScrollY > 40);
 
       if (currentScrollY < 10) {
         setIsVisible(true);
@@ -167,8 +173,12 @@ const Navbar = ({
   return (
     <>
       <nav
-        className={`bg-white/95 backdrop-blur-md text-brand-dark fixed top-0 left-0 right-0 z-[100] shadow-sm border-b border-gray-100 transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ease-in-out ${
           isVisible ? "translate-y-0" : "-translate-y-full"
+        } ${
+          isContactPage && !isScrolled
+            ? "bg-transparent backdrop-blur-none shadow-none border-b border-transparent text-white"
+            : "bg-white/95 backdrop-blur-md text-brand-dark shadow-sm border-b border-gray-100"
         }`}
       >
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
@@ -186,55 +196,38 @@ const Navbar = ({
                   decoding="sync"
                 />
               </div>
-              <span className="text-[22px] md:text-[28px] font-bold text-[#0B1C2D] font-luxury tracking-[0.12em] uppercase transition-all duration-300 group-hover:scale-105 origin-left">
+              <span className={`text-[22px] md:text-[28px] font-bold font-luxury tracking-[0.12em] uppercase transition-all duration-500 group-hover:scale-105 origin-left ${
+                isContactPage && !isScrolled ? 'text-white drop-shadow-md' : 'text-[#0B1C2D]'
+              }`}>
                 Look Immo
               </span>
             </div>
 
             <div className="hidden md:flex items-center space-x-6 lg:space-x-8">
-              <button
-                onClick={() => handleNavClick("home")}
-                className={`${isAccueilActive ? "text-brand-teal font-bold" : "text-brand-grey hover:text-brand-dark"} transition`}
-              >
-                Accueil
-              </button>
-              <button
-                onClick={() => handleNavClick("listings", "sale")}
-                className={`${isAchatActive ? "text-brand-teal font-bold" : "text-brand-grey hover:text-brand-dark"} transition`}
-              >
-                Ventes
-              </button>
-              <button
-                onClick={() => handleNavClick("listings", "rent")}
-                className={`${isLocationActive ? "text-brand-teal font-bold" : "text-brand-grey hover:text-brand-dark"} transition`}
-              >
-                Locations
-              </button>
-              <button
-                onClick={() => handleNavClick("listings", "sale", "land")}
-                className={`${isTerrainsActive ? "text-brand-teal font-bold" : "text-brand-grey hover:text-brand-dark"} transition`}
-              >
-                Terrains
-              </button>
-              <button
-                onClick={() => handleNavClick("listings", "sale", "land", true)}
-                className={`${isPromotionsActive ? "text-brand-teal font-bold" : "text-brand-grey hover:text-brand-dark"} transition`}
-              >
-                Promotions
-              </button>
-              <button
-                onClick={() => handleNavClick("blog")}
-                className={`${isBlogActive ? "text-brand-teal font-bold" : "text-brand-grey hover:text-brand-dark"} transition`}
-              >
-                Blog
-              </button>
-              <button
-                onClick={() => handleNavClick("contact")}
-                className={`${isContactActive ? "text-brand-teal font-bold" : "text-brand-grey hover:text-brand-dark"} transition`}
-              >
-                Contact
-              </button>
-              <div className="h-6 w-px bg-gray-200 mx-2"></div>
+              {([
+                { label: 'Accueil',    active: isAccueilActive,    onClick: () => handleNavClick('home') },
+                { label: 'Ventes',     active: isAchatActive,      onClick: () => handleNavClick('listings', 'sale') },
+                { label: 'Locations',  active: isLocationActive,   onClick: () => handleNavClick('listings', 'rent') },
+                { label: 'Terrains',   active: isTerrainsActive,   onClick: () => handleNavClick('listings', 'sale', 'land') },
+                { label: 'Promotions', active: isPromotionsActive, onClick: () => handleNavClick('listings', 'sale', 'land', true) },
+                { label: 'Blog',       active: isBlogActive,       onClick: () => handleNavClick('blog') },
+                { label: 'Contact',    active: isContactActive,    onClick: () => handleNavClick('contact') },
+              ] as const).map(({ label, active, onClick }) => (
+                <button
+                  key={label}
+                  onClick={onClick}
+                  className={`transition-all duration-500 font-medium ${
+                    active
+                      ? 'text-brand-teal font-bold'
+                      : isContactPage && !isScrolled
+                        ? 'text-white/90 hover:text-white drop-shadow-sm'
+                        : 'text-brand-grey hover:text-brand-dark'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+              <div className={`h-6 w-px mx-2 transition-all duration-500 ${ isContactPage && !isScrolled ? 'bg-white/30' : 'bg-gray-200' }`}></div>
 
               <div className="relative" ref={currencyDropdownRef}>
                 <button

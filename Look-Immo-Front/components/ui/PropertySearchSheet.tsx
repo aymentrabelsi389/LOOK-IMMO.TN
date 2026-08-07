@@ -101,15 +101,26 @@ const PropertySearchSheet: React.FC<PropertySearchSheetProps> = ({ isOpen, onClo
   const navigate = useNavigate();
   const { siteSettings } = useData();
   const inputRef = useRef<HTMLInputElement>(null);
-  const [isFullyClosed, setIsFullyClosed] = useState(!isOpen);
+  // shouldRender controls DOM presence; isActive controls CSS transition state
+  const [shouldRender, setShouldRender] = useState(isOpen);
+  const [isActive, setIsActive] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setIsFullyClosed(false);
+      // Phase 1: mount the DOM element at off-screen starting position
+      setShouldRender(true);
+      // Phase 2: on the next paint, trigger CSS transition in
+      const raf = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setIsActive(true));
+      });
+      return () => cancelAnimationFrame(raf);
     } else {
+      // Phase 1: trigger CSS transition out
+      setIsActive(false);
+      // Phase 2: after animation completes, unmount from DOM
       const timer = setTimeout(() => {
-        setIsFullyClosed(true);
-      }, 300);
+        setShouldRender(false);
+      }, 520);
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
@@ -231,22 +242,22 @@ const PropertySearchSheet: React.FC<PropertySearchSheetProps> = ({ isOpen, onClo
   const showSuggestions = !query.trim();
   const showResults = query.trim().length > 0;
 
+  if (!shouldRender) return null;
+
   return (
-    <div className={`fixed inset-0 z-[100] flex items-end justify-center lg:hidden ${
-      isOpen ? 'pointer-events-auto' : 'pointer-events-none'
-    } ${isFullyClosed ? 'hidden' : ''}`}>
+    <div className={`fixed inset-0 z-[100] flex items-end justify-center lg:hidden ${isActive ? 'pointer-events-auto' : 'pointer-events-none'}`}>
       {/* Backdrop */}
       <div
         onClick={handleClose}
-        className={`fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-300 ease-in-out ${
-          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        className={`fixed inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
+          isActive ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       />
 
       {/* Sheet */}
       <div
-        className={`relative w-full max-w-md bg-[#0C1F32] rounded-t-[28px] border-t border-white/10 shadow-[0_-12px_40px_rgba(0,0,0,0.5)] z-10 transition-transform duration-300 ease-in-out transform flex flex-col ${
-          isOpen ? 'translate-y-0 pointer-events-auto' : 'translate-y-full pointer-events-none'
+        className={`relative w-full max-w-md bg-[#0C1F32] rounded-t-[28px] border-t border-white/10 shadow-[0_-12px_40px_rgba(0,0,0,0.5)] z-10 transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] transform flex flex-col ${
+          isActive ? 'translate-y-0 pointer-events-auto' : 'translate-y-full pointer-events-none'
         }`}
         style={{ height: '82%', maxHeight: '88%' }}
       >

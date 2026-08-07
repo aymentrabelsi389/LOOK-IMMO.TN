@@ -54,23 +54,29 @@ const AdminSidebar = ({
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 w-72 bg-[#0F1E2E] text-white z-40 transform transition-transform duration-300 md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col shadow-2xl`}
+        className={`fixed inset-y-0 left-0 w-72 bg-[#0C1F32]/95 backdrop-blur-xl text-white z-40 transform transition-transform duration-300 ease-in-out md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} flex flex-col shadow-[4px_0_32px_rgba(0,0,0,0.6)] border-r border-white/5`}
       >
-        <div className="h-20 flex items-center px-8 border-b border-white/10">
+        <div className="h-20 flex items-center px-8 border-b border-white/5">
           <span className="font-serif text-2xl font-bold tracking-wider">Look<span className="text-brand-teal">Admin</span></span>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 pb-[72px] md:pb-4">
-          <div className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 px-4">Menu Principal</div>
+          <div className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-4 px-4">Menu Principal</div>
           <nav className="space-y-2">
-            {menuItems.map(item => (
+            {menuItems.map((item, index) => (
               <button
                 key={item.id}
                 onClick={() => { setActiveTab(item.id); setSidebarOpen(false); }}
-                className={`w-full flex items-center px-4 py-3.5 rounded-xl transition-all duration-200 group font-medium text-sm ${activeTab === item.id
-                  ? 'bg-blue-600/20 text-blue-400 shadow-inner border border-blue-500/30'
-                  : 'text-gray-300 hover:bg-white/5 hover:text-white'
-                  }`}
+                style={{ transitionDelay: `${index * 30}ms` }}
+                className={`w-full flex items-center px-4 py-3.5 rounded-xl transition-all duration-300 group font-medium text-sm transform ${
+                  activeTab === item.id
+                    ? 'bg-blue-600/20 text-blue-400 shadow-inner border border-blue-500/30'
+                    : 'text-gray-300 hover:bg-white/5 hover:text-white'
+                } ${
+                  sidebarOpen 
+                    ? 'translate-x-0 opacity-100' 
+                    : 'md:translate-x-0 md:opacity-100 -translate-x-4 opacity-0'
+                }`}
               >
                 <span className={`${activeTab === item.id ? 'text-blue-400' : 'text-gray-400 group-hover:text-white'} mr-3`}>
                   {item.icon}

@@ -39,128 +39,27 @@ const getDuration = (type: Toast['type'], customDuration?: number): number => {
   }
 };
 
-// Programmatic Web Audio Synthesizer for notifications
+// Cached Audio instance for the notification sound file
+let _notifAudio: HTMLAudioElement | null = null;
+const getNotifAudio = (): HTMLAudioElement => {
+  if (!_notifAudio) {
+    _notifAudio = new Audio('/notification.mp3');
+    _notifAudio.preload = 'auto';
+  }
+  return _notifAudio;
+};
+
+// Play the notification sound file
 const playAudio = (type: Toast['type']) => {
   if (!soundEnabled || type === 'loading') return;
   try {
-    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContextClass) return;
-    
-    const ctx = new AudioContextClass();
-    if (ctx.state === 'suspended') {
-      ctx.resume();
-    }
-    
-    const now = ctx.currentTime;
-    
-    if (type === 'success') {
-      // Apple Pay-style double ascending chime: D5 → G5
-      // First chime: D5 (587.33 Hz)
-      const osc1 = ctx.createOscillator();
-      const gain1 = ctx.createGain();
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(587.33, now); // D5
-      gain1.gain.setValueAtTime(0, now);
-      gain1.gain.linearRampToValueAtTime(0.10, now + 0.015);
-      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.38);
-      osc1.connect(gain1);
-      gain1.connect(ctx.destination);
-      osc1.start(now);
-      osc1.stop(now + 0.4);
-
-      // Harmonic overtone for D5 (adds warmth, like a real chime)
-      const osc1h = ctx.createOscillator();
-      const gain1h = ctx.createGain();
-      osc1h.type = 'sine';
-      osc1h.frequency.setValueAtTime(587.33 * 2, now); // D6 overtone
-      gain1h.gain.setValueAtTime(0, now);
-      gain1h.gain.linearRampToValueAtTime(0.025, now + 0.015);
-      gain1h.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
-      osc1h.connect(gain1h);
-      gain1h.connect(ctx.destination);
-      osc1h.start(now);
-      osc1h.stop(now + 0.28);
-
-      // Second chime: G5 (783.99 Hz) — offset by 0.18s
-      const osc2 = ctx.createOscillator();
-      const gain2 = ctx.createGain();
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(783.99, now + 0.18); // G5
-      gain2.gain.setValueAtTime(0, now + 0.18);
-      gain2.gain.linearRampToValueAtTime(0.12, now + 0.195);
-      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.7);
-      osc2.connect(gain2);
-      gain2.connect(ctx.destination);
-      osc2.start(now + 0.18);
-      osc2.stop(now + 0.75);
-
-      // Harmonic overtone for G5
-      const osc2h = ctx.createOscillator();
-      const gain2h = ctx.createGain();
-      osc2h.type = 'sine';
-      osc2h.frequency.setValueAtTime(783.99 * 2, now + 0.18); // G6 overtone
-      gain2h.gain.setValueAtTime(0, now + 0.18);
-      gain2h.gain.linearRampToValueAtTime(0.030, now + 0.195);
-      gain2h.gain.exponentialRampToValueAtTime(0.0001, now + 0.5);
-      osc2h.connect(gain2h);
-      gain2h.connect(ctx.destination);
-      osc2h.start(now + 0.18);
-      osc2h.stop(now + 0.55);
-    } else if (type === 'error') {
-      // Warm low alert (D3 -> C3)
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(146.83, now); // D3
-      osc.frequency.setValueAtTime(130.81, now + 0.1); // C3
-      
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.08, now + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.3);
-      
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      
-      osc.start(now);
-      osc.stop(now + 0.3);
-    } else if (type === 'warning') {
-      // Gentle warning chime (A4)
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(440.00, now); // A4
-      
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.05, now + 0.04);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.25);
-      
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      
-      osc.start(now);
-      osc.stop(now + 0.25);
-    } else if (type === 'info') {
-      // Modern subtle ping (F5)
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(698.46, now); // F5
-      
-      gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(0.04, now + 0.03);
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.2);
-      
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      
-      osc.start(now);
-      osc.stop(now + 0.2);
-    }
+    const audio = getNotifAudio();
+    audio.currentTime = 0;
+    audio.play().catch(() => {
+      // Silent fail — browser may block autoplay before first user gesture
+    });
   } catch {
-    // Silent fail if browser restricts audio context before user gesture
+    // Silent fail
   }
 };
 

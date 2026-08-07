@@ -12,6 +12,7 @@ const ClientMobileBottomNavigation = () => {
   const currentPath = location.pathname;
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [isFABAnimating, setIsFABAnimating] = useState(false);
   const lastScrollY = useRef(0);
 
   // Scroll to hide logic — uses a ref so the listener is only registered once
@@ -83,7 +84,7 @@ const ClientMobileBottomNavigation = () => {
   return (
     <>
       <nav className={`fixed bottom-0 left-0 right-0 z-50 bg-[#0C1F32]/95 backdrop-blur-lg border-t border-white/10 shadow-[0_-8px_30px_rgba(0,0,0,0.3)] rounded-t-[20px] lg:hidden pb-[env(safe-area-inset-bottom)] transition-transform duration-300 ease-in-out transform ${
-        isVisible ? 'translate-y-0' : 'translate-y-[130%]'
+        (isVisible || isSearchOpen || isFABAnimating) ? 'translate-y-0' : 'translate-y-[130%]'
       }`}>
         <div className="h-[64px] flex items-center justify-around w-full relative px-4">
           
@@ -107,7 +108,7 @@ const ClientMobileBottomNavigation = () => {
               Accueil
             </span>
           </Link>
-
+ 
           {/* Item 2: Vente */}
           <button
             onClick={() => {
@@ -131,16 +132,24 @@ const ClientMobileBottomNavigation = () => {
               Vente
             </span>
           </button>
-
+ 
           {/* Item 3: Center Floating Search Button */}
           <div className="flex-1 flex justify-center h-full relative">
             <button
-              onClick={() => setIsSearchOpen(true)}
+              onClick={() => {
+                setIsFABAnimating(true);
+                setTimeout(() => {
+                  setIsSearchOpen(true);
+                  setIsFABAnimating(false);
+                }, 220);
+              }}
               type="button"
-              className="absolute -top-6 w-[52px] h-[52px] bg-brand-teal text-white rounded-full flex items-center justify-center shadow-lg shadow-brand-teal/40 border-4 border-[#0C1F32] hover:scale-105 active:scale-95 transition-all duration-200 z-10 cursor-pointer"
+              className={`absolute -top-6 w-[52px] h-[52px] bg-brand-teal text-white rounded-full flex items-center justify-center shadow-lg shadow-brand-teal/40 border-4 border-[#0C1F32] transition-all duration-300 z-10 cursor-pointer ${
+                isFABAnimating ? 'scale-[1.2] bg-cyan-500 shadow-cyan-500/50' : 'hover:scale-105 active:scale-95'
+              }`}
               aria-label="Rechercher"
             >
-              <Search size={22} className="stroke-[2.5]" />
+              <Search size={22} className={`stroke-[2.5] transition-transform duration-300 ${isFABAnimating ? 'rotate-[360deg] scale-95' : ''}`} />
             </button>
           </div>
 

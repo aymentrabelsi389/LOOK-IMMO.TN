@@ -22,6 +22,50 @@ const MapUpdater = () => {
   return null;
 };
 
+// Scroll Reveal animation helper component using Intersection Observer
+const ScrollReveal: React.FC<{ children: React.ReactNode; className?: string; delay?: number }> = ({ children, className = "", delay = 0 }) => {
+  const [isVisible, setIsVisible] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => {
+            setIsVisible(true);
+          }, delay);
+          observer.unobserve(entry.target);
+        }
+      },
+      {
+        threshold: 0.05,
+        rootMargin: '0px 0px -40px 0px'
+      }
+    );
+
+    if (ref.current) {
+      observer.observe(ref.current);
+    }
+
+    return () => {
+      if (ref.current) {
+        observer.unobserve(ref.current);
+      }
+    };
+  }, [delay]);
+
+  return (
+    <div
+      ref={ref}
+      className={`transition-all duration-1000 cubic-bezier(0.16, 1, 0.3, 1) transform ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+      } ${className}`}
+    >
+      {children}
+    </div>
+  );
+};
+
 const ContactPage = () => {
   useSEO({
     title: "Contactez-nous",
@@ -86,8 +130,8 @@ const ContactPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Header */}
-      <div className="bg-gradient-to-r from-brand-dark to-blue-900 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 animate-fade-in-up">
+      <div className="bg-gradient-to-br from-brand-dark via-[#0d2a45] to-blue-900 text-white pt-20 pb-16">
+        <div className="max-w-7xl mx-auto px-4 pt-8 animate-fade-in-up">
           <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">Contactez-Nous</h1>
           <p className="text-xl text-gray-200">
             Nous sommes là pour répondre à toutes vos questions et vous accompagner dans votre projet immobilier.
@@ -99,7 +143,7 @@ const ContactPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           
           {/* Contact Form */}
-          <div className="lg:col-span-2 animate-fade-in-up delay-100 opacity-0">
+          <ScrollReveal className="lg:col-span-2" delay={100}>
             <div className="bg-white rounded-2xl p-8 md:p-10 shadow-xl border border-gray-100">
               <h2 className="text-2xl font-bold text-brand-dark mb-8">Envoyez-nous un message</h2>
               
@@ -228,10 +272,10 @@ const ContactPage = () => {
                 )}
               </form>
             </div>
-          </div>
+          </ScrollReveal>
 
           {/* Sidebar Info */}
-          <div className="space-y-6 animate-fade-in-up delay-150 opacity-0">
+          <ScrollReveal className="space-y-6" delay={250}>
             {/* Coordinates */}
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
               <h3 className="font-bold text-xl text-brand-dark mb-6">Nos Coordonnées</h3>
@@ -301,11 +345,11 @@ const ContactPage = () => {
                 </a>
               </div>
             </div>
-          </div>
+          </ScrollReveal>
         </div>
 
         {/* Bottom Section: Map & About */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12 animate-fade-in-up delay-250 opacity-0">
+        <ScrollReveal className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12" delay={100}>
           <div className="lg:col-span-2">
             <div id="notre-localisation" className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 h-[400px] flex flex-col">
               <h3 className="font-bold text-xl text-brand-dark mb-6">Notre Localisation</h3>
@@ -364,7 +408,7 @@ const ContactPage = () => {
               )}
             </div>
           </div>
-        </div>
+        </ScrollReveal>
       </div>
     </div>
   );

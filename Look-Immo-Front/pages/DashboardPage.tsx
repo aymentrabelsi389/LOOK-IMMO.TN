@@ -21,6 +21,28 @@ import { getImageSrc, getLQIP } from '@/utils/imageUtils';
 import { createPortal } from 'react-dom';
 import { useAdmin } from '@/hooks/useAdmin';
 
+// Staggered Mount Reveal animation helper component
+const ScrollReveal: React.FC<{ children: React.ReactNode; className?: string; delay?: number }> = ({ children, className = "", delay = 0 }) => {
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsVisible(true);
+    }, delay);
+    return () => clearTimeout(timer);
+  }, [delay]);
+
+  return (
+    <div
+      className={`transition-all duration-1000 cubic-bezier(0.16, 1, 0.3, 1) transform ${
+        isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"
+      } ${className}`}
+    >
+      {children}
+    </div>
+  );
+};
+
 const DashboardPage = () => {
   useSEO({
     title: "Mon Tableau de Bord",
@@ -516,51 +538,53 @@ const DashboardPage = () => {
     });
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-6 sm:py-12 opacity-0 animate-fade-in-up">
+    <div className="max-w-6xl mx-auto px-4 py-6 sm:py-12">
       {/* Header with Action Buttons */}
-      <div className="relative overflow-hidden bg-gradient-to-br from-brand-dark via-[#112942] to-[#0A1A2A] rounded-3xl p-6 sm:p-8 border border-white/10 shadow-xl mb-10">
-        {/* Radial decorative light */}
-        <div className="absolute top-0 right-0 w-80 h-80 bg-brand-teal/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
-        <div className="absolute -left-10 -bottom-10 w-60 h-60 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
+      <ScrollReveal delay={50}>
+        <div className="relative overflow-hidden bg-gradient-to-br from-brand-dark via-[#112942] to-[#0A1A2A] rounded-3xl p-6 sm:p-8 border border-white/10 shadow-xl mb-10">
+          {/* Radial decorative light */}
+          <div className="absolute top-0 right-0 w-80 h-80 bg-brand-teal/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
+          <div className="absolute -left-10 -bottom-10 w-60 h-60 bg-blue-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5 sm:gap-6">
-            <div className="w-24 h-24 rounded-full border-4 border-white/10 shadow-xl flex items-center justify-center bg-white/5 text-white/40 flex-shrink-0 relative group overflow-hidden">
-              {user.avatar ? (
-                <img src={user.avatar} alt={user.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
-              ) : (
-                <UserIcon size={48} className="text-white/60" />
-              )}
-              <div className="absolute inset-0 bg-brand-teal/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </div>
-            <div className="space-y-2">
-              <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-3">
-                <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight">
-                  Bienvenue, <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-cyan-400 font-bold">{user.name}</span>
-                </h1>
-                <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border ${user.role === 'admin'
-                  ? 'bg-brand-teal/20 text-brand-teal border-brand-teal/30'
-                  : user.role === 'agent'
-                    ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
-                    : 'bg-white/10 text-white/80 border-white/20'
-                  }`}>
-                  {user.role}
-                </span>
+          <div className="relative flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5 sm:gap-6">
+              <div className="w-24 h-24 rounded-full border-4 border-white/10 shadow-xl flex items-center justify-center bg-white/5 text-white/40 flex-shrink-0 relative group overflow-hidden">
+                {user.avatar ? (
+                  <img src={user.avatar} alt={user.name} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" />
+                ) : (
+                  <UserIcon size={48} className="text-white/60" />
+                )}
+                <div className="absolute inset-0 bg-brand-teal/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </div>
-              <p className="text-gray-300 text-sm sm:text-base max-w-xl font-light">
-                Gerez votre profil, vos rendez-vous et vos favoris immobiliers Look Immo.
-              </p>
+              <div className="space-y-2">
+                <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-3">
+                  <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight">
+                    Bienvenue, <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-cyan-400 font-bold">{user.name}</span>
+                  </h1>
+                  <span className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border ${user.role === 'admin'
+                    ? 'bg-brand-teal/20 text-brand-teal border-brand-teal/30'
+                    : user.role === 'agent'
+                      ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                      : 'bg-white/10 text-white/80 border-white/20'
+                    }`}>
+                    {user.role}
+                  </span>
+                </div>
+                <p className="text-gray-300 text-sm sm:text-base max-w-xl font-light">
+                  Gerez votre profil, vos rendez-vous et vos favoris immobiliers Look Immo.
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </ScrollReveal>
 
       {/* Three Column Layout on Desktop, Vertical on Mobile */}
       <div className="grid grid-cols-1 lg:grid-cols-3 lg:[grid-template-rows:max-content_1fr] items-start gap-6 mb-8">
 
         {/* 1. ADMIN STATS (Moved to very top on mobile) */}
         {user.role === 'admin' && (
-          <div className="lg:col-span-2 lg:col-start-1">
+          <ScrollReveal className="lg:col-span-2 lg:col-start-1" delay={150}>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {/* Stat 1 */}
               <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100/80 shadow-soft hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex items-center relative overflow-hidden group">
@@ -607,205 +631,208 @@ const DashboardPage = () => {
                 </div>
               </div>
             </div>
-          </div>
+          </ScrollReveal>
         )}
 
         {/* 2. RIGHT COLUMN: Compact Appointment Reminder Widget */}
-        <div className="bg-white rounded-3xl shadow-soft border border-gray-100/80 p-6 lg:col-start-3 lg:row-span-2 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-brand-teal to-blue-500"></div>
-          <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center font-sans">
-            <CalendarDays className="mr-2 text-brand-teal" size={18} />
-            Prochains Rendez-vous
-          </h2>
+        <ScrollReveal className="lg:col-start-3 lg:row-span-2" delay={250}>
+          <div className="bg-white rounded-3xl shadow-soft border border-gray-100/80 p-6 relative overflow-hidden h-full">
+            <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-brand-teal to-blue-500"></div>
+            <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center font-sans">
+              <CalendarDays className="mr-2 text-brand-teal" size={18} />
+              Prochains Rendez-vous
+            </h2>
 
-          {upcomingAppointments.length > 0 ? (
-            <div className="space-y-4">
-              {upcomingAppointments.map(apt => (
-                <div key={apt.id} className="bg-gradient-to-br from-gray-50/80 to-white hover:from-white hover:to-white rounded-2xl p-5 border border-gray-100 hover:border-brand-teal/30 hover:shadow-soft transition-all duration-300 relative group overflow-hidden">
-                  <div className="absolute top-0 right-0 w-24 h-24 bg-brand-teal/5 rounded-full blur-xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            {upcomingAppointments.length > 0 ? (
+              <div className="space-y-4">
+                {upcomingAppointments.map(apt => (
+                  <div key={apt.id} className="bg-gradient-to-br from-gray-50/80 to-white hover:from-white hover:to-white rounded-2xl p-5 border border-gray-100 hover:border-brand-teal/30 hover:shadow-soft transition-all duration-300 relative group overflow-hidden">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-brand-teal/5 rounded-full blur-xl pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
 
-                  <div className="flex items-center gap-3.5 mb-4 relative z-10">
-                    <div className="w-11 h-11 bg-gradient-to-br from-brand-teal to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-brand-teal/15">
-                      <Calendar className="text-white" size={20} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-bold text-gray-900 truncate font-sans">
-                        {(() => {
-                          const d = new Date(apt.date);
-                          const day = d.getUTCDate();
-                          const monthNames = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
-                          const month = monthNames[d.getUTCMonth()];
-
-                          const now = new Date();
-                          const isToday = d.getUTCFullYear() === now.getFullYear() &&
-                            d.getUTCMonth() === now.getMonth() &&
-                            d.getUTCDate() === now.getDate();
-
-                          const tomorrow = new Date();
-                          tomorrow.setDate(tomorrow.getDate() + 1);
-                          const isTomorrow = d.getUTCFullYear() === tomorrow.getFullYear() &&
-                            d.getUTCMonth() === tomorrow.getMonth() &&
-                            d.getUTCDate() === tomorrow.getDate();
-
-                          return (
-                            <>
-                              {`${day} ${month}`}
-                              {isToday && <span className="ml-2 text-[10px] bg-brand-teal/10 text-brand-teal px-2 py-0.5 rounded-full font-extrabold tracking-wide uppercase">Aujourd'hui</span>}
-                              {isTomorrow && <span className="ml-2 text-[10px] bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-extrabold tracking-wide uppercase">Demain</span>}
-                            </>
-                          );
-                        })()}
-                      </p>
-                      {apt.time ? (
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <Clock size={12} className="text-brand-teal" />
-                          <p className="text-xs text-brand-teal font-bold">{apt.time}</p>
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-1.5 mt-0.5">
-                          <Clock size={12} className="text-amber-500" />
-                          <span className="text-[11px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">Heure non fixée</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2.5 text-sm border-t border-gray-100 pt-3.5 mb-4">
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0">
-                        <UserIcon size={12} />
+                    <div className="flex items-center gap-3.5 mb-4 relative z-10">
+                      <div className="w-11 h-11 bg-gradient-to-br from-brand-teal to-blue-500 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-brand-teal/15">
+                        <Calendar className="text-white" size={20} />
                       </div>
-                      <span className="font-semibold text-gray-800 truncate">{apt.userName}</span>
+                      <div className="min-w-0">
+                        <p className="text-sm font-bold text-gray-900 truncate font-sans">
+                          {(() => {
+                            const d = new Date(apt.date);
+                            const day = d.getUTCDate();
+                            const monthNames = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+                            const month = monthNames[d.getUTCMonth()];
+
+                            const now = new Date();
+                            const isToday = d.getUTCFullYear() === now.getFullYear() &&
+                              d.getUTCMonth() === now.getMonth() &&
+                              d.getUTCDate() === now.getDate();
+
+                            const tomorrow = new Date();
+                            tomorrow.setDate(tomorrow.getDate() + 1);
+                            const isTomorrow = d.getUTCFullYear() === tomorrow.getFullYear() &&
+                              d.getUTCMonth() === tomorrow.getMonth() &&
+                              d.getUTCDate() === tomorrow.getDate();
+
+                            return (
+                              <span className="flex items-center gap-2">
+                                {day} {month}
+                                {isToday && (
+                                  <span className="px-2 py-0.5 text-[10px] font-bold bg-brand-teal/15 text-brand-teal rounded-full uppercase tracking-wider">Aujourd'hui</span>
+                                )}
+                                {isTomorrow && (
+                                  <span className="px-2 py-0.5 text-[10px] font-bold bg-indigo-500/15 text-indigo-500 rounded-full uppercase tracking-wider">Demain</span>
+                                )}
+                              </span>
+                            );
+                          })()}
+                        </p>
+                        <p className="text-xs text-gray-400 font-medium mt-0.5 flex items-center gap-1.5">
+                          <Clock size={12} className="text-gray-400" />
+                          {apt.time ? (
+                            <span>{apt.time.replace(':', 'h')}</span>
+                          ) : (
+                            <span className="text-amber-500 font-semibold bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-100">Heure non fixée</span>
+                          )}
+                        </p>
+                      </div>
                     </div>
-                    {apt.clientPhone && (
+
+                    <div className="space-y-2 text-xs text-gray-500 border-t border-gray-50 pt-3 relative z-10">
                       <div className="flex items-center gap-2.5">
                         <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0">
-                          <Phone size={12} />
+                          <UserIcon size={12} />
                         </div>
-                        <span className="text-gray-600 truncate">{apt.clientPhone}</span>
+                        <span className="font-semibold text-gray-800 truncate">{apt.userName}</span>
                       </div>
-                    )}
-                    {/* Primary property row */}
-                    {(() => {
-                      const p = properties.find(pr => pr.id === apt.propertyId);
-                      const title = p?.title || apt.propertyTitle || 'Aucune';
-                      const details = p
-                        ? `${p.location.city}${p.price ? ` • ${p.price.toLocaleString('fr-TN')} DT` : ''}`
-                        : '';
-                      return (
-                        <div className="flex items-start gap-2.5">
-                          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0 mt-0.5">
-                            <HomeIcon size={12} />
+                      {apt.clientPhone && (
+                        <div className="flex items-center gap-2.5">
+                          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0">
+                            <Phone size={12} />
                           </div>
-                          <div className="min-w-0 flex-1">
-                            <span className="block text-gray-800 font-semibold truncate" title={title}>{title}</span>
-                            {details && (
-                              <span className="block text-xs text-gray-400 font-medium truncate mt-0.5">
-                                {details}
-                              </span>
-                            )}
-                          </div>
+                          <span className="text-gray-600 truncate">{apt.clientPhone}</span>
                         </div>
-                      );
-                    })()}
-                    {/* Additional properties — same style as primary */}
-                    {(() => {
-                      const { propertyIds } = parseNotes((apt as any).notes || apt.message || '');
-                      if (propertyIds.length === 0) return null;
-                      return propertyIds.map(pid => {
-                        const p = properties.find(pr => pr.id === pid);
-                        if (!p) return null;
-                        const details = `${p.location.city}${p.price ? ` • ${p.price.toLocaleString('fr-TN')} DT` : ''}`;
+                      )}
+                      {/* Primary property row */}
+                      {(() => {
+                        const p = properties.find(pr => pr.id === apt.propertyId);
+                        const title = p?.title || apt.propertyTitle || 'Aucune';
+                        const details = p
+                          ? `${p.location.city}${p.price ? ` • ${p.price.toLocaleString('fr-TN')} DT` : ''}`
+                          : '';
                         return (
-                          <div key={pid} className="flex items-start gap-2.5">
+                          <div className="flex items-start gap-2.5">
                             <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0 mt-0.5">
                               <HomeIcon size={12} />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <span className="block text-gray-800 font-semibold truncate" title={p.title}>{p.title}</span>
-                              <span className="block text-xs text-gray-400 font-medium truncate mt-0.5">
-                                {details}
-                              </span>
+                              <span className="block text-gray-800 font-semibold truncate" title={title}>{title}</span>
+                              {details && (
+                                <span className="block text-xs text-gray-400 font-medium truncate mt-0.5">
+                                  {details}
+                                </span>
+                              )}
                             </div>
                           </div>
                         );
-                      });
-                    })()}
-                  </div>
+                      })()}
+                      {/* Additional properties — same style as primary */}
+                      {(() => {
+                        const { propertyIds } = parseNotes((apt as any).notes || apt.message || '');
+                        if (propertyIds.length === 0) return null;
+                        return propertyIds.map(pid => {
+                          const p = properties.find(pr => pr.id === pid);
+                          if (!p) return null;
+                          const details = `${p.location.city}${p.price ? ` • ${p.price.toLocaleString('fr-TN')} DT` : ''}`;
+                          return (
+                            <div key={pid} className="flex items-start gap-2.5">
+                              <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0 mt-0.5">
+                                <HomeIcon size={12} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <span className="block text-gray-800 font-semibold truncate" title={p.title}>{p.title}</span>
+                                <span className="block text-xs text-gray-400 font-medium truncate mt-0.5">
+                                  {details}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
 
-                  <div className="mt-3.5 pt-3.5 border-t border-gray-100 flex justify-between items-center relative z-10">
-                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${apt.status === 'accepted'
-                      ? 'bg-green-50 text-green-700 border border-green-200'
-                      : apt.status === 'rejected'
-                        ? 'bg-red-50 text-red-700 border border-red-200'
-                        : 'bg-amber-50 text-amber-700 border border-amber-200'
-                      }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${apt.status === 'accepted' ? 'bg-green-500 animate-pulse' : apt.status === 'rejected' ? 'bg-red-500' : 'bg-amber-500 animate-pulse'
-                        }`}></span>
-                      {apt.status === 'accepted' ? 'Confirmé' : apt.status === 'rejected' ? 'Annulé' : 'En attente'}
-                    </span>
+                    <div className="mt-3.5 pt-3.5 border-t border-gray-100 flex justify-between items-center relative z-10">
+                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold ${apt.status === 'accepted'
+                        ? 'bg-green-50 text-green-700 border border-green-200'
+                        : apt.status === 'rejected'
+                          ? 'bg-red-50 text-red-700 border border-red-200'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200'
+                        }`}>
+                        <span className={`w-1.5 h-1.5 rounded-full mr-1.5 ${apt.status === 'accepted' ? 'bg-green-500 animate-pulse' : apt.status === 'rejected' ? 'bg-red-500' : 'bg-amber-500 animate-pulse'
+                          }`}></span>
+                        {apt.status === 'accepted' ? 'Confirmé' : apt.status === 'rejected' ? 'Annulé' : 'En attente'}
+                      </span>
 
-                    {(apt.status === 'pending' || apt.status === 'accepted' || apt.status === 'rejected') && (
-                      <div className="flex gap-1">
-                        {isAdminOrAgent && (apt.status === 'pending' || apt.status === 'rejected') && (
+                      {(apt.status === 'pending' || apt.status === 'accepted' || apt.status === 'rejected') && (
+                        <div className="flex gap-1">
+                          {isAdminOrAgent && (apt.status === 'pending' || apt.status === 'rejected') && (
+                            <button
+                              onClick={() => onUpdateAppointment(apt.id, { status: 'accepted' })}
+                              className="p-2 text-green-600 hover:bg-green-50 rounded-xl transition-all duration-200"
+                              title="Confirmer"
+                            >
+                              <Check size={16} />
+                            </button>
+                          )}
+                          {isAdminOrAgent && apt.status === 'pending' && (
+                            <button
+                              onClick={() => onUpdateAppointment(apt.id, { status: 'rejected' })}
+                              className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200"
+                              title="Refuser"
+                            >
+                              <X size={16} />
+                            </button>
+                          )}
                           <button
-                            onClick={() => onUpdateAppointment(apt.id, { status: 'accepted' })}
-                            className="p-2 text-green-600 hover:bg-green-50 rounded-xl transition-all duration-200"
-                            title="Confirmer"
+                            onClick={() => openEditAppointment(apt)}
+                            className="p-2 text-brand-teal hover:bg-brand-teal/5 rounded-xl transition-all duration-200"
+                            title="Modifier"
                           >
-                            <Check size={16} />
+                            <Edit2 size={16} />
                           </button>
-                        )}
-                        {isAdminOrAgent && apt.status === 'pending' && (
                           <button
-                            onClick={() => onUpdateAppointment(apt.id, { status: 'rejected' })}
-                            className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200"
-                            title="Refuser"
+                            onClick={async () => {
+                              const isRejected = apt.status === 'rejected';
+                              const confirmed = await confirm({
+                                title: isRejected ? 'Supprimer ?' : 'Annuler le rendez-vous ?',
+                                message: isRejected
+                                  ? 'Êtes-vous sûr de vouloir supprimer définitivement ce rendez-vous ? Cette action est irréversible.'
+                                  : 'Êtes-vous sûr de vouloir annuler ce rendez-vous ?',
+                                confirmText: isRejected ? 'Supprimer' : 'Annuler',
+                                cancelText: 'Retour',
+                                variant: 'danger'
+                              });
+                              if (confirmed) {
+                                onCancelAppointment(apt.id);
+                              }
+                            }}
+                            className="p-2 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all duration-200"
+                            title={apt.status === 'rejected' ? 'Supprimer' : 'Annuler'}
                           >
-                            <X size={16} />
+                            <Trash2 size={16} />
                           </button>
-                        )}
-                        <button
-                          onClick={() => openEditAppointment(apt)}
-                          className="p-2 text-brand-teal hover:bg-brand-teal/5 rounded-xl transition-all duration-200"
-                          title="Modifier"
-                        >
-                          <Edit2 size={16} />
-                        </button>
-                        <button
-                          onClick={async () => {
-                            const isRejected = apt.status === 'rejected';
-                            const confirmed = await confirm({
-                              title: isRejected ? 'Supprimer ?' : 'Annuler le rendez-vous ?',
-                              message: isRejected
-                                ? 'Êtes-vous sûr de vouloir supprimer définitivement ce rendez-vous ? Cette action est irréversible.'
-                                : 'Êtes-vous sûr de vouloir annuler ce rendez-vous ?',
-                              confirmText: isRejected ? 'Supprimer' : 'Annuler',
-                              cancelText: 'Retour',
-                              variant: 'danger'
-                            });
-                            if (confirmed) {
-                              onCancelAppointment(apt.id);
-                            }
-                          }}
-                          className="p-2 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all duration-200"
-                          title={apt.status === 'rejected' ? 'Supprimer' : 'Annuler'}
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-10 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
-              <CalendarDays className="mx-auto text-gray-300 mb-2.5" size={32} />
-              <p className="text-sm font-semibold text-gray-500">Aucun rendez-vous à venir</p>
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-10 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
+                <CalendarDays className="mx-auto text-gray-300 mb-2.5" size={32} />
+                <p className="text-sm font-semibold text-gray-500">Aucun rendez-vous à venir</p>
+              </div>
+            )}
+          </div>
+        </ScrollReveal>
 
         {/* 3. LEFT COLUMN REST: Admin = Quick Actions/Visits, User = Favorites */}
         {user.role === 'admin' ? (

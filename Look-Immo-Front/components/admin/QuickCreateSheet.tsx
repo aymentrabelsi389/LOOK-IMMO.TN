@@ -9,15 +9,26 @@ interface QuickCreateSheetProps {
 
 const QuickCreateSheet: React.FC<QuickCreateSheetProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
-  const [isFullyClosed, setIsFullyClosed] = useState(!isOpen);
+  // shouldRender controls DOM presence; isActive controls CSS transition state
+  const [shouldRender, setShouldRender] = useState(isOpen);
+  const [isActive, setIsActive] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
-      setIsFullyClosed(false);
+      // Phase 1: mount the DOM element (still at off-screen starting position)
+      setShouldRender(true);
+      // Phase 2: on the next paint, trigger the CSS transition in
+      const raf = requestAnimationFrame(() => {
+        requestAnimationFrame(() => setIsActive(true));
+      });
+      return () => cancelAnimationFrame(raf);
     } else {
+      // Phase 1: trigger CSS transition out
+      setIsActive(false);
+      // Phase 2: after animation completes, unmount from DOM
       const timer = setTimeout(() => {
-        setIsFullyClosed(true);
-      }, 300);
+        setShouldRender(false);
+      }, 520);
       return () => clearTimeout(timer);
     }
   }, [isOpen]);
@@ -34,30 +45,8 @@ const QuickCreateSheet: React.FC<QuickCreateSheetProps> = ({ isOpen, onClose }) 
     };
   }, [isOpen]);
 
-  // Handle browser back button (popstate) to close drawer
-  useEffect(() => {
-    if (!isOpen) return;
-
-    window.history.pushState({ drawerOpen: true }, '');
-
-    const handlePopState = (e: PopStateEvent) => {
-      if (!e.state || !e.state.drawerOpen) {
-        onClose();
-      }
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, [isOpen, onClose]);
-
   const handleClose = () => {
-    if (window.history.state && window.history.state.drawerOpen) {
-      window.history.back();
-    } else {
-      onClose();
-    }
+    onClose();
   };
 
   const handleAction = (target: 'property' | 'appointment' | 'demand') => {
@@ -75,22 +64,22 @@ const QuickCreateSheet: React.FC<QuickCreateSheetProps> = ({ isOpen, onClose }) 
     }
   };
 
+  if (!shouldRender) return null;
+
   return (
-    <div className={`fixed inset-0 z-[100] flex items-end justify-center lg:hidden ${
-      isOpen ? 'pointer-events-auto' : 'pointer-events-none'
-    } ${isFullyClosed ? 'hidden' : ''}`}>
+    <div className={`fixed inset-0 z-[100] flex items-end justify-center lg:hidden ${isActive ? 'pointer-events-auto' : 'pointer-events-none'}`}>
       {/* Backdrop overlay */}
       <div 
         onClick={handleClose}
-        className={`fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ease-in-out ${
-          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] ${
+          isActive ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
         }`}
       />
 
       {/* Slide-up bottom sheet */}
       <div 
-        className={`relative w-full max-w-md bg-[#0C1F32] rounded-t-[28px] border-t border-white/10 shadow-[0_-12px_40px_rgba(0,0,0,0.5)] z-10 transition-transform duration-300 ease-in-out transform ${
-          isOpen ? 'translate-y-0 pointer-events-auto' : 'translate-y-full pointer-events-none'
+        className={`relative w-full max-w-md bg-[#0C1F32] rounded-t-[28px] border-t border-white/10 shadow-[0_-12px_40px_rgba(0,0,0,0.5)] z-10 transition-transform duration-500 [transition-timing-function:cubic-bezier(0.16,1,0.3,1)] transform ${
+          isActive ? 'translate-y-0 pointer-events-auto' : 'translate-y-full pointer-events-none'
         } pb-[calc(16px+env(safe-area-inset-bottom))]`}
       >
         {/* Drag/Touch Handle Indicator */}

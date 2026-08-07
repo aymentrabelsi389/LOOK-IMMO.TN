@@ -15,6 +15,7 @@ const MobileBottomNavigation = () => {
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isVisible, setIsVisible] = useState(true);
+  const [isFABAnimating, setIsFABAnimating] = useState(false);
   const lastScrollY = useRef(0);
 
   // Scroll to hide logic — uses a ref so the listener is only registered once
@@ -37,8 +38,8 @@ const MobileBottomNavigation = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Always show the nav bar when a sheet is open so it doesn't disappear behind sheets
-  const navVisible = isVisible || isNotifOpen || isQuickCreateOpen;
+  // Always show the nav bar when a sheet or FAB is animating open so it doesn't disappear
+  const navVisible = isVisible || isNotifOpen || isQuickCreateOpen || isFABAnimating;
 
   // Active route helpers
   const isActive = (path: string) => {
@@ -155,12 +156,20 @@ const MobileBottomNavigation = () => {
           {/* Item 3: Center FAB */}
           <div className="flex-1 flex justify-center h-full relative">
             <button
-              onClick={() => setIsQuickCreateOpen(true)}
+              onClick={() => {
+                setIsFABAnimating(true);
+                setTimeout(() => {
+                  setIsQuickCreateOpen(true);
+                  setIsFABAnimating(false);
+                }, 220);
+              }}
               type="button"
-              className="absolute -top-6 w-[52px] h-[52px] bg-brand-teal text-white rounded-full flex items-center justify-center shadow-lg shadow-brand-teal/40 border-[3px] border-[#0C1F32] hover:scale-105 active:scale-95 transition-all duration-200 z-10 cursor-pointer"
+              className={`absolute -top-6 w-[52px] h-[52px] bg-brand-teal text-white rounded-full flex items-center justify-center shadow-lg shadow-brand-teal/40 border-[3px] border-[#0C1F32] transition-all duration-300 z-10 cursor-pointer ${
+                isFABAnimating ? 'scale-[1.2] bg-cyan-500 shadow-cyan-500/50' : 'hover:scale-105 active:scale-95'
+              }`}
               aria-label="Ajouter"
             >
-              <Plus size={22} className="stroke-[2.5]" />
+              <Plus size={22} className={`stroke-[2.5] transition-transform duration-300 ${isFABAnimating ? 'rotate-[135deg] scale-90' : ''}`} />
             </button>
           </div>
 

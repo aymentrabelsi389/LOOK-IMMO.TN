@@ -36,6 +36,23 @@ const ListingsPage = () => {
   const [isListingTypeOpen, setIsListingTypeOpen] = useState(false);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [isFilterAnimating, setIsFilterAnimating] = useState(false);
+  const [localMaxPrice, setLocalMaxPrice] = useState(filters.maxPrice);
+
+  // Sync localMaxPrice when filters.maxPrice is reset or changed externally
+  useEffect(() => {
+    setLocalMaxPrice(filters.maxPrice);
+  }, [filters.maxPrice]);
+
+  // Debounce updating parent filters state to avoid performance lag and API spamming
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      if (localMaxPrice !== filters.maxPrice) {
+        setFilters(prev => ({ ...prev, maxPrice: localMaxPrice }));
+      }
+    }, 350);
+
+    return () => clearTimeout(handler);
+  }, [localMaxPrice]);
 
   const openFilter = () => {
     setIsMobileFilterOpen(true);
@@ -291,8 +308,8 @@ const ListingsPage = () => {
             min="0"
             max={maxPriceLimit}
             step="50000"
-            value={filters.maxPrice}
-            onChange={(e) => setFilters({ ...filters, maxPrice: Number(e.target.value) })}
+            value={localMaxPrice}
+            onChange={(e) => setLocalMaxPrice(Number(e.target.value))}
             style={{
               WebkitAppearance: 'none',
               appearance: 'none',
@@ -301,7 +318,7 @@ const ListingsPage = () => {
               borderRadius: '9999px',
               outline: 'none',
               cursor: 'pointer',
-              background: `linear-gradient(to right, #0EA5E9 0%, #0EA5E9 ${(filters.maxPrice / maxPriceLimit) * 100}%, #E5E7EB ${(filters.maxPrice / maxPriceLimit) * 100}%, #E5E7EB 100%)`
+              background: `linear-gradient(to right, #0EA5E9 0%, #0EA5E9 ${(localMaxPrice / maxPriceLimit) * 100}%, #E5E7EB ${(localMaxPrice / maxPriceLimit) * 100}%, #E5E7EB 100%)`
             }}
             className="range-slider-thumb w-full"
             aria-label="Prix maximum"
@@ -312,7 +329,7 @@ const ListingsPage = () => {
             <Price amount={0} />
           </span>
           <span className="text-xs font-semibold text-brand-teal bg-brand-teal/10 px-3 py-1.5 rounded-lg">
-            <Price amount={filters.maxPrice} />
+            <Price amount={localMaxPrice} />
           </span>
         </div>
       </div>

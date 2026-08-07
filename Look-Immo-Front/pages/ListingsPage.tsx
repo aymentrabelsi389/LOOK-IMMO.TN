@@ -301,7 +301,7 @@ const ListingsPage = () => {
         <label className="text-sm font-bold text-gray-700 mb-3 flex items-center">
           <DollarSign size={16} className="mr-2 text-brand-teal" strokeWidth={1.5} /> Prix Maximum
         </label>
-        {/* Custom range slider with large touch target */}
+        {/* Custom range slider with large touch target — updates local state on drag, commits to filters only on release to avoid perf issues on mobile */}
         <div className="relative py-3">
           <input
             type="range"
@@ -310,14 +310,18 @@ const ListingsPage = () => {
             step="50000"
             value={localMaxPrice}
             onChange={(e) => setLocalMaxPrice(Number(e.target.value))}
+            onMouseUp={(e) => setFilters(prev => ({ ...prev, maxPrice: Number((e.target as HTMLInputElement).value) }))}
+            onTouchEnd={(e) => setFilters(prev => ({ ...prev, maxPrice: Number((e.target as HTMLInputElement).value) }))}
             style={{
               WebkitAppearance: 'none',
               appearance: 'none',
               width: '100%',
-              height: '6px',
+              height: '8px',
               borderRadius: '9999px',
               outline: 'none',
               cursor: 'pointer',
+              touchAction: 'none',
+              willChange: 'background',
               background: `linear-gradient(to right, #0EA5E9 0%, #0EA5E9 ${(localMaxPrice / maxPriceLimit) * 100}%, #E5E7EB ${(localMaxPrice / maxPriceLimit) * 100}%, #E5E7EB 100%)`
             }}
             className="range-slider-thumb w-full"
@@ -407,8 +411,8 @@ const ListingsPage = () => {
   return (
     <div className="max-w-7xl mx-auto w-full px-4 py-6 md:py-8 pb-28 md:pb-8 bg-brand-light min-h-screen">
 
-      {/* ── MOBILE: Floating Filter Button ── */}
-      <div className="md:hidden fixed bottom-20 left-1/2 -translate-x-1/2 z-40">
+      {/* ── MOBILE: Floating Filter Button — positioned well above bottom nav (64px) with extra gap ── */}
+      <div className="md:hidden fixed bottom-[100px] left-1/2 -translate-x-1/2 z-40">
         <button
           onClick={openFilter}
           className="flex items-center gap-2 px-5 py-3 bg-brand-dark text-white rounded-full shadow-2xl border border-brand-dark hover:bg-brand-teal transition-all duration-300 transform active:scale-95 whitespace-nowrap"
@@ -446,7 +450,7 @@ const ListingsPage = () => {
           />
           {/* Drawer */}
           <div
-            className={`absolute bottom-[58px] left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col transition-transform duration-300 ease-in-out ${
+            className={`absolute bottom-[64px] left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col transition-transform duration-300 ease-in-out ${
               isFilterAnimating ? 'translate-y-0' : 'translate-y-full'
             }`}
             onClick={(e) => e.stopPropagation()}

@@ -255,7 +255,7 @@ const AdminPanel = () => {
           onProfileClick={() => handleNavigate('dashboard')}
           isVisible={true}
         />
-        <main className="flex-1 overflow-y-auto p-6 md:p-8 pb-[72px] md:pb-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-[100px] md:pb-8">
           <Suspense fallback={
             <div className="space-y-8 animate-pulse">
               {/* Top Grid: 4 Stat Cards */}

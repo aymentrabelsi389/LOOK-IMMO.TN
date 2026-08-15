@@ -234,7 +234,7 @@ export function useDemandsManagement({
 
           return { property, score };
         })
-        .filter(m => m.score >= 45)
+        .filter(m => m.score >= 75)
         .sort((a, b) => b.score - a.score);
 
       map.set(demand.id, matches);

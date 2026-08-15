@@ -178,7 +178,7 @@ const AdminPanel = () => {
       // 5. Priority
       if (demand.priority === 'high') score += 5;
 
-      if (score >= 45) {
+      if (score >= 75) {
         count++;
       }
     }

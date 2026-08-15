@@ -175,11 +175,7 @@ const Navbar = ({
       <nav
         className={`fixed top-0 left-0 right-0 z-[100] transition-all duration-500 ease-in-out ${
           isVisible ? "translate-y-0" : "-translate-y-full"
-        } ${
-          isContactPage && !isScrolled
-            ? "bg-transparent backdrop-blur-none shadow-none border-b border-transparent text-white"
-            : "bg-white/95 backdrop-blur-md text-brand-dark shadow-sm border-b border-gray-100"
-        }`}
+        } bg-white/95 backdrop-blur-md shadow-sm border-b border-gray-100 text-brand-dark`}
       >
         <div className="max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-20 items-center">
@@ -196,9 +192,7 @@ const Navbar = ({
                   decoding="sync"
                 />
               </div>
-              <span className={`text-[22px] md:text-[28px] font-bold font-luxury tracking-[0.12em] uppercase transition-all duration-500 group-hover:scale-105 origin-left ${
-                isContactPage && !isScrolled ? 'text-white drop-shadow-md' : 'text-[#0B1C2D]'
-              }`}>
+              <span className="text-[22px] md:text-[28px] font-bold font-luxury tracking-[0.12em] uppercase transition-all duration-500 group-hover:scale-105 origin-left text-[#0B1C2D]">
                 Look Immo
               </span>
             </div>
@@ -219,15 +213,13 @@ const Navbar = ({
                   className={`transition-all duration-500 font-medium ${
                     active
                       ? 'text-brand-teal font-bold'
-                      : isContactPage && !isScrolled
-                        ? 'text-white/90 hover:text-white drop-shadow-sm'
-                        : 'text-brand-grey hover:text-brand-dark'
+                      : 'text-brand-grey hover:text-brand-dark'
                   }`}
                 >
                   {label}
                 </button>
               ))}
-              <div className={`h-6 w-px mx-2 transition-all duration-500 ${ isContactPage && !isScrolled ? 'bg-white/30' : 'bg-gray-200' }`}></div>
+              <div className="h-6 w-px mx-2 bg-gray-200"></div>
 
               <div className="relative" ref={currencyDropdownRef}>
                 <button

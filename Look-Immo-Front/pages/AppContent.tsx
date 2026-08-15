@@ -80,6 +80,7 @@ const AppContent = () => {
     return '';
   };
   const currentPage = getPageKey(location.pathname);
+  const isContactPage = currentPage === 'contact';
 
   return (
     <div className="flex flex-col min-h-screen bg-brand-light text-brand-dark font-sans selection:bg-brand-teal selection:text-white w-full">

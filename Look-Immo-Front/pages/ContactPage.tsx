@@ -130,8 +130,8 @@ const ContactPage = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Header */}
-      <div className="bg-gradient-to-br from-brand-dark via-[#0d2a45] to-blue-900 text-white pt-20 pb-16">
-        <div className="max-w-7xl mx-auto px-4 pt-8 animate-fade-in-up">
+      <div className="bg-gradient-to-br from-brand-dark via-[#0d2a45] to-blue-900 text-white py-12 md:py-16">
+        <div className="max-w-7xl mx-auto px-4 animate-fade-in-up">
           <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">Contactez-Nous</h1>
           <p className="text-xl text-gray-200">
             Nous sommes là pour répondre à toutes vos questions et vous accompagner dans votre projet immobilier.

@@ -297,7 +297,7 @@ export function usePropertiesManagement({
 
             if (demand.priority === 'high') score += 5;
 
-            return score >= 45;
+            return score >= 75;
           });
 
           if (matchingDemands.length > 0) {

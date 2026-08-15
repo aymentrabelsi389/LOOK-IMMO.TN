@@ -109,25 +109,10 @@ const DemandsManagement = ({
             <h1 className="text-2xl font-bold text-gray-900 leading-tight uppercase tracking-tight">Opportunités Clients</h1>
             <p className="text-sm text-gray-500 mt-1">Gérez et connectez vos clients aux biens correspondants</p>
           </div>
-
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto animate-fade-in">
-            <CustomDropdown
-              value={sortBy}
-              onChange={(val) => setSortBy(val as any)}
-              options={[
-                { value: 'created-desc', label: '📅 Reçu le (Récent)' },
-                { value: 'created-asc', label: '📅 Reçu le (Ancien)' },
-                { value: 'matches-desc', label: '✨ Meilleures Opportunités' }
-              ]}
-              triggerClassName="w-full sm:w-[220px] flex items-center justify-between gap-3 px-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10 shadow-sm text-xs font-bold text-gray-600 cursor-pointer hover:border-brand-teal/50 transition bg-white"
-              menuClassName="absolute right-0 z-[60] mt-2 w-full sm:w-[220px] bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up"
-              optionClassName="w-full flex items-center justify-between px-4 py-2 text-left text-xs font-bold text-gray-600 hover:bg-gray-50 transition-colors"
-            />
-          </div>
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="flex flex-col md:flex-row gap-4">
+        <div className="flex flex-col md:flex-row gap-3 relative z-30">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
@@ -140,6 +125,18 @@ const DemandsManagement = ({
           </div>
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
             <CustomDropdown
+              value={sortBy}
+              onChange={(val) => setSortBy(val as any)}
+              options={[
+                { value: 'created-desc', label: '📅 Reçu le (Récent)' },
+                { value: 'created-asc', label: '📅 Reçu le (Ancien)' },
+                { value: 'matches-desc', label: '✨ Meilleures Opportunités' }
+              ]}
+              triggerClassName="w-full sm:w-[200px] flex items-center justify-between gap-3 px-4 py-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-teal/50 focus:outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10 transition-all text-[10px] font-black text-gray-600 uppercase tracking-widest cursor-pointer"
+              menuClassName="absolute left-0 sm:right-0 z-[70] mt-2 w-full sm:w-[200px] bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up"
+              optionClassName="w-full flex items-center justify-between px-4 py-2.5 text-left text-[10px] font-black uppercase tracking-widest transition-colors"
+            />
+            <CustomDropdown
               value={filter}
               onChange={setFilter}
               options={[
@@ -150,7 +147,7 @@ const DemandsManagement = ({
                 { value: 'closed', label: 'Fermé' }
               ]}
               triggerClassName="w-full sm:w-[180px] flex items-center justify-between gap-3 px-4 py-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-teal/50 focus:outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10 transition-all text-[10px] font-black text-gray-600 uppercase tracking-widest cursor-pointer"
-              menuClassName="absolute left-0 sm:right-0 z-[60] mt-2 w-full sm:w-[180px] bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up"
+              menuClassName="absolute left-0 sm:right-0 z-[70] mt-2 w-full sm:w-[180px] bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up"
               optionClassName="w-full flex items-center justify-between px-4 py-2.5 text-left text-[10px] font-black uppercase tracking-widest transition-colors"
             />
             <CustomDropdown
@@ -162,7 +159,7 @@ const DemandsManagement = ({
                 { value: 'no-matches', label: 'Sans Correspondance' }
               ]}
               triggerClassName="w-full sm:w-[200px] flex items-center justify-between gap-3 px-4 py-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-teal/50 focus:outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10 transition-all text-[10px] font-black text-gray-600 uppercase tracking-widest cursor-pointer"
-              menuClassName="absolute left-0 sm:right-0 z-[60] mt-2 w-full sm:w-[200px] bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up"
+              menuClassName="absolute left-0 sm:right-0 z-[70] mt-2 w-full sm:w-[200px] bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up"
               optionClassName="w-full flex items-center justify-between px-4 py-2.5 text-left text-[10px] font-black uppercase tracking-widest transition-colors"
             />
           </div>
@@ -260,11 +257,11 @@ const DemandsManagement = ({
                                   setSelectedDemand(demand);
                                   setIsMatchModalOpen(true);
                                 }}
-                                className="group/btn flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 text-emerald-700 rounded-xl border border-emerald-200/60 shadow-sm transition-all text-xs font-black"
+                                className="group/btn inline-flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-emerald-50 to-teal-50 hover:from-emerald-100 hover:to-teal-100 text-emerald-700 rounded-xl border border-emerald-200/60 shadow-sm transition-all text-xs font-black whitespace-nowrap flex-shrink-0"
                               >
-                                <Sparkles size={14} className="text-emerald-500 animate-pulse" />
-                                <span>{matches.length} bien{matches.length > 1 ? 's' : ''} trouvé{matches.length > 1 ? 's' : ''}</span>
-                                <span className="text-[10px] bg-white px-1.5 py-0.5 rounded-md text-emerald-800 font-bold border border-emerald-200">
+                                <Sparkles size={14} className="text-emerald-500 animate-pulse flex-shrink-0" />
+                                <span className="whitespace-nowrap">{matches.length} bien{matches.length > 1 ? 's' : ''} trouvé{matches.length > 1 ? 's' : ''}</span>
+                                <span className="text-[10px] bg-white px-1.5 py-0.5 rounded-md text-emerald-800 font-bold border border-emerald-200 whitespace-nowrap flex-shrink-0">
                                   {matches[0].score}% max
                                 </span>
                               </button>
@@ -359,11 +356,13 @@ const DemandsManagement = ({
                         </div>
                       </div>
 
-                      <div className="flex justify-between items-center pt-2">
-                        <StatusDropdown
-                          status={demand.status}
-                          onChange={(newStatus) => handleUpdateStatus(demand.id, newStatus)}
-                        />
+                      <div className="flex items-center justify-between gap-2 pt-2 flex-nowrap">
+                        <div className="flex-1 min-w-0">
+                          <StatusDropdown
+                            status={demand.status}
+                            onChange={(newStatus) => handleUpdateStatus(demand.id, newStatus)}
+                          />
+                        </div>
 
                         {matches.length > 0 && (
                           <button
@@ -371,10 +370,10 @@ const DemandsManagement = ({
                               setSelectedDemand(demand);
                               setIsMatchModalOpen(true);
                             }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 rounded-xl border border-emerald-200 text-xs font-black"
+                            className="flex-shrink-0 whitespace-nowrap inline-flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 rounded-xl border border-emerald-200 text-xs font-black shadow-sm hover:shadow transition active:scale-95"
                           >
-                            <Sparkles size={14} className="text-emerald-500" />
-                            <span>{matches.length} match{matches.length > 1 ? 's' : ''} ({matches[0].score}%)</span>
+                            <Sparkles size={14} className="text-emerald-500 flex-shrink-0" />
+                            <span className="whitespace-nowrap">{matches.length} match{matches.length > 1 ? 's' : ''} ({matches[0].score}%)</span>
                           </button>
                         )}
                       </div>

@@ -29,7 +29,7 @@ const CustomDropdown = <T extends string>({
   const selectedOption = options.find(opt => opt.value === value);
 
   return (
-    <div className="relative inline-block w-full sm:w-auto" ref={containerRef}>
+    <div className={`relative inline-block w-full sm:w-auto ${isOpen ? 'z-[70]' : ''}`} ref={containerRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}

@@ -424,7 +424,7 @@ const DashboardPage = () => {
       // 5. Priority Bonus — 5 points
       if (demand.priority === 'high') score += 5;
 
-      if (score >= 45) {
+      if (score >= 75) {
         count++;
       }
     }

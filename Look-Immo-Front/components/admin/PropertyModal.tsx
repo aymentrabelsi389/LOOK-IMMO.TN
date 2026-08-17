@@ -777,10 +777,14 @@ const PropertyModal = ({
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-                    <span className="text-lg">🌍</span> Localisation Map
-                    <span className="text-[10px] text-blue-500 font-normal ml-2 uppercase tracking-tighter">(Cliquez sur la carte pour définir la position)</span>
-                  </label>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                      <span className="text-lg">🌍</span> Localisation
+                    </label>
+                    <p className="text-xs text-blue-500 font-medium flex items-center gap-1 pl-1">
+                      <span>📍</span> Cliquez sur la carte pour définir la position
+                    </p>
+                  </div>
                   <div 
                     onWheel={e => e.stopPropagation()}
                     onTouchStart={e => e.stopPropagation()}

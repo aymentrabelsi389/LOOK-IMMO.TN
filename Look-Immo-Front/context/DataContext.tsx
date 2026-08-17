@@ -118,7 +118,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const propertiesKey = useMemo(() => ['properties', 'global', isAdminOrAgent] as const, [isAdminOrAgent]);
   const { data: qPropertiesResult, isFetched: isPropertiesFetched } = useQuery({
     queryKey: propertiesKey,
-    queryFn: () => propertiesAPI.getAll(isAdminOrAgent ? { noLimit: 'true' } : { page: 1, limit: 24 }),
+    queryFn: () => propertiesAPI.getAll(isAdminOrAgent ? { noLimit: 'true' } : { page: 1, limit: 24, excludeSold: 'true' }),
     staleTime: 5 * 60 * 1000,
   });
 

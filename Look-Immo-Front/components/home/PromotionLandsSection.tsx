@@ -26,6 +26,7 @@ const PromotionLandsSection = ({
       type: 'sale',
       isHotDeal: 'true',
       noLimit: 'true',
+      excludeSold: 'true',
     }),
     staleTime: 5 * 60 * 1000,
   });

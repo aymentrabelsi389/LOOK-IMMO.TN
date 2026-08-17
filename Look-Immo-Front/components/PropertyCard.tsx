@@ -29,14 +29,22 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, is
   return (
     <div className="relative group h-full">
       <div className="absolute -inset-1 bg-gradient-to-r from-brand-teal to-blue-600 rounded-2xl blur opacity-25 md:group-hover:opacity-50 transition duration-500"></div>
-      <div onClick={() => onSelect(property.id)} className="group bg-white rounded-2xl shadow-soft md:hover:shadow-2xl md:hover:shadow-brand-teal/10 transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100 flex flex-col h-full md:transform md:hover:-translate-y-1 relative isolate">
+      <div 
+        onClick={() => onSelect(property.id)} 
+        className="group bg-white rounded-2xl shadow-soft md:hover:shadow-2xl md:hover:shadow-brand-teal/10 transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100 flex flex-col h-full md:transform md:hover:-translate-y-1 relative isolate transform-gpu"
+        style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+      >
         <div
-          className="relative h-44 sm:h-52 md:h-64 overflow-hidden rounded-t-2xl isolate"
+          className="relative h-44 sm:h-52 md:h-64 overflow-hidden rounded-t-2xl isolate transform-gpu"
           style={{
             backgroundImage: getLQIP(property.images[0]) ? `url(${getLQIP(property.images[0])})` : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             backgroundColor: getLQIP(property.images[0]) ? undefined : '#f3f4f6',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden',
+            maskImage: '-webkit-radial-gradient(white, black)',
+            WebkitMaskImage: '-webkit-radial-gradient(white, black)',
           }}
         >
           <img
@@ -53,7 +61,8 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, is
               pool:        property.features.pool,
               parking:     property.features.parking,
             })}
-            className="w-full h-full object-cover transform md:group-hover:scale-110 transition duration-700 rounded-t-2xl"
+            className="w-full h-full object-cover transform-gpu md:group-hover:scale-110 transition duration-700 rounded-t-2xl"
+            style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
             loading="lazy"
             decoding="async"
           />
@@ -106,7 +115,10 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, is
             </div>
           )}
 
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-brand-dark/90 via-brand-dark/50 to-transparent p-4 pt-12">
+          <div 
+            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-brand-dark/90 via-brand-dark/50 to-transparent p-4 pt-12 transform-gpu"
+            style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+          >
             <p className="text-lg md:text-2xl font-bold text-white font-serif tracking-wide drop-shadow-md">
               <Price amount={property.price} priceType={property.priceType} />
               {property.listingType === 'rent' && <span className="ml-1 text-[0.7em] font-medium">/ Mois</span>}

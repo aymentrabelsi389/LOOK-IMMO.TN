@@ -174,9 +174,11 @@ const InfiniteCarousel = <T extends { id: string }>({
         {extendedItems.map((item, index) => (
           <div
             key={`${item.id}-${index}`}
-            className="flex-shrink-0 px-2 carousel-item-container"
+            className="flex-shrink-0 px-2 carousel-item-container transform-gpu"
             style={{
               width: `${100 / visibleCount}%`,
+              backfaceVisibility: 'hidden',
+              WebkitBackfaceVisibility: 'hidden',
             }}
           >
             <CardWrapper>

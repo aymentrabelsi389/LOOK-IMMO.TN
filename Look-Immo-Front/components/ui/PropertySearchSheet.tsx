@@ -178,7 +178,7 @@ const PropertySearchSheet: React.FC<PropertySearchSheetProps> = ({ isOpen, onClo
       const normalized = term.trim().toLowerCase();
 
       // Build API params — check if keyword maps to a category
-      const params: Record<string, string | number | undefined> = { limit: 12 };
+      const params: Record<string, string | number | undefined> = { limit: 12, excludeSold: 'true' };
       const mappedCategory = KEYWORD_CATEGORY_MAP[normalized];
       if (mappedCategory) {
         params.category = mappedCategory;

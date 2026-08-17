@@ -1,4 +1,4 @@
-import React, { useState, useMemo, memo } from 'react';
+import React, { useState, useMemo, memo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   GripVertical, MapPin, Star, Edit, Trash2, Search, Plus,
@@ -6,12 +6,13 @@ import {
   FileText, Shield, Eye, Download, Calendar, Mail, Phone, Clock, Check, MessageSquare
 } from 'lucide-react';
 import {
-  DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors
+  DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, DragOverlay, type DragStartEvent
 } from '@dnd-kit/core';
 import {
   SortableContext, verticalListSortingStrategy, useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { Property, PropertyType, User, Appointment, ClientDemand } from '@/types';
 import { BACKEND_URL } from '@/services/api';
 import Pagination from '../ui/Pagination';
@@ -56,11 +57,11 @@ const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, handleQuick
   }, [appointments, p.id]);
   const appointmentsCount = propertyAppointments.length;
 
-  const style = {
-    transform: CSS.Transform.toString(transform),
+  const style: React.CSSProperties = {
+    transform: CSS.Translate.toString(transform),
     transition,
     zIndex: isDragging ? 40 : (activePlanMenu || activePaperMenu) ? 30 : 1,
-    opacity: isDragging ? 0.5 : 1,
+    opacity: isDragging ? 0.4 : 1,
     animationDelay: `${index * 50}ms`,
   };
 
@@ -68,7 +69,7 @@ const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, handleQuick
     <div 
       ref={setNodeRef} 
       style={style} 
-      className="group bg-white border-b border-gray-100 last:border-0 hover:bg-blue-50/20 transition-all p-4 md:p-0 md:flex md:items-center md:min-w-[1000px] w-full overflow-hidden opacity-0 animate-fade-in"
+      className={`group bg-white border-b border-gray-100 last:border-0 hover:bg-blue-50/20 transition-colors p-4 md:p-0 md:flex md:items-center md:min-w-[1000px] w-full overflow-hidden opacity-0 animate-fade-in ${isDragging ? 'shadow-lg ring-2 ring-blue-200 rounded-xl' : ''}`}
     >
       {/* Mobile Card Layout */}
       <div className="flex flex-col w-full md:hidden gap-3">
@@ -595,20 +596,32 @@ const PropertiesManagement = ({
     handleDragEnd
   } = mgmt;
 
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const activeDragProperty = activeDragId ? paginatedProperties.find(p => p.id === activeDragId) : null;
+
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 10,
+        distance: 8,
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 50,
-        tolerance: 8,
+        delay: 200,
+        tolerance: 5,
       },
     }),
     useSensor(KeyboardSensor)
   );
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveDragId(String(event.active.id));
+  }, []);
+
+  const onDragEnd = useCallback((event: any) => {
+    setActiveDragId(null);
+    handleDragEnd(event);
+  }, [handleDragEnd]);
 
   return (
     <div className="animate-fade-in-up space-y-6">
@@ -695,7 +708,7 @@ const PropertiesManagement = ({
       )}
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden w-full">
-        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={onDragEnd} modifiers={[restrictToVerticalAxis]}>
           <div className="flex flex-col overflow-x-auto custom-scrollbar w-full">
             {/* Table Header - Visible only on Desktop */}
             <div className="hidden md:flex bg-gray-50 border-b border-gray-100 py-3 text-xs uppercase font-bold text-gray-500 md:min-w-[1000px] w-full">
@@ -729,6 +742,27 @@ const PropertiesManagement = ({
               )}
             </SortableContext>
           </div>
+          <DragOverlay dropAnimation={{
+            duration: 200,
+            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+          }}>
+            {activeDragProperty ? (
+              <div className="bg-white rounded-xl shadow-2xl border-2 border-blue-300 p-4 opacity-95 max-w-md">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-200 shrink-0">
+                    <img src={getImageSrc(activeDragProperty.images?.[0], 'thumb')} className="w-full h-full object-cover" alt="" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-bold text-gray-900 text-sm truncate">{activeDragProperty.title}</h4>
+                    <p className="text-xs text-gray-400 flex items-center gap-1">
+                      <MapPin size={10} />
+                      {activeDragProperty.location?.city || 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ) : null}
+          </DragOverlay>
         </DndContext>
 
         {/* Footer with Pagination and Show All */}

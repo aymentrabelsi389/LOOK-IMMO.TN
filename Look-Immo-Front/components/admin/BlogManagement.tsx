@@ -153,7 +153,7 @@ const BlogManagement = ({
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
           <CustomDropdown
             value={sortBy}
-            onChange={(val) => setSortBy(val as any)}
+            onChange={(val) => setSortBy(val as 'date-desc' | 'date-asc' | 'title')}
             options={[
               { value: 'date-desc', label: '📅 Plus récent' },
               { value: 'date-asc', label: '📅 Plus ancien' },

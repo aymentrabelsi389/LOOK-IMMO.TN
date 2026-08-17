@@ -92,7 +92,7 @@ const RatingsManagement = ({
 
           <CustomDropdown
             value={sortBy}
-            onChange={(val) => setSortBy(val as any)}
+            onChange={(val) => setSortBy(val as 'date-desc' | 'date-asc' | 'rating-desc' | 'rating-asc')}
             options={[
               { value: 'date-desc', label: '📅 Plus récent' },
               { value: 'date-asc', label: '📅 Plus ancien' },

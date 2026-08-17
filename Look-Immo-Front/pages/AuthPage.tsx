@@ -107,7 +107,7 @@ const AuthPage = ({ initialMode = 'login' }: AuthPageProps) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              <label htmlFor="auth-name" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                 Nom complet
               </label>
               <div className="relative">
@@ -115,6 +115,7 @@ const AuthPage = ({ initialMode = 'login' }: AuthPageProps) => {
                   <UserIcon className="w-4 h-4" />
                 </div>
                 <input
+                  id="auth-name"
                   type="text"
                   required
                   placeholder="Nom & Prénom"
@@ -128,7 +129,7 @@ const AuthPage = ({ initialMode = 'login' }: AuthPageProps) => {
 
           {!isLogin && (
             <div>
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+              <label htmlFor="auth-phone" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
                 Téléphone
               </label>
               <div className="relative">
@@ -136,6 +137,7 @@ const AuthPage = ({ initialMode = 'login' }: AuthPageProps) => {
                   <Phone className="w-4 h-4" />
                 </div>
                 <input
+                  id="auth-phone"
                   type="tel"
                   required
                   placeholder="+216 20 000 000"
@@ -148,7 +150,7 @@ const AuthPage = ({ initialMode = 'login' }: AuthPageProps) => {
           )}
 
           <div>
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
+            <label htmlFor="auth-email" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
               Adresse email
             </label>
             <div className="relative">
@@ -156,6 +158,7 @@ const AuthPage = ({ initialMode = 'login' }: AuthPageProps) => {
                 <Mail className="w-4 h-4" />
               </div>
               <input
+                id="auth-email"
                 type="email"
                 required
                 placeholder="nom@exemple.com"
@@ -168,7 +171,7 @@ const AuthPage = ({ initialMode = 'login' }: AuthPageProps) => {
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
-              <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              <label htmlFor="auth-password" className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider">
                 Mot de passe
               </label>
               {isLogin && (
@@ -186,6 +189,7 @@ const AuthPage = ({ initialMode = 'login' }: AuthPageProps) => {
                 <Lock className="w-4 h-4" />
               </div>
               <input
+                id="auth-password"
                 type={showPassword ? "text" : "password"}
                 required
                 placeholder="••••••••"

@@ -1,6 +1,11 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
+  DEFAULT_MAX_PRICE, DEFAULT_MIN_PRICE, DEFAULT_MIN_BEDROOMS, DEFAULT_MIN_AREA,
+  LAND_OR_HOTDEAL_MAX_PRICE, LISTINGS_PER_PAGE, PRICE_SLIDER_STEP, PRICE_DEBOUNCE_MS,
+  BEDROOM_OPTIONS, AREA_STEP,
+} from '@/constants/filterConstants';
+import {
   Filter, Lock, Check, ChevronDown, Home as HomeIcon, MapPin,
   DollarSign, Square, BedDouble, RefreshCw, ChevronLeft, ChevronRight, Search, X, SlidersHorizontal
 } from 'lucide-react';
@@ -29,7 +34,6 @@ const ListingsPage = () => {
     handleToggleFavorite(propertyId, () => setShowAuthModal(true));
   const userRole = user?.role;
 
-  const LISTINGS_PER_PAGE = 12;
   const [currentPage, setCurrentPage] = useState(1);
   const [isCityOpen, setIsCityOpen] = useState(false);
   const [isTypeOpen, setIsTypeOpen] = useState(false);
@@ -51,7 +55,7 @@ const ListingsPage = () => {
       if (localMaxPrice !== filters.maxPrice) {
         setFilters(prev => ({ ...prev, maxPrice: localMaxPrice }));
       }
-    }, 350);
+    }, PRICE_DEBOUNCE_MS);
 
     return () => clearTimeout(handler);
   }, [localMaxPrice]);
@@ -100,7 +104,7 @@ const ListingsPage = () => {
   // City list from locationsAPI (already fetched in DataContext)
   const uniqueCities = useMemo(() => [...availableLocations].sort(), [availableLocations]);
 
-  const maxPriceLimit = filters.propertyType === 'land' || filters.isHotDeal ? 15000000 : 5000000;
+  const maxPriceLimit = filters.propertyType === 'land' || filters.isHotDeal ? LAND_OR_HOTDEAL_MAX_PRICE : DEFAULT_MAX_PRICE;
 
   // Build server-side query params from filter state
   const queryParams = useMemo(() => {
@@ -167,14 +171,19 @@ const ListingsPage = () => {
             {isListingTypeOpen && (
               <div className="absolute z-30 mt-2 w-full bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 <div className="p-1.5">
-                  {[
-                    { id: 'all', label: 'Tout' },
-                    { id: 'sale', label: 'Ventes' },
-                    { id: 'rent', label: 'Locations' }
-                  ].map(type => (
+                  {(
+                    [
+                      { id: 'all', label: 'Tout' },
+                      { id: 'sale', label: 'Ventes' },
+                      { id: 'rent', label: 'Locations' }
+                    ] as const
+                  ).map((type) => (
                     <button
                       key={type.id}
-                      onClick={() => { setFilters({ ...filters, listingType: type.id as any }); setIsListingTypeOpen(false); }}
+                      onClick={() => {
+                        setFilters({ ...filters, listingType: type.id });
+                        setIsListingTypeOpen(false);
+                      }}
                       className={`
                         w-full px-4 py-3 rounded-lg text-left text-sm transition-all duration-200
                         flex items-center justify-between group mt-0.5 first:mt-0
@@ -224,22 +233,27 @@ const ListingsPage = () => {
             {isTypeOpen && (
               <div className="absolute z-30 mt-2 w-full bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                 <div className="max-h-60 overflow-y-auto custom-scrollbar p-1.5">
-                  {[
-                    { id: 'all', label: 'Tous les types' },
-                    { id: 'apartment', label: 'Appartement' },
-                    { id: 'villa', label: 'Villa' },
-                    { id: 'duplex', label: 'Duplex' },
-                    { id: 'triplex', label: 'Triplex' },
-                    { id: 'land', label: 'Terrain' },
-                    { id: 'penthouse', label: 'Penthouse' },
-                    { id: 'depot', label: 'Dépôt' },
-                    { id: 'studio', label: 'Studio' },
-                    { id: 'commerce', label: 'Commerce' },
-                    { id: 'commercial', label: 'Bureau / Local' }
-                  ].map(type => (
+                  {(
+                    [
+                      { id: 'all', label: 'Tous les types' },
+                      { id: 'apartment', label: 'Appartement' },
+                      { id: 'villa', label: 'Villa' },
+                      { id: 'duplex', label: 'Duplex' },
+                      { id: 'triplex', label: 'Triplex' },
+                      { id: 'land', label: 'Terrain' },
+                      { id: 'penthouse', label: 'Penthouse' },
+                      { id: 'depot', label: 'Dépôt' },
+                      { id: 'studio', label: 'Studio' },
+                      { id: 'commerce', label: 'Commerce' },
+                      { id: 'commercial', label: 'Bureau / Local' }
+                    ] as const
+                  ).map((type) => (
                     <button
                       key={type.id}
-                      onClick={() => { setFilters({ ...filters, propertyType: type.id as any }); setIsTypeOpen(false); }}
+                      onClick={() => {
+                        setFilters({ ...filters, propertyType: type.id });
+                        setIsTypeOpen(false);
+                      }}
                       className={`
                         w-full px-4 py-3 rounded-lg text-left text-sm transition-all duration-200
                         flex items-center justify-between group mt-0.5 first:mt-0
@@ -325,9 +339,9 @@ const ListingsPage = () => {
         <div className="relative py-3">
           <input
             type="range"
-            min="0"
+            min={DEFAULT_MIN_PRICE}
             max={maxPriceLimit}
-            step="50000"
+            step={PRICE_SLIDER_STEP}
             value={localMaxPrice}
             onChange={(e) => setLocalMaxPrice(Number(e.target.value))}
             onMouseUp={(e) => setFilters(prev => ({ ...prev, maxPrice: Number((e.target as HTMLInputElement).value) }))}
@@ -366,7 +380,7 @@ const ListingsPage = () => {
           </label>
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => setFilters({ ...filters, minArea: Math.max(0, (filters.minArea || 0) - 100) })}
+              onClick={() => setFilters({ ...filters, minArea: Math.max(DEFAULT_MIN_AREA, (filters.minArea || 0) - AREA_STEP) })}
               className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-brand-teal hover:text-white transition text-lg font-bold flex-shrink-0"
             >
               −
@@ -375,7 +389,7 @@ const ListingsPage = () => {
               {filters.minArea || 0} m²
             </div>
             <button
-              onClick={() => setFilters({ ...filters, minArea: (filters.minArea || 0) + 100 })}
+              onClick={() => setFilters({ ...filters, minArea: (filters.minArea || 0) + AREA_STEP })}
               className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center hover:bg-brand-teal hover:text-white transition text-lg font-bold flex-shrink-0"
             >
               +
@@ -388,7 +402,7 @@ const ListingsPage = () => {
             <BedDouble size={16} className="mr-2 text-brand-teal" strokeWidth={1.5} /> Chambres Minimum
           </label>
           <div className="flex items-center gap-2 flex-wrap">
-            {[1, 2, 3, 4].map(num => (
+            {BEDROOM_OPTIONS.map(num => (
               <button
                 key={num}
                 onClick={() => setFilters({ ...filters, minBedrooms: filters.minBedrooms === num ? 0 : num })}
@@ -411,10 +425,10 @@ const ListingsPage = () => {
       <button
         onClick={() => setFilters({
           ...filters,
-          minPrice: 0,
-          maxPrice: 5000000,
-          minBedrooms: 0,
-          minArea: 0,
+          minPrice: DEFAULT_MIN_PRICE,
+          maxPrice: DEFAULT_MAX_PRICE,
+          minBedrooms: DEFAULT_MIN_BEDROOMS,
+          minArea: DEFAULT_MIN_AREA,
           listingType: 'all',
           propertyType: 'all',
           city: 'all',
@@ -441,18 +455,21 @@ const ListingsPage = () => {
           <SlidersHorizontal size={16} className="text-brand-teal" />
           <span className="font-bold text-sm tracking-wide">Filtres</span>
           {/* Active filter count badge */}
-          {(filters.listingType !== 'all' || filters.propertyType !== 'all' || filters.city !== 'all' || filters.maxPrice < maxPriceLimit || filters.minBedrooms > 0 || ((filters.propertyType as any) === 'land' && (filters.minArea || 0) > (filters.isHotDeal ? 1000 : 0))) && (
-            <span className="w-5 h-5 bg-brand-teal text-white text-[10px] font-extrabold rounded-full flex items-center justify-center animate-in zoom-in">
-              {[
-                filters.listingType !== 'all',
-                filters.propertyType !== 'all',
-                filters.city !== 'all',
-                filters.maxPrice < maxPriceLimit,
-                filters.minBedrooms > 0,
-                (filters.propertyType as any) === 'land' && (filters.minArea || 0) > (filters.isHotDeal ? 1000 : 0),
-              ].filter(Boolean).length}
-            </span>
-          )}
+          {(() => {
+            const activeCount = [
+              filters.listingType !== 'all',
+              filters.propertyType !== 'all',
+              filters.city !== 'all',
+              filters.maxPrice < maxPriceLimit,
+              filters.minBedrooms > 0,
+              (filters.minArea || 0) > (filters.isHotDeal ? 1000 : 0)
+            ].filter(Boolean).length;
+            return activeCount > 0 ? (
+              <span className="w-5 h-5 bg-brand-teal text-white text-[10px] font-extrabold rounded-full flex items-center justify-center animate-in zoom-in">
+                {activeCount}
+              </span>
+            ) : null;
+          })()}
         </button>
       </div>
 

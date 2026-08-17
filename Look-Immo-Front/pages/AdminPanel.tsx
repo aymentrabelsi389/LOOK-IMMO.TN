@@ -51,10 +51,11 @@ const AdminPanel = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
-    if (location.state && (location.state as any).tab) {
-      setActiveTab((location.state as any).tab);
+    const navState = location.state as { tab?: string; [key: string]: unknown } | null;
+    if (navState?.tab) {
+      setActiveTab(navState.tab);
       // Clean up the location state so it doesn't trigger again on component updates
-      navigate(location.pathname, { replace: true, state: { ...location.state, tab: undefined } });
+      navigate(location.pathname, { replace: true, state: { ...navState, tab: undefined } });
     }
   }, [location.state, location.pathname, navigate]);
 

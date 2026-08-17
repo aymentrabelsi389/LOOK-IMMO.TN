@@ -186,7 +186,7 @@ const AppointmentsManagement = ({
 
           <CustomDropdown
             value={sortBy}
-            onChange={(val) => setSortBy(val as any)}
+            onChange={(val) => setSortBy(val as 'created-desc' | 'created-asc' | 'scheduled-desc' | 'scheduled-asc')}
             options={[
               { value: 'created-desc', label: '📅 Reçu le (Récent)' },
               { value: 'created-asc', label: '📅 Reçu le (Ancien)' },

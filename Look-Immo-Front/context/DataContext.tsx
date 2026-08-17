@@ -4,15 +4,22 @@ import {
   Property, User, SiteSettings, Message, Appointment, BlogPost, Rating, Location
 } from '@/types';
 import {
-  propertiesAPI, locationsAPI, blogAPI, settingsAPI, ratingsAPI,
+  propertiesAPI, blogAPI, ratingsAPI,
   messagesAPI, appointmentsAPI, statsAPI, usersAPI, adaptAppointment,
-  type BackendRating, shapeProperties, shapeRatings
+  type BackendRating, shapeRatings
 } from '@/services/api';
 import { socketService } from '@/services/socket';
 import { notify } from '@/services/notificationStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useUI } from './UIContext';
 import { useAdmin } from '@/hooks/useAdmin';
+import {
+  usePropertiesQuery,
+  useSettingsQuery,
+  useLocationsQuery,
+  useBlogPostsQuery,
+  useAppointmentsQuery
+} from '@/hooks/queries';
 
 // Evidence-based shapes for the two write handlers below, matching what
 // their actual callers (ContactPage, PropertyDetailsPage) send — narrower
@@ -74,23 +81,7 @@ export const useData = () => {
   return context;
 };
 
-const DEFAULT_SITE_SETTINGS: SiteSettings = {
-  websiteName: 'Look Immo',
-  contactEmail: 'contact@lookimmo.tn',
-  phoneNumber: '+216 70 123 456',
-  address: 'Tunis, Tunisie',
-  socialMedia: { instagram: '', facebook: '', whatsapp: '' },
-  workingHours: { weekdays: '', saturday: '', sunday: '' },
-} as SiteSettings;
-
-
-
 // ── Setter bridges ───────────────────────────────────────────────────────
-// These give components the exact same `Dispatch<SetStateAction<T[]>>` API
-// they had with useState, but write straight into the React Query cache via
-// queryClient.setQueryData instead of a parallel piece of local state. Every
-// subscriber to that query (this context included) re-renders from the same
-// single source of truth — no sync effect, no second copy to go stale.
 function makeArraySetter<T>(
   queryClient: ReturnType<typeof useQueryClient>,
   key: QueryKey
@@ -107,80 +98,39 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const user = useAuthStore((s) => s.user);
   const { handleNavigate, setSelectedPropertyId, setSelectedBlogPostId } = useUI();
   const queryClient = useQueryClient();
-
   const { isAdminOrAgent } = useAdmin();
 
-  // ── TanStack Queries — each query's cache IS the state now. ──
+  // ── Composed Modular Query Hooks ──
+  const {
+    properties,
+    totalProperties,
+    isFetched: isPropertiesFetched,
+    setProperties,
+  } = usePropertiesQuery();
 
-  // Properties Query: 5 minutes staleTime — fetches first page only for global context,
-  // or all properties for admins/agents so they can manage the full list.
-  // (ListingsPage manages its own server-side paginated query independently)
-  const propertiesKey = useMemo(() => ['properties', 'global', isAdminOrAgent] as const, [isAdminOrAgent]);
-  const { data: qPropertiesResult, isFetched: isPropertiesFetched } = useQuery({
-    queryKey: propertiesKey,
-    queryFn: () => propertiesAPI.getAll(isAdminOrAgent ? { noLimit: 'true' } : { page: 1, limit: 24, excludeSold: 'true' }),
-    staleTime: 5 * 60 * 1000,
-  });
+  const {
+    siteSettings,
+    setSiteSettings,
+  } = useSettingsQuery();
 
-  const properties = useMemo(
-    () => (qPropertiesResult ? shapeProperties(qPropertiesResult.data) : []),
-    [qPropertiesResult]
-  );
-  const totalProperties = qPropertiesResult?.pagination.total ?? 0;
+  const {
+    adminLocations,
+    availableLocations,
+    setAdminLocations,
+    setAvailableLocations,
+  } = useLocationsQuery();
 
-  const setProperties: React.Dispatch<React.SetStateAction<Property[]>> = (updater) => {
-    queryClient.setQueryData(propertiesKey, (old: typeof qPropertiesResult) => {
-      if (!old) return old;
-      const currentShaped = shapeProperties(old.data);
-      const next = typeof updater === 'function' ? (updater as (prev: Property[]) => Property[])(currentShaped) : updater;
-      return { ...old, data: next };
-    });
-  };
+  const {
+    blogPosts,
+    setBlogPosts,
+  } = useBlogPostsQuery();
 
-  // Locations Query: 10 minutes staleTime
-  const { data: qLocations } = useQuery({
-    queryKey: ['locations'],
-    queryFn: () => locationsAPI.getAll(),
-    staleTime: 10 * 60 * 1000,
-  });
-  const adminLocations = qLocations ?? [];
-  // availableLocations is purely a `.name` projection of adminLocations, so it's
-  // derived rather than tracked separately — updating adminLocations already
-  // updates this on the next render.
-  const availableLocations = useMemo(() => (qLocations ?? []).map((l: Location) => l.name), [qLocations]);
-  const setAdminLocations = makeArraySetter<Location>(queryClient, ['locations']);
-  // Kept only so existing call sites that set both together (always
-  // `setAdminLocations(x); setAvailableLocations(x.map(...))`) keep compiling —
-  // it's a no-op because setAdminLocations already updates the derived view above.
-  const setAvailableLocations: React.Dispatch<React.SetStateAction<string[]>> = () => {};
+  const {
+    appointments,
+    setAppointments,
+  } = useAppointmentsQuery(user);
 
-  // Blog Posts Query: 5 minutes staleTime
-  const { data: qBlogPosts } = useQuery({
-    queryKey: ['blogPosts'],
-    queryFn: () => blogAPI.getAll(),
-    staleTime: 5 * 60 * 1000,
-  });
-  const blogPosts = qBlogPosts ?? [];
-  const setBlogPosts = makeArraySetter<BlogPost>(queryClient, ['blogPosts']);
-
-  // Settings Query: 10 minutes staleTime
-  const { data: qSettings } = useQuery({
-    queryKey: ['settings'],
-    queryFn: () => settingsAPI.get(),
-    staleTime: 10 * 60 * 1000,
-  });
-  // Mirrors the previous state machine: while the query hasn't resolved yet,
-  // stay null (loading); once resolved, fall back to defaults only if the
-  // server genuinely returned nothing.
-  const siteSettings = qSettings === undefined ? null : qSettings ?? DEFAULT_SITE_SETTINGS;
-  const setSiteSettings: React.Dispatch<React.SetStateAction<SiteSettings | null>> = (updater) => {
-    queryClient.setQueryData(['settings'], (old: SiteSettings | null | undefined) => {
-      const current = old === undefined ? null : old ?? DEFAULT_SITE_SETTINGS;
-      return typeof updater === 'function' ? (updater as (prev: SiteSettings | null) => SiteSettings | null)(current) : updater;
-    });
-  };
-
-  // Ratings Query: 1 minute staleTime
+  // ── Admin-Only Queries ──
   const { data: qRatings } = useQuery({
     queryKey: ['ratings'],
     queryFn: () => ratingsAPI.getAll(),
@@ -195,7 +145,6 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
     });
   };
 
-  // Users Query: 1 minute staleTime, enabled for admin/agent only
   const { data: qUsers } = useQuery({
     queryKey: ['users'],
     queryFn: () => usersAPI.getAll(),
@@ -205,7 +154,6 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const allUsers = qUsers ?? [];
   const setAllUsers = makeArraySetter<User>(queryClient, ['users']);
 
-  // Messages Query: 30 seconds staleTime, enabled for admin/agent only
   const { data: qMessages } = useQuery({
     queryKey: ['messages'],
     queryFn: () => messagesAPI.getAll(),
@@ -215,19 +163,6 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
   const messages = qMessages ?? [];
   const setMessages = makeArraySetter<Message>(queryClient, ['messages']);
 
-  // Appointments Query: 30 seconds staleTime, enabled for logged-in users
-  const { data: qAppointments } = useQuery({
-    queryKey: ['appointments'],
-    queryFn: () => appointmentsAPI.getAll(),
-    enabled: !!user,
-    staleTime: 30 * 1000,
-  });
-  const appointments = qAppointments ?? [];
-  const setAppointments = makeArraySetter<Appointment>(queryClient, ['appointments']);
-
-  // Loading gate — only the global first load blocks the UI; background
-  // refetches never do, since isFetched stays true forever once the query
-  // has resolved once. Derived directly, no state/effect needed.
   const isLoading = !isPropertiesFetched;
 
   // Track visit on mount
@@ -290,7 +225,6 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
           queryClient.invalidateQueries({ queryKey: ['messages'] });
         });
       } else {
-        // Standard Client Listeners
         socketService.on('appointment_new', () => {
           queryClient.invalidateQueries({ queryKey: ['appointments'] });
         });
@@ -316,7 +250,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         socketService.disconnect();
       };
     }
-  }, [user, isAdminOrAgent, queryClient]);
+  }, [user, isAdminOrAgent, queryClient, setAppointments, setMessages]);
 
   const refreshAdminData = async () => {
     if (isAdminOrAgent) {
@@ -362,7 +296,7 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
         phone: data.phone,
         subject: data.subject,
         message: data.message,
-        website: data.website || '', // honeypot — forwarded for backend validation
+        website: data.website || '',
       });
       notify.success('Message envoyé.');
       if (user?.role === 'admin') {
@@ -400,7 +334,6 @@ export const DataProvider = ({ children }: { children: React.ReactNode }) => {
       await ratingsAPI.create({ userName: user.name, propertyId, stars: value, userId: user.id });
       notify.success('Merci pour votre avis.');
 
-      // Invalidate properties and ratings in the background
       queryClient.invalidateQueries({ queryKey: ['properties', 'global'] });
       queryClient.invalidateQueries({ queryKey: ['ratings'] });
 

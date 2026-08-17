@@ -651,17 +651,19 @@ const PropertyModal = ({
               <div>
                 <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">Statut de la propriété</h4>
                 <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { value: 'available', label: 'Disponible', emoji: '✅', bg: 'bg-emerald-500', ring: 'ring-emerald-300', light: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
-                    { value: 'sold', label: 'Vendu', emoji: '🔴', bg: 'bg-red-500', ring: 'ring-red-300', light: 'bg-red-50 border-red-200 text-red-700' },
-                    { value: 'rented', label: 'Loué', emoji: '🟠', bg: 'bg-orange-500', ring: 'ring-orange-300', light: 'bg-orange-50 border-orange-200 text-orange-700' },
-                  ].map(opt => {
+                  {(
+                    [
+                      { value: 'available', label: 'Disponible', emoji: '✅', bg: 'bg-emerald-500', ring: 'ring-emerald-300', light: 'bg-emerald-50 border-emerald-200 text-emerald-700' },
+                      { value: 'sold', label: 'Vendu', emoji: '🔴', bg: 'bg-red-500', ring: 'ring-red-300', light: 'bg-red-50 border-red-200 text-red-700' },
+                      { value: 'rented', label: 'Loué', emoji: '🟠', bg: 'bg-orange-500', ring: 'ring-orange-300', light: 'bg-orange-50 border-orange-200 text-orange-700' },
+                    ] as const
+                  ).map((opt) => {
                     const isSelected = (formData.status || 'available') === opt.value;
                     return (
                       <button
                         key={opt.value}
                         type="button"
-                        onClick={() => setFormData({ ...formData, status: opt.value as any })}
+                        onClick={() => setFormData({ ...formData, status: opt.value })}
                         className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 font-bold text-sm transition-all ${
                           isSelected
                             ? `${opt.light} border-current shadow-md ring-2 ${opt.ring}`

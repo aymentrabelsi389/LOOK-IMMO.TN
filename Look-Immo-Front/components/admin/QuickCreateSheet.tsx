@@ -51,16 +51,12 @@ const QuickCreateSheet: React.FC<QuickCreateSheetProps> = ({ isOpen, onClose }) 
 
   const handleAction = (target: 'property' | 'appointment' | 'demand') => {
     onClose();
-    const options = { replace: true, state: {} as any };
     if (target === 'property') {
-      options.state = { tab: 'properties', action: 'new-property' };
-      navigate('/admin', options);
+      navigate('/admin', { replace: true, state: { tab: 'properties', action: 'new-property' } });
     } else if (target === 'appointment') {
-      options.state = { action: 'new-appointment' };
-      navigate('/dashboard', options);
+      navigate('/dashboard', { replace: true, state: { action: 'new-appointment' } });
     } else if (target === 'demand') {
-      options.state = { action: 'new-demand' };
-      navigate('/dashboard', options);
+      navigate('/dashboard', { replace: true, state: { action: 'new-demand' } });
     }
   };
 

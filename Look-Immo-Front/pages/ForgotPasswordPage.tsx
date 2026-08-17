@@ -379,7 +379,7 @@ const ForgotPasswordPage = () => {
               
               {/* New Password */}
               <div className="relative">
-                <label className="text-xs font-bold text-gray-600 uppercase tracking-wider block mb-2">
+                <label htmlFor="new-password" className="text-xs font-bold text-gray-600 uppercase tracking-wider block mb-2">
                   Nouveau mot de passe
                 </label>
                 <div className="relative">
@@ -387,6 +387,7 @@ const ForgotPasswordPage = () => {
                     <Lock className="h-5 w-5" />
                   </span>
                   <input
+                    id="new-password"
                     type={showPassword ? "text" : "password"}
                     required
                     placeholder="Min. 6 caractères"
@@ -406,7 +407,7 @@ const ForgotPasswordPage = () => {
 
               {/* Confirm Password */}
               <div className="relative">
-                <label className="text-xs font-bold text-gray-600 uppercase tracking-wider block mb-2">
+                <label htmlFor="confirm-password" className="text-xs font-bold text-gray-600 uppercase tracking-wider block mb-2">
                   Confirmer le mot de passe
                 </label>
                 <div className="relative">
@@ -414,6 +415,7 @@ const ForgotPasswordPage = () => {
                     <Lock className="h-5 w-5" />
                   </span>
                   <input
+                    id="confirm-password"
                     type={showConfirmPassword ? "text" : "password"}
                     required
                     placeholder="Confirmez votre saisie"

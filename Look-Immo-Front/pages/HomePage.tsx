@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { MapPin, ChevronDown } from 'lucide-react';
+import {
+  DEFAULT_MAX_PRICE, DEFAULT_MIN_PRICE, DEFAULT_MIN_BEDROOMS, DEFAULT_MIN_AREA,
+} from '@/constants/filterConstants';
 
 import FeaturedPropertiesSection from '@/components/home/FeaturedPropertiesSection';
 import NewPropertiesSection from '@/components/home/NewPropertiesSection';
@@ -52,10 +55,10 @@ const HomePage = () => {
       listingType: activeTab === 'buy' ? 'sale' : 'rent',
       propertyType: 'all',
       isHotDeal: false,
-      minPrice: 0,
-      maxPrice: 5000000,
-      minBedrooms: 0,
-      minArea: 0,
+      minPrice: DEFAULT_MIN_PRICE,
+      maxPrice: DEFAULT_MAX_PRICE,
+      minBedrooms: DEFAULT_MIN_BEDROOMS,
+      minArea: DEFAULT_MIN_AREA,
       city: 'all',
     });
     onNavigate('listings');
@@ -106,10 +109,10 @@ const HomePage = () => {
             {/* Tabs - Centered */}
             <div className="flex justify-center mb-8">
               <div className="bg-brand-dark/50 rounded-full p-1.5 flex border border-white/10">
-                {['buy', 'rent'].map((tab) => (
+                {(['buy', 'rent'] as const).map((tab) => (
                   <button
                     key={tab}
-                    onClick={() => setActiveTab(tab as any)}
+                    onClick={() => setActiveTab(tab)}
                     className={`px-6 md:px-10 py-3 rounded-full text-sm md:text-base font-semibold transition-all duration-300 capitalize tracking-wide ${activeTab === tab
                       ? 'bg-white text-brand-dark shadow-lg scale-105'
                       : 'text-gray-300 hover:text-white hover:bg-white/5'
@@ -208,10 +211,10 @@ const HomePage = () => {
             query: '',
             listingType: 'all',
             propertyType: 'all',
-            minPrice: 0,
-            maxPrice: 5000000,
-            minBedrooms: 0,
-            minArea: 0
+            minPrice: DEFAULT_MIN_PRICE,
+            maxPrice: DEFAULT_MAX_PRICE,
+            minBedrooms: DEFAULT_MIN_BEDROOMS,
+            minArea: DEFAULT_MIN_AREA
           });
           onNavigate('listings');
         }}

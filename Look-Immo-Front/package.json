@@ -20,7 +20,6 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@sentry/react": "^10.62.0",
     "@tanstack/react-query": "^5.101.0",
-    "@types/leaflet": "^1.9.21",
     "dompurify": "^3.4.11",
     "heic2any": "^0.0.4",
     "leaflet": "^1.9.4",
@@ -35,6 +34,7 @@
   },
   "devDependencies": {
     "@types/dompurify": "^3.0.5",
+    "@types/leaflet": "^1.9.21",
     "@types/node": "^22.14.0",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",

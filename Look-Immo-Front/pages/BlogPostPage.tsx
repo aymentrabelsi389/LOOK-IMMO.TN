@@ -48,18 +48,27 @@ const BlogPostPage = () => {
     description: post ? `${post.excerpt || (post.content ? post.content.substring(0, 150) : '')}...` : "Découvrez cet article sur le blog Look Immo."
   });
 
-  // JSON-LD Structured Data for Google Rich Results
+  // JSON-LD Structured Data for Google Rich Results (Article schema)
   const jsonLd = post ? {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: post.title,
     description: post.excerpt || post.content.replace(/<[^>]+>/g, '').substring(0, 150),
     image: post.image,
+    url: window.location.href,
+    inLanguage: 'fr-TN',
+    articleSection: post.category || 'Immobilier',
+    wordCount: post.content
+      ? post.content.replace(/<[^>]+>/g, '').split(/\s+/).filter(Boolean).length
+      : 0,
     datePublished: post.createdAt ? new Date(post.createdAt).toISOString() : undefined,
-    dateModified: post.updatedAt ? new Date(post.updatedAt).toISOString() : (post.createdAt ? new Date(post.createdAt).toISOString() : undefined),
+    dateModified: post.updatedAt
+      ? new Date(post.updatedAt).toISOString()
+      : post.createdAt ? new Date(post.createdAt).toISOString() : undefined,
     author: {
       '@type': 'Organization',
       name: 'Look Immo',
+      url: window.location.origin,
     },
     publisher: {
       '@type': 'Organization',

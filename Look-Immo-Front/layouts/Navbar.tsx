@@ -8,6 +8,10 @@ import {
   X,
 } from "lucide-react";
 import {
+  DEFAULT_MAX_PRICE, DEFAULT_MIN_PRICE, DEFAULT_MIN_BEDROOMS, DEFAULT_MIN_AREA,
+  LAND_OR_HOTDEAL_MAX_PRICE, PROMOTION_LAND_MIN_AREA,
+} from '@/constants/filterConstants';
+import {
   CurrencyCode,
   FilterState,
   ListingType,
@@ -55,20 +59,18 @@ const Navbar = ({
   const [isOpen, setIsOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const [isScrolled, setIsScrolled] = useState(false);
+
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { currency, setCurrency } = useCurrencyStore();
   const [isCurrencyOpen, setIsCurrencyOpen] = useState(false);
   const currencyDropdownRef = useRef<HTMLDivElement>(null);
 
-  const isContactPage = currentPage === "contact";
+
 
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
 
-      // Frosted-glass trigger (used on contact page)
-      setIsScrolled(currentScrollY > 40);
 
       if (currentScrollY < 10) {
         setIsVisible(true);
@@ -94,10 +96,10 @@ const Navbar = ({
         query: "",
         listingType: type || "all",
         propertyType: propType || "all",
-        minPrice: 0,
-        maxPrice: isHotDeal ? 15000000 : 5000000,
-        minBedrooms: 0,
-        minArea: isHotDeal ? 1000 : 0,
+        minPrice: DEFAULT_MIN_PRICE,
+        maxPrice: isHotDeal ? LAND_OR_HOTDEAL_MAX_PRICE : DEFAULT_MAX_PRICE,
+        minBedrooms: DEFAULT_MIN_BEDROOMS,
+        minArea: isHotDeal ? PROMOTION_LAND_MIN_AREA : DEFAULT_MIN_AREA,
         isHotDeal: isHotDeal || false,
       };
       onSearch(searchFilters);

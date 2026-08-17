@@ -3,6 +3,7 @@ import { CalendarDays, ChevronLeft, ChevronRight, Clock, ChevronDown, X } from '
 import { useClickOutside } from '@/hooks/useClickOutside';
 
 interface DatePickerProps {
+  id?: string;
   value: string;
   onChange: (date: string) => void;
   required?: boolean;
@@ -10,7 +11,7 @@ interface DatePickerProps {
   error?: boolean;
 }
 
-export const CustomDatePicker: React.FC<DatePickerProps> = ({ value, onChange, required, allowPastDates = false, error }) => {
+export const CustomDatePicker: React.FC<DatePickerProps> = ({ id, value, onChange, required, allowPastDates = false, error }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -57,6 +58,7 @@ export const CustomDatePicker: React.FC<DatePickerProps> = ({ value, onChange, r
   return (
     <div className="relative w-full" ref={popoverRef}>
       <button
+        id={id}
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`w-full flex items-center justify-between px-4 py-3 bg-white border rounded-xl focus:outline-none focus:ring-2 transition-all text-left shadow-sm cursor-pointer ${
@@ -138,13 +140,14 @@ export const CustomDatePicker: React.FC<DatePickerProps> = ({ value, onChange, r
 };
 
 interface TimePickerProps {
+  id?: string;
   value: string;
   onChange: (time: string) => void;
   required?: boolean;
   error?: boolean;
 }
 
-export const CustomTimePicker: React.FC<TimePickerProps> = ({ value, onChange, required, error }) => {
+export const CustomTimePicker: React.FC<TimePickerProps> = ({ id, value, onChange, required, error }) => {
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
   
@@ -187,35 +190,41 @@ export const CustomTimePicker: React.FC<TimePickerProps> = ({ value, onChange, r
 
   return (
     <div className="relative w-full" ref={popoverRef}>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className={`w-full flex items-center justify-between px-4 py-3 bg-white border rounded-xl focus:outline-none focus:ring-2 transition-all text-left shadow-sm cursor-pointer ${
-          error
-            ? 'border-red-400 ring-2 ring-red-100 hover:border-red-500'
-            : value
-            ? 'border-gray-200 hover:border-blue-500 focus:ring-blue-50'
-            : 'border-amber-200 bg-amber-50/30 hover:border-amber-400 focus:ring-amber-50'
-        }`}
-      >
-        <span className={value ? "text-gray-900 font-semibold text-sm" : "text-amber-500 text-sm font-medium"}>
-          {value || 'À définir...'}
-        </span>
-        <div className={`flex items-center gap-1.5 ${error ? 'text-red-400' : value ? 'text-gray-400' : 'text-amber-400'}`}>
-          {value && (
-            <button
-              type="button"
-              onClick={e => { e.stopPropagation(); onChange(''); }}
-              className="hover:bg-gray-100 rounded-full p-0.5 transition-colors"
-              title="Effacer l'heure"
-            >
-              <X size={13} className="text-gray-400" />
-            </button>
-          )}
-          <Clock size={16} />
-          <ChevronDown size={16} className={`transition-transform duration-300 ${isOpen ? 'rotate-180 text-blue-500' : ''}`} />
-        </div>
-      </button>
+      {/* Wrapper div makes trigger + clear siblings — no nested <button> */}
+      <div className="relative">
+        <button
+          id={id}
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className={`w-full flex items-center justify-between px-4 py-3 bg-white border rounded-xl focus:outline-none focus:ring-2 transition-all text-left shadow-sm cursor-pointer ${
+            error
+              ? 'border-red-400 ring-2 ring-red-100 hover:border-red-500'
+              : value
+              ? 'border-gray-200 hover:border-blue-500 focus:ring-blue-50'
+              : 'border-amber-200 bg-amber-50/30 hover:border-amber-400 focus:ring-amber-50'
+          }`}
+        >
+          <span className={value ? "text-gray-900 font-semibold text-sm" : "text-amber-500 text-sm font-medium"}>
+            {value || 'À définir...'}
+          </span>
+          <div className={`flex items-center gap-1.5 ${value ? 'pr-6' : ''} ${error ? 'text-red-400' : value ? 'text-gray-400' : 'text-amber-400'}`}>
+            <Clock size={16} />
+            <ChevronDown size={16} className={`transition-transform duration-300 ${isOpen ? 'rotate-180 text-blue-500' : ''}`} />
+          </div>
+        </button>
+
+        {/* Clear button — sibling of the trigger, not a child, to avoid nested <button> */}
+        {value && (
+          <button
+            type="button"
+            onClick={e => { e.stopPropagation(); onChange(''); }}
+            className="absolute right-9 top-1/2 -translate-y-1/2 hover:bg-gray-100 rounded-full p-0.5 transition-colors z-10"
+            title="Effacer l'heure"
+          >
+            <X size={13} className="text-gray-400" />
+          </button>
+        )}
+      </div>
 
       {/* Hidden input for HTML5 validation if required */}
       {required && <input type="text" value={value} readOnly className="absolute opacity-0 w-0 h-0" required />}

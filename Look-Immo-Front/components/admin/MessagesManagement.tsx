@@ -128,7 +128,7 @@ const MessagesManagement = ({
 
           <CustomDropdown
             value={sortBy}
-            onChange={(val) => setSortBy(val as any)}
+            onChange={(val) => setSortBy(val as 'date-desc' | 'date-asc' | 'status')}
             options={[
               { value: 'date-desc', label: '📅 Plus récent' },
               { value: 'date-asc', label: '📅 Plus ancien' },

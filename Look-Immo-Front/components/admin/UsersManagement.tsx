@@ -94,7 +94,7 @@ const UsersManagement = ({
 
           <CustomDropdown
             value={sortBy}
-            onChange={(val) => setSortBy(val as any)}
+            onChange={(val) => setSortBy(val as 'date-desc' | 'date-asc' | 'name')}
             options={[
               { value: 'date-desc', label: '📅 Inscription (Récent)' },
               { value: 'date-asc', label: '📅 Inscription (Ancien)' },

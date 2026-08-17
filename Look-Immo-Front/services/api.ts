@@ -444,7 +444,7 @@ export const resolveImage = (img: string) => (img && img.startsWith('/') && !img
 const adaptProperty = (backendProp: any): Property => {
     let realType = (backendProp.category || 'apartment').toLowerCase();
     let featuresRaw = backendProp.features;
-    let features = {
+    let features: Property['features'] = {
         bedrooms: 0,
         bathrooms: 0,
         area: 0,
@@ -457,11 +457,11 @@ const adaptProperty = (backendProp: any): Property => {
     };
     if (featuresRaw && typeof featuresRaw === 'object') {
         features = { ...features, ...featuresRaw };
-        if ((features as any).propertyPlan) {
-            (features as any).propertyPlan = resolveImage((features as any).propertyPlan);
+        if (features.propertyPlan) {
+            features.propertyPlan = resolveImage(features.propertyPlan);
         }
-        if ((features as any).ownerPaper) {
-            (features as any).ownerPaper = resolveImage((features as any).ownerPaper);
+        if (features.ownerPaper) {
+            features.ownerPaper = resolveImage(features.ownerPaper);
         }
     }
     let cleanDescription = backendProp.description || '';
@@ -819,8 +819,12 @@ export const blogAPI = {
 
 // ==================== NOTIFICATIONS API ====================
 export const notificationsAPI = {
-    getAll: async (params?: { filter?: string; page?: number; limit?: number }): Promise<any> => {
-        const query = params ? '?' + new URLSearchParams(params as any).toString() : '';
+    getAll: async (params?: { filter?: string; page?: number; limit?: number }): Promise<{ notifications: SiteNotification[]; unreadCount: number; pagination?: any; total?: number }> => {
+        const query = params ? '?' + new URLSearchParams(
+            Object.entries(params)
+                .filter(([_, v]) => v !== undefined)
+                .map(([k, v]) => [k, String(v)])
+        ).toString() : '';
         const res = await apiFetch(`/notifications${query}`);
         return res.json();
     },

@@ -58,7 +58,7 @@ export interface Property {
   };
   type: PropertyType;
   listingType: ListingType;
-  status?: PropertyStatus; // New status field
+  status?: PropertyStatus;
   images: string[];
   agentId: string;
   isFeatured?: boolean;
@@ -190,8 +190,6 @@ export interface OrganicVisit {
   visitDate: number; // timestamp, auto-generated
 }
 
-
-
 export interface FinanceTransaction {
   id: string;
   type: 'vente' | 'location';
@@ -229,3 +227,8 @@ export interface SiteNotification {
   user?: { id: string; name: string } | null;
 }
 
+export interface AppNavigationState {
+  action?: 'new-appointment' | 'new-demand';
+  from?: string;
+  [key: string]: unknown;
+}

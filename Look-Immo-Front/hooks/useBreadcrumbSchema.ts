@@ -11,6 +11,8 @@ export interface BreadcrumbSchemaItem {
  * Mirrors the same DOM-mutation pattern as useSEO and cleans up on unmount.
  */
 export const useBreadcrumbSchema = (items: BreadcrumbSchemaItem[]) => {
+  const itemsKey = items.map((i) => `${i.name}:${i.item || ''}`).join('|');
+
   useEffect(() => {
     if (!items.length) return;
 
@@ -36,7 +38,7 @@ export const useBreadcrumbSchema = (items: BreadcrumbSchemaItem[]) => {
 
     return () => {
       // Remove only the breadcrumb script we injected (identified by data-schema)
-      document.head.querySelectorAll('script[data-schema="breadcrumb"]').forEach(el => el.remove());
+      document.head.querySelectorAll('script[data-schema="breadcrumb"]').forEach((el) => el.remove());
     };
-  }, [JSON.stringify(items)]);
+  }, [itemsKey]);
 };

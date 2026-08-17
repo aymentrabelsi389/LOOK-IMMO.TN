@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { propertiesAPI } from '@/services/api';
 import PropertyCarousel from './PropertyCarousel';
 import { SkeletonPropertyCard } from '../ui/SkeletonCard';
+import { LAND_OR_HOTDEAL_MAX_PRICE, PROMOTION_LAND_MIN_AREA } from '@/constants/filterConstants';
 
 const PromotionLandsSection = ({
   onSelectProperty,
@@ -33,8 +34,8 @@ const PromotionLandsSection = ({
 
   const devLands = (result?.data ?? [])
     .filter(p =>
-      p.price <= 15000000 &&
-      (p.features?.area ?? 0) >= 1000
+      p.price <= LAND_OR_HOTDEAL_MAX_PRICE &&
+      (p.features?.area ?? 0) >= PROMOTION_LAND_MIN_AREA
     )
     .sort((a, b) => {
       const orderA = a.displayOrder || 999999;

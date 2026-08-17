@@ -2,14 +2,16 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FilterState } from '@/types';
 
+import { DEFAULT_MAX_PRICE, DEFAULT_MIN_PRICE, DEFAULT_MIN_BEDROOMS, DEFAULT_MIN_AREA } from '@/constants/filterConstants';
+
 export const INITIAL_FILTERS: FilterState = {
   query: '',
   listingType: 'all',
   propertyType: 'all',
-  minPrice: 0,
-  maxPrice: 5000000,
-  minBedrooms: 0,
-  minArea: 0,
+  minPrice: DEFAULT_MIN_PRICE,
+  maxPrice: DEFAULT_MAX_PRICE,
+  minBedrooms: DEFAULT_MIN_BEDROOMS,
+  minArea: DEFAULT_MIN_AREA,
   city: 'all',
   isHotDeal: false,
 };

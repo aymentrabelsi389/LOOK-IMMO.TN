@@ -126,7 +126,7 @@ const DemandsManagement = ({
           <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
             <CustomDropdown
               value={sortBy}
-              onChange={(val) => setSortBy(val as any)}
+              onChange={(val) => setSortBy(val as 'created-desc' | 'created-asc' | 'matches-desc')}
               options={[
                 { value: 'created-desc', label: '📅 Reçu le (Récent)' },
                 { value: 'created-asc', label: '📅 Reçu le (Ancien)' },
@@ -563,14 +563,16 @@ const DemandsManagement = ({
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Type de transaction *</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { value: 'sale', label: '🔑 Achat', active: 'bg-blue-50 border-blue-400 text-blue-700 shadow-sm shadow-blue-100', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-blue-200 hover:bg-blue-50/50' },
-                    { value: 'rent', label: '🏠 Location', active: 'bg-blue-50 border-blue-400 text-blue-700 shadow-sm shadow-blue-100', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-blue-200 hover:bg-blue-50/50' },
-                  ].map(opt => (
+                  {(
+                    [
+                      { value: 'sale', label: '🔑 Achat', active: 'bg-blue-50 border-blue-400 text-blue-700 shadow-sm shadow-blue-100', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-blue-200 hover:bg-blue-50/50' },
+                      { value: 'rent', label: '🏠 Location', active: 'bg-blue-50 border-blue-400 text-blue-700 shadow-sm shadow-blue-100', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-blue-200 hover:bg-blue-50/50' },
+                    ] as const
+                  ).map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
-                      onClick={() => setEditingDemand({ ...editingDemand, contractType: opt.value as any })}
+                      onClick={() => setEditingDemand({ ...editingDemand, contractType: opt.value })}
                       className={`py-2.5 rounded-2xl border-2 text-xs font-bold transition-all duration-200 text-center ${
                         editingDemand.contractType === opt.value ? opt.active : opt.inactive
                       }`}
@@ -584,17 +586,19 @@ const DemandsManagement = ({
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Type de bien *</label>
                 <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                  {[
-                    { value: 'appartement', label: 'Appartement', emoji: '🏢' },
-                    { value: 'villa', label: 'Villa', emoji: '🏡' },
-                    { value: 'terrain', label: 'Terrain', emoji: '🌿' },
-                    { value: 'bureau', label: 'Bureau', emoji: '💼' },
-                    { value: 'commerce', label: 'Commerce', emoji: '🏪' },
-                  ].map(opt => (
+                  {(
+                    [
+                      { value: 'appartement', label: 'Appartement', emoji: '🏢' },
+                      { value: 'villa', label: 'Villa', emoji: '🏡' },
+                      { value: 'terrain', label: 'Terrain', emoji: '🌿' },
+                      { value: 'bureau', label: 'Bureau', emoji: '💼' },
+                      { value: 'commerce', label: 'Commerce', emoji: '🏪' },
+                    ] as const
+                  ).map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
-                      onClick={() => setEditingDemand({ ...editingDemand, type: opt.value as any })}
+                      onClick={() => setEditingDemand({ ...editingDemand, type: opt.value })}
                       className={`flex flex-col items-center justify-center gap-1 py-2 px-1 rounded-2xl border-2 text-xs font-bold transition-all duration-200 ${
                         editingDemand.type === opt.value
                           ? 'bg-blue-50 border-blue-400 text-blue-700 shadow-sm shadow-blue-100'
@@ -611,15 +615,17 @@ const DemandsManagement = ({
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Priorité</label>
                 <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { value: 'high', label: '🔴 Haute', active: 'bg-red-50 border-red-400 text-red-700 shadow-sm', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-red-200 hover:bg-red-50/50' },
-                    { value: 'medium', label: '🟡 Moyenne', active: 'bg-amber-50 border-amber-400 text-amber-700 shadow-sm', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-amber-200 hover:bg-amber-50/50' },
-                    { value: 'low', label: '🟢 Basse', active: 'bg-green-50 border-green-400 text-green-700 shadow-sm', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-green-200 hover:bg-green-50/50' },
-                  ].map(opt => (
+                  {(
+                    [
+                      { value: 'high', label: '🔴 Haute', active: 'bg-red-50 border-red-400 text-red-700 shadow-sm', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-red-200 hover:bg-red-50/50' },
+                      { value: 'medium', label: '🟡 Moyenne', active: 'bg-amber-50 border-amber-400 text-amber-700 shadow-sm', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-amber-200 hover:bg-amber-50/50' },
+                      { value: 'low', label: '🟢 Basse', active: 'bg-green-50 border-green-400 text-green-700 shadow-sm', inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-green-200 hover:bg-green-50/50' },
+                    ] as const
+                  ).map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
-                      onClick={() => setEditingDemand({ ...editingDemand, priority: opt.value as any })}
+                      onClick={() => setEditingDemand({ ...editingDemand, priority: opt.value })}
                       className={`py-2.5 rounded-2xl border-2 text-xs font-bold transition-all duration-200 text-center ${
                         editingDemand.priority === opt.value ? opt.active : opt.inactive
                       }`}
@@ -634,7 +640,7 @@ const DemandsManagement = ({
                 <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Statut</label>
                 <select
                   value={editingDemand.status}
-                  onChange={e => setEditingDemand({ ...editingDemand, status: e.target.value as any })}
+                  onChange={(e) => setEditingDemand({ ...editingDemand, status: e.target.value as ClientDemand['status'] })}
                   className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium transition-all"
                 >
                   <option value="searching">Recherche active</option>

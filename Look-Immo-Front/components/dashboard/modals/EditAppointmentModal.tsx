@@ -82,10 +82,13 @@ export const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
                 <input
                   id="edit-apt-client-name"
                   type="text"
+                  autoCapitalize="words"
+                  autoComplete="name"
                   value={editForm.clientName || ''}
                   onChange={(e) => {
-                    setEditForm({ ...editForm, clientName: e.target.value });
-                    if (e.target.value.trim().length >= 2) setEditErrors((prev) => ({ ...prev, clientName: '' }));
+                    const formatted = e.target.value.replace(/(?:^|\s)\S/g, (match) => match.toUpperCase());
+                    setEditForm({ ...editForm, clientName: formatted });
+                    if (formatted.trim().length >= 2) setEditErrors((prev) => ({ ...prev, clientName: '' }));
                   }}
                   placeholder="Nom du client"
                   className={`w-full px-4 py-2.5 border rounded-2xl focus:ring-2 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm ${

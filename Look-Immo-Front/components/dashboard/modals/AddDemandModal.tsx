@@ -57,10 +57,13 @@ export const AddDemandModal: React.FC<AddDemandModalProps> = ({
                 <input
                   id="demand-client-name"
                   type="text"
+                  autoCapitalize="words"
+                  autoComplete="name"
                   value={demandForm.clientName || ''}
                   onChange={(e) => {
-                    setDemandForm({ ...demandForm, clientName: e.target.value });
-                    if ((e.target.value as string).trim().length >= 2)
+                    const formatted = e.target.value.replace(/(?:^|\s)\S/g, (match) => match.toUpperCase());
+                    setDemandForm({ ...demandForm, clientName: formatted });
+                    if (formatted.trim().length >= 2)
                       setDemandErrors((prev) => ({ ...prev, clientName: '' }));
                   }}
                   placeholder="Nom du client"

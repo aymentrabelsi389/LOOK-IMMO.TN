@@ -55,6 +55,12 @@ const AuthPage = ({ initialMode = 'login' }: AuthPageProps) => {
     if (phoneRegex.test(value)) setPhone(value);
   };
 
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const formattedValue = value.replace(/(?:^|\s)\S/g, (match) => match.toUpperCase());
+    setName(formattedValue);
+  };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,9 +124,11 @@ const AuthPage = ({ initialMode = 'login' }: AuthPageProps) => {
                   id="auth-name"
                   type="text"
                   required
+                  autoCapitalize="words"
+                  autoComplete="name"
                   placeholder="Nom & Prénom"
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={handleNameChange}
                   className="w-full pl-10 pr-4 py-3 bg-slate-50/60 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder-slate-400 focus:bg-white focus:border-brand-dark focus:ring-2 focus:ring-brand-dark/10 transition-all outline-none"
                 />
               </div>

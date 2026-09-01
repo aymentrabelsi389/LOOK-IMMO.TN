@@ -3,7 +3,7 @@ import {
   Globe, Phone, MapPin, MessageCircle, 
   Instagram, Facebook, Info, Edit2, Plus, 
   Trash2, AlertCircle, Eye, Check, RefreshCw,
-  ChevronDown, Building, Mail, Clock, Copy, ExternalLink,
+  ChevronDown, Building, Mail, Clock, ExternalLink,
   Sparkles, ShieldCheck, Compass, CheckCircle2, RotateCcw
 } from 'lucide-react';
 import '@/utils/leafletSetup';

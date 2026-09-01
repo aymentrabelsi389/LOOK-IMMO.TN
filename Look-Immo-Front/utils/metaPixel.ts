@@ -26,7 +26,6 @@ export function initMetaPixel(pixelId: string | undefined | null): boolean {
   }
 
   try {
-    /* eslint-disable */
     if (!window.fbq) {
       const n: any = function () {
         n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments);
@@ -51,7 +50,6 @@ export function initMetaPixel(pixelId: string | undefined | null): boolean {
         document.head.appendChild(script);
       }
     }
-    /* eslint-enable */
 
     window.fbq('init', cleanId);
     isPixelInitialized = true;

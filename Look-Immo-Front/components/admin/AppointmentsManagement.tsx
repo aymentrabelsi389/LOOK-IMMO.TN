@@ -192,12 +192,12 @@ const AppointmentsManagement = ({
     if (editingAppointment) {
       try {
         const serializedNotes = formatNotes(editAdditionalProps, editForm.message);
-        const updatePayload = {
+        const updatePayload: Partial<Appointment> = {
           clientName: editForm.clientName,
           clientPhone: editForm.clientPhone,
           date: editForm.date,
           time: editForm.time || undefined,
-          propertyId: editForm.propertyId || null,
+          propertyId: editForm.propertyId || undefined,
           status: editForm.status as Appointment['status'],
           notes: serializedNotes,
           message: serializedNotes

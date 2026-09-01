@@ -5,7 +5,7 @@ export declare const createAppointmentSchema: z.ZodObject<{
         clientEmail: z.ZodUnion<[z.ZodOptional<z.ZodString>, z.ZodLiteral<"">]>;
         clientPhone: z.ZodOptional<z.ZodString>;
         date: z.ZodString;
-        time: z.ZodString;
+        time: z.ZodUnion<[z.ZodOptional<z.ZodString>, z.ZodLiteral<"">]>;
         propertyId: z.ZodNullable<z.ZodOptional<z.ZodString>>;
         notes: z.ZodOptional<z.ZodString>;
         source: z.ZodDefault<z.ZodOptional<z.ZodEnum<{
@@ -35,7 +35,7 @@ export declare const updateAppointmentSchema: z.ZodObject<{
             rejected: "rejected";
         }>>;
         date: z.ZodOptional<z.ZodString>;
-        time: z.ZodOptional<z.ZodString>;
+        time: z.ZodUnion<[z.ZodOptional<z.ZodString>, z.ZodLiteral<"">]>;
         notes: z.ZodOptional<z.ZodString>;
         source: z.ZodOptional<z.ZodEnum<{
             other: "other";

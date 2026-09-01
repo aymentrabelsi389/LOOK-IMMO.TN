@@ -49,8 +49,9 @@ const NewsSection = ({ blogPosts, onSelectPost }: { blogPosts: BlogPost[], onSel
                       src={post.image} 
                       alt={post.title} 
                       className="w-full h-full object-cover transform [@media(hover:hover)]:group-hover:scale-105 transition duration-500" 
-                      loading="lazy"
-                      decoding="async"
+                      loading="eager"
+                      fetchPriority="high"
+                      decoding="sync"
                     />
                     <div className="absolute top-3 left-3 bg-brand-teal px-3 py-1 rounded-full text-xs font-bold text-white uppercase shadow-sm">
                       {post.category}

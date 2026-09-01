@@ -11,9 +11,10 @@ interface PropertyCardProps {
   isFavorite: boolean;
   userRole?: string;
   onToggleFavorite?: (propertyId: string) => void;
+  priority?: boolean;
 }
 
-const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, isFavorite, userRole, onToggleFavorite }) => {
+const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, isFavorite, userRole, onToggleFavorite, priority = false }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const isAdmin = userRole === 'admin';
 
@@ -28,23 +29,17 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, is
 
   return (
     <div className="relative group h-full">
-      <div className="absolute -inset-1 bg-gradient-to-r from-brand-teal to-blue-600 rounded-2xl blur opacity-25 md:group-hover:opacity-50 transition duration-500"></div>
+      <div className="absolute -inset-1 bg-gradient-to-r from-brand-teal to-blue-600 rounded-2xl blur opacity-25 md:group-hover:opacity-50 transition duration-500 pointer-events-none"></div>
       <div 
         onClick={() => onSelect(property.id)} 
-        className="group bg-white rounded-2xl shadow-soft md:hover:shadow-2xl md:hover:shadow-brand-teal/10 transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100 flex flex-col h-full md:transform md:hover:-translate-y-1 relative isolate transform-gpu"
-        style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+        className="group bg-white rounded-2xl shadow-soft md:hover:shadow-2xl md:hover:shadow-brand-teal/10 transition-all duration-300 cursor-pointer overflow-hidden border border-gray-100 flex flex-col h-full md:transform md:hover:-translate-y-1 relative"
       >
         <div
-          className="relative h-44 sm:h-52 md:h-64 overflow-hidden rounded-t-2xl isolate transform-gpu"
+          className="relative h-44 sm:h-52 md:h-64 overflow-hidden rounded-t-2xl bg-gray-100"
           style={{
             backgroundImage: getLQIP(property.images[0]) ? `url(${getLQIP(property.images[0])})` : undefined,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
-            backgroundColor: getLQIP(property.images[0]) ? undefined : '#f3f4f6',
-            backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden',
-            maskImage: '-webkit-radial-gradient(white, black)',
-            WebkitMaskImage: '-webkit-radial-gradient(white, black)',
           }}
         >
           <img
@@ -61,12 +56,12 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, is
               pool:        property.features.pool,
               parking:     property.features.parking,
             })}
-            className="w-full h-full object-cover transform-gpu md:group-hover:scale-110 transition duration-700 rounded-t-2xl"
-            style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
-            loading="lazy"
-            decoding="async"
+            className="w-full h-full object-cover md:group-hover:scale-110 transition duration-700 rounded-t-2xl"
+            loading={priority ? 'eager' : 'lazy'}
+            fetchPriority={priority ? 'high' : 'auto'}
+            decoding={priority ? 'sync' : 'async'}
           />
-          <div className="absolute top-3 left-3 flex flex-col space-y-1 z-10">
+          <div className="absolute top-3 left-3 flex flex-col space-y-1 z-20 pointer-events-none">
             <span className={`px-1.5 md:px-3 py-0.5 md:py-1 rounded-full text-[9px] md:text-xs font-bold uppercase tracking-wide md:tracking-wider text-white shadow-md ${property.listingType === 'sale' ? 'bg-blue-600' : 'bg-green-600'}`}>
               {property.listingType === 'sale' ? 'À VENDRE' : 'À LOUER'}
             </span>
@@ -90,7 +85,7 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, is
           </div>
 
           {!isAdmin && onToggleFavorite && (
-            <div className="absolute top-4 right-4 z-10">
+            <div className="absolute top-4 right-4 z-20">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -108,7 +103,7 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, is
           )}
 
           {(property.status === 'sold' || property.status === 'rented') && (
-            <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-0">
+            <div className="absolute inset-0 bg-black/50 flex items-center justify-center z-10">
               <span className="text-white text-3xl font-bold border-4 border-white px-6 py-2 transform -rotate-12 uppercase tracking-widest">
                 {property.status === 'sold' ? 'VENDU' : 'LOUÉ'}
               </span>
@@ -116,8 +111,7 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, is
           )}
 
           <div 
-            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-brand-dark/90 via-brand-dark/50 to-transparent p-4 pt-12 transform-gpu"
-            style={{ backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden' }}
+            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-brand-dark/90 via-brand-dark/50 to-transparent p-4 pt-12 z-10 pointer-events-none"
           >
             <p className="text-lg md:text-2xl font-bold text-white font-serif tracking-wide drop-shadow-md">
               <Price amount={property.price} priceType={property.priceType} />

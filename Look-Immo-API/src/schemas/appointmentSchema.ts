@@ -64,7 +64,7 @@ export const updateAppointmentSchema = z.object({
     body: z.object({
         status: z.enum(appointmentStatuses).optional(),
         date: dateString.optional(),
-        time: timeString.optional(),
+        time: optionalTimeString,
         notes: z.string().max(2000).optional(),
         source: z.enum(appointmentSources).optional(),
         meetingType: z.enum(meetingTypes).optional(),

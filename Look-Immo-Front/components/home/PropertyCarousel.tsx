@@ -30,6 +30,7 @@ const PropertyCarousel = ({
           isFavorite={user?.favorites.includes(property.id) || false}
           userRole={userRole}
           onToggleFavorite={onToggleFavorite}
+          priority={true}
         />
       )}
     />

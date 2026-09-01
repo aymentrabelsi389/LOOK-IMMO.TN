@@ -10,6 +10,7 @@ import { useUI } from '@/context/UIContext';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useData } from '@/context/DataContext';
 import { formatPropertyType } from '@/utils/propertyUtils';
+import { trackViewContent } from '@/utils/metaPixel';
 import Breadcrumb from '@/components/ui/Breadcrumb';
 
 // Modular Subcomponents
@@ -57,6 +58,20 @@ const PropertyDetailsPage: React.FC = () => {
       propertiesAPI.getById(propertyId).then(setFullProperty).catch(console.error);
     }
   }, [propertyId]);
+
+  // Track Meta Pixel ViewContent event
+  useEffect(() => {
+    if (property) {
+      trackViewContent({
+        id: property.id,
+        title: property.title,
+        price: property.price,
+        type: property.type,
+        listingType: property.listingType,
+        city: property.location?.city
+      });
+    }
+  }, [property?.id]);
 
   useEffect(() => {
     if (property && user) {

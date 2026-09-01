@@ -162,6 +162,9 @@ router.post('/upload/blog-image', auth_1.authMiddleware, roleGuard_1.adminOnly, 
 // ==================== SETTINGS ====================
 // Anyone can read site settings
 router.get('/settings', settingController.getSettings);
+// Resolve Google Maps link to lat/lng
+router.get('/settings/resolve-map', settingController.resolveGoogleMapsUrl);
+router.post('/settings/resolve-map', settingController.resolveGoogleMapsUrl);
 // Only admin can update settings
 router.put('/settings', auth_1.authMiddleware, roleGuard_1.adminOnly, settingController.updateSettings);
 // ==================== EXCHANGE RATES ====================

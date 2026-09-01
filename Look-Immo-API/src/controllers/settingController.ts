@@ -70,3 +70,77 @@ export const updateSettings = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Failed to update settings' });
   }
 };
+
+export const resolveGoogleMapsUrl = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const url = (req.query.url as string) || (req.body?.url as string);
+    if (!url) {
+      res.status(400).json({ error: 'URL is required' });
+      return;
+    }
+
+    let targetUrl = url.trim();
+    if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+      targetUrl = `https://${targetUrl}`;
+    }
+
+    const response = await fetch(targetUrl, {
+      method: 'GET',
+      redirect: 'follow',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8'
+      }
+    });
+
+    const finalUrl = response.url || targetUrl;
+    const bodyText = await response.text();
+
+    // 1. /@(-?\d+\.\d+),(-?\d+\.\d+)
+    let match = finalUrl.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
+
+    // 2. !3d(-?\d+\.\d+)!4d(-?\d+\.\d+)
+    if (!match) {
+      const dMatch = finalUrl.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) || bodyText.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
+      if (dMatch) {
+        match = dMatch;
+      }
+    }
+
+    // 3. ?q=(-?\d+\.\d+),(-?\d+\.\d+) or &ll=(-?\d+\.\d+),(-?\d+\.\d+)
+    if (!match) {
+      const qMatch = finalUrl.match(/[?&](?:q|ll)=(-?\d+\.\d+),(-?\d+\.\d+)/) || bodyText.match(/[?&](?:q|ll)=(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (qMatch) {
+        match = qMatch;
+      }
+    }
+
+    // 4. Meta property og:image with center=...
+    if (!match) {
+      const ogMatch = bodyText.match(/center=(-?\d+\.\d+)%2C(-?\d+\.\d+)/) || bodyText.match(/center=(-?\d+\.\d+),(-?\d+\.\d+)/);
+      if (ogMatch) {
+        match = ogMatch;
+      }
+    }
+
+    // 5. App initialization state JSON arrays
+    if (!match) {
+      const initMatch = bodyText.match(/\[null,null,(-?\d+\.\d+),(-?\d+\.\d+)\]/);
+      if (initMatch) {
+        match = initMatch;
+      }
+    }
+
+    if (match) {
+      const lat = parseFloat(match[1]);
+      const lng = parseFloat(match[2]);
+      res.json({ success: true, lat, lng, finalUrl });
+      return;
+    }
+
+    res.json({ success: false, finalUrl });
+  } catch (error) {
+    logger.error('Error resolving map URL:', error);
+    res.status(500).json({ error: 'Failed to resolve map URL' });
+  }
+};

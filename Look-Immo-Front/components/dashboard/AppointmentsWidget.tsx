@@ -25,7 +25,7 @@ export const AppointmentsWidget: React.FC<AppointmentsWidgetProps> = ({
   parseNotes
 }) => {
   return (
-    <ScrollReveal className="lg:col-start-3 lg:row-span-2" delay={250}>
+    <ScrollReveal className="lg:col-span-1 w-full" delay={250}>
       <div className="bg-white rounded-3xl shadow-soft border border-gray-100/80 p-6 relative overflow-hidden h-full">
         <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-brand-teal to-blue-500"></div>
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center font-sans">

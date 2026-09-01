@@ -79,13 +79,7 @@ const clearCachePattern = async (pattern) => {
     if (!isRedisConnected)
         return;
     try {
-        const keys = [];
-        for await (const key of exports.redisClient.scanIterator({
-            MATCH: pattern,
-            COUNT: 100
-        })) {
-            keys.push(String(key));
-        }
+        const keys = await exports.redisClient.keys(pattern);
         if (keys.length > 0) {
             await Promise.all(keys.map(key => exports.redisClient.del(key)));
             logger_1.logger.info(`[REDIS] Cleared cache keys matching pattern ${pattern}:`, keys);

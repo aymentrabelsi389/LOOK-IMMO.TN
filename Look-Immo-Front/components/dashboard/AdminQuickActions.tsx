@@ -25,7 +25,7 @@ export const AdminQuickActions: React.FC<AdminQuickActionsProps> = ({
   onUpdateHours,
 }) => {
   return (
-    <ScrollReveal className="lg:col-span-2 lg:col-start-1 space-y-6" delay={200}>
+    <ScrollReveal className="lg:col-span-2 space-y-6" delay={200}>
       {/* Quick Actions Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Rendez-vous card */}

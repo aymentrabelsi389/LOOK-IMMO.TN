@@ -20,10 +20,10 @@ export declare const createPropertySchema: z.ZodObject<{
         city: z.ZodString;
         zone: z.ZodOptional<z.ZodString>;
         status: z.ZodDefault<z.ZodOptional<z.ZodEnum<{
-            pending: "pending";
-            available: "available";
             sold: "sold";
             rented: "rented";
+            pending: "pending";
+            available: "available";
             reserved: "reserved";
         }>>>;
         images: z.ZodOptional<z.ZodArray<z.ZodString>>;
@@ -93,10 +93,10 @@ export declare const updatePropertySchema: z.ZodObject<{
         city: z.ZodOptional<z.ZodString>;
         zone: z.ZodOptional<z.ZodString>;
         status: z.ZodOptional<z.ZodEnum<{
-            pending: "pending";
-            available: "available";
             sold: "sold";
             rented: "rented";
+            pending: "pending";
+            available: "available";
             reserved: "reserved";
         }>>;
         images: z.ZodOptional<z.ZodArray<z.ZodString>>;

@@ -458,21 +458,9 @@ const DashboardPage: React.FC = () => {
         matchedDemandsCount={matchedDemandsCount}
       />
 
-      {/* Main Content Grid: Left Content (Admin Actions or User Favorites) + Right Sidebar (Upcoming Appointments) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 lg:[grid-template-rows:max-content_1fr] items-start gap-6 mb-8">
-        {/* Right Sidebar: Appointments Reminder Widget */}
-        <AppointmentsWidget
-          upcomingAppointments={upcomingAppointments}
-          properties={properties}
-          isAdminOrAgent={isAdminOrAgent}
-          onConfirmAppointment={handleAppointmentConfirm}
-          onRefuseAppointment={handleAppointmentRefuse}
-          onOpenEditAppointment={openEditAppointment}
-          onCancelAppointment={handleAppointmentCancel}
-          parseNotes={parseNotes}
-        />
-
-        {/* Left Column Content */}
+      {/* Main Content Grid: Left Column (Admin Actions / Favorites) + Right Sidebar (Upcoming Appointments) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 items-start gap-6 lg:gap-8 mb-10">
+        {/* Left Column Content (2 columns) */}
         {user.role === 'admin' ? (
           <AdminQuickActions
             settings={settings}
@@ -493,6 +481,18 @@ const DashboardPage: React.FC = () => {
             onNavigateHome={() => handleNavigate('home')}
           />
         )}
+
+        {/* Right Sidebar: Appointments Reminder Widget (1 column) */}
+        <AppointmentsWidget
+          upcomingAppointments={upcomingAppointments}
+          properties={properties}
+          isAdminOrAgent={isAdminOrAgent}
+          onConfirmAppointment={handleAppointmentConfirm}
+          onRefuseAppointment={handleAppointmentRefuse}
+          onOpenEditAppointment={openEditAppointment}
+          onCancelAppointment={handleAppointmentCancel}
+          parseNotes={parseNotes}
+        />
       </div>
 
       {/* Account Settings Section */}

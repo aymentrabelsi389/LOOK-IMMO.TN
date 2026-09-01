@@ -25,6 +25,8 @@ const DemandsManagement = ({
     loading,
     filter,
     setFilter,
+    contractFilter,
+    setContractFilter,
     matchFilter,
     setMatchFilter,
     searchQuery,
@@ -112,7 +114,7 @@ const DemandsManagement = ({
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="flex flex-col md:flex-row gap-3 relative z-30">
+        <div className="flex flex-col lg:flex-row gap-3 relative z-30">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
             <input
@@ -123,19 +125,21 @@ const DemandsManagement = ({
               className="w-full pl-12 pr-4 py-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm focus:outline-none focus:border-brand-teal transition-all outline-none"
             />
           </div>
-          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+          <div className="flex flex-wrap sm:flex-nowrap gap-2 w-full lg:w-auto">
+            {/* Contract Type Filter (Achat / Location / Tous) */}
             <CustomDropdown
-              value={sortBy}
-              onChange={(val) => setSortBy(val as 'created-desc' | 'created-asc' | 'matches-desc')}
+              value={contractFilter}
+              onChange={(val) => setContractFilter(val as 'all' | 'rent' | 'sale')}
               options={[
-                { value: 'created-desc', label: '📅 Reçu le (Récent)' },
-                { value: 'created-asc', label: '📅 Reçu le (Ancien)' },
-                { value: 'matches-desc', label: '✨ Meilleures Opportunités' }
+                { value: 'all', label: '🏷️ Tous (Achat/Loc.)' },
+                { value: 'sale', label: '🔑 Achat' },
+                { value: 'rent', label: '🏠 Location' }
               ]}
-              triggerClassName="w-full sm:w-[200px] flex items-center justify-between gap-3 px-4 py-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-teal/50 focus:outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10 transition-all text-[10px] font-black text-gray-600 uppercase tracking-widest cursor-pointer"
-              menuClassName="absolute left-0 sm:right-0 z-[70] mt-2 w-full sm:w-[200px] bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up"
+              triggerClassName="w-full sm:w-[170px] flex items-center justify-between gap-3 px-4 py-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-teal/50 focus:outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10 transition-all text-[10px] font-black text-gray-600 uppercase tracking-widest cursor-pointer"
+              menuClassName="absolute left-0 sm:right-0 z-[70] mt-2 w-full sm:w-[170px] bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up"
               optionClassName="w-full flex items-center justify-between px-4 py-2.5 text-left text-[10px] font-black uppercase tracking-widest transition-colors"
             />
+            {/* Status Filter */}
             <CustomDropdown
               value={filter}
               onChange={setFilter}
@@ -146,20 +150,34 @@ const DemandsManagement = ({
                 { value: 'matched', label: 'Matché' },
                 { value: 'closed', label: 'Fermé' }
               ]}
-              triggerClassName="w-full sm:w-[180px] flex items-center justify-between gap-3 px-4 py-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-teal/50 focus:outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10 transition-all text-[10px] font-black text-gray-600 uppercase tracking-widest cursor-pointer"
-              menuClassName="absolute left-0 sm:right-0 z-[70] mt-2 w-full sm:w-[180px] bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up"
+              triggerClassName="w-full sm:w-[160px] flex items-center justify-between gap-3 px-4 py-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-teal/50 focus:outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10 transition-all text-[10px] font-black text-gray-600 uppercase tracking-widest cursor-pointer"
+              menuClassName="absolute left-0 sm:right-0 z-[70] mt-2 w-full sm:w-[160px] bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up"
               optionClassName="w-full flex items-center justify-between px-4 py-2.5 text-left text-[10px] font-black uppercase tracking-widest transition-colors"
             />
+            {/* Matching Filter */}
             <CustomDropdown
               value={matchFilter}
               onChange={setMatchFilter}
               options={[
                 { value: 'all', label: 'Tout matching' },
-                { value: 'with-matches', label: 'Avec Correspondances' },
-                { value: 'no-matches', label: 'Sans Correspondance' }
+                { value: 'with-matches', label: 'Avec Matchs' },
+                { value: 'no-matches', label: 'Sans Match' }
               ]}
-              triggerClassName="w-full sm:w-[200px] flex items-center justify-between gap-3 px-4 py-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-teal/50 focus:outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10 transition-all text-[10px] font-black text-gray-600 uppercase tracking-widest cursor-pointer"
-              menuClassName="absolute left-0 sm:right-0 z-[70] mt-2 w-full sm:w-[200px] bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up"
+              triggerClassName="w-full sm:w-[160px] flex items-center justify-between gap-3 px-4 py-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-teal/50 focus:outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10 transition-all text-[10px] font-black text-gray-600 uppercase tracking-widest cursor-pointer"
+              menuClassName="absolute left-0 sm:right-0 z-[70] mt-2 w-full sm:w-[160px] bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up"
+              optionClassName="w-full flex items-center justify-between px-4 py-2.5 text-left text-[10px] font-black uppercase tracking-widest transition-colors"
+            />
+            {/* Sort Dropdown */}
+            <CustomDropdown
+              value={sortBy}
+              onChange={(val) => setSortBy(val as 'created-desc' | 'created-asc' | 'matches-desc')}
+              options={[
+                { value: 'created-desc', label: '📅 Récent' },
+                { value: 'created-asc', label: '📅 Ancien' },
+                { value: 'matches-desc', label: '✨ Opportunités' }
+              ]}
+              triggerClassName="w-full sm:w-[160px] flex items-center justify-between gap-3 px-4 py-3.5 bg-white border border-gray-100 rounded-2xl shadow-sm hover:border-brand-teal/50 focus:outline-none focus:border-brand-teal focus:ring-4 focus:ring-brand-teal/10 transition-all text-[10px] font-black text-gray-600 uppercase tracking-widest cursor-pointer"
+              menuClassName="absolute left-0 sm:right-0 z-[70] mt-2 w-full sm:w-[160px] bg-white border border-gray-100 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up"
               optionClassName="w-full flex items-center justify-between px-4 py-2.5 text-left text-[10px] font-black uppercase tracking-widest transition-colors"
             />
           </div>

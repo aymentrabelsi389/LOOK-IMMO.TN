@@ -3,13 +3,16 @@ import React, { useState } from 'react';
 import { 
   CalendarDays, Search, Calendar, 
   Check, X, Trash2, List, Phone, Mail, Building2, Clock, MessageSquare,
-  History
+  History, Edit2
 } from 'lucide-react';
 import { Appointment, User, Property } from '@/types';
 import { appointmentsAPI } from '@/services/api';
 import AppointmentsCalendarModal from './AppointmentsCalendarModal';
 import ClientAppointmentsHistoryModal from './ClientAppointmentsHistoryModal';
+import { EditAppointmentModal } from '@/components/dashboard/modals/EditAppointmentModal';
 import { useConfirm } from '@/context/ConfirmContext';
+import { useAuthStore } from '@/stores/useAuthStore';
+import { notify } from '@/services/notificationStore';
 import CustomDropdown from '../ui/CustomDropdown';
 import Pagination from '../ui/Pagination';
 
@@ -18,15 +21,20 @@ interface AppointmentsManagementProps {
   setAppointments: React.Dispatch<React.SetStateAction<Appointment[]>>;
   users: User[];
   properties: Property[];
+  currentUser?: User | null;
 }
 
 const AppointmentsManagement = ({
   appointments,
   setAppointments,
   users,
-  properties
+  properties,
+  currentUser
 }: AppointmentsManagementProps) => {
   const { confirm } = useConfirm();
+  const authUser = useAuthStore(state => state.user);
+  const effectiveUser = currentUser || authUser || ({ role: 'admin' } as User);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'created-desc' | 'created-asc' | 'scheduled-desc' | 'scheduled-asc'>('created-desc');
   const [showCalendar, setShowCalendar] = useState(false);
@@ -34,6 +42,20 @@ const AppointmentsManagement = ({
   const [itemsPerPage] = useState(10);
   const [showAll, setShowAll] = useState(false);
   const [historyAppointment, setHistoryAppointment] = useState<Appointment | null>(null);
+
+  // Edit Appointment State
+  const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
+  const [editAdditionalProps, setEditAdditionalProps] = useState<string[]>([]);
+  const [editErrors, setEditErrors] = useState<Record<string, string>>({});
+  const [editForm, setEditForm] = useState({
+    date: '',
+    time: '',
+    message: '',
+    propertyId: '',
+    status: '',
+    clientName: '',
+    clientPhone: ''
+  });
 
   const parseNotes = (raw: string | undefined): { propertyIds: string[]; userNotes: string } => {
     if (!raw) return { propertyIds: [], userNotes: '' };
@@ -119,6 +141,80 @@ const AppointmentsManagement = ({
 
   const totalPages = Math.ceil(sortedAppointments.length / itemsPerPage);
   const paginatedAppointments = showAll ? sortedAppointments : sortedAppointments.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const formatNotes = (propertyIds: string[], userNotes: string): string => {
+    const valid = propertyIds.filter(Boolean);
+    if (valid.length === 0) return userNotes;
+    return `[PROPS:${valid.join(',')}] ${userNotes}`;
+  };
+
+  const openEditAppointment = (apt: Appointment) => {
+    setEditingAppointment(apt);
+    const d = new Date(apt.date);
+    const year = d.getUTCFullYear();
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const dateStr = `${year}-${month}-${day}`;
+
+    const rawNotes = apt.notes || apt.message || '';
+    const { propertyIds, userNotes } = parseNotes(rawNotes);
+    setEditAdditionalProps(propertyIds);
+
+    setEditForm({
+      date: dateStr,
+      time: apt.time || '',
+      message: userNotes,
+      propertyId: apt.propertyId || '',
+      status: apt.status || 'pending',
+      clientName: apt.clientName || apt.userName || '',
+      clientPhone: apt.clientPhone || apt.userPhone || ''
+    });
+    setEditErrors({});
+  };
+
+  const saveEditAppointment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const errs: Record<string, string> = {};
+    if (!editForm.clientName || editForm.clientName.trim().length < 2)
+      errs.clientName = 'Le nom du client est obligatoire.';
+    if (!editForm.clientPhone || editForm.clientPhone.replace(/\D/g, '').length === 0)
+      errs.clientPhone = 'Veuillez renseigner un numéro de téléphone.';
+    else if (editForm.clientPhone.replace(/\D/g, '').length < 8)
+      errs.clientPhone = 'Le numéro doit contenir au moins 8 chiffres.';
+    if (!editForm.date) errs.date = 'Veuillez saisir une date.';
+
+    setEditErrors(errs);
+    if (Object.keys(errs).length > 0) {
+      notify.error('Veuillez corriger les champs en rouge.');
+      return;
+    }
+
+    if (editingAppointment) {
+      try {
+        const serializedNotes = formatNotes(editAdditionalProps, editForm.message);
+        const updatePayload = {
+          clientName: editForm.clientName,
+          clientPhone: editForm.clientPhone,
+          date: editForm.date,
+          time: editForm.time || undefined,
+          propertyId: editForm.propertyId || null,
+          status: editForm.status as Appointment['status'],
+          notes: serializedNotes,
+          message: serializedNotes
+        };
+
+        const updatedApt = await appointmentsAPI.update(editingAppointment.id, updatePayload);
+        setAppointments(prev => prev.map(apt => apt.id === editingAppointment.id ? { ...apt, ...updatedApt, ...updatePayload } : apt));
+        setEditingAppointment(null);
+        setEditAdditionalProps([]);
+        setEditErrors({});
+        notify.success('Rendez-vous mis à jour avec succès !');
+      } catch (err) {
+        console.error('Failed to update appointment:', err);
+        notify.error('Erreur lors de la mise à jour du rendez-vous.');
+      }
+    }
+  };
 
   const handleUpdateStatus = async (id: string, newStatus: Appointment['status']) => {
     try {
@@ -327,6 +423,13 @@ const AppointmentsManagement = ({
                               </>
                             )}
                             <button
+                              onClick={() => openEditAppointment(apt)}
+                              className="p-2.5 bg-white border border-gray-200 text-gray-400 rounded-xl hover:text-brand-teal hover:border-brand-teal/30 hover:shadow-sm transition-all"
+                              title="Modifier"
+                            >
+                              <Edit2 size={18} />
+                            </button>
+                            <button
                               onClick={() => setHistoryAppointment(apt)}
                               className="p-2.5 bg-white border border-gray-200 text-gray-400 rounded-xl hover:text-blue-500 hover:shadow-sm transition-all"
                               title="Historique des rendez-vous"
@@ -425,6 +528,13 @@ const AppointmentsManagement = ({
                         </>
                       )}
                       <button
+                        onClick={() => openEditAppointment(apt)}
+                        className="p-2.5 bg-gray-100 text-gray-400 rounded-xl hover:bg-brand-teal hover:text-white transition active:scale-95"
+                        title="Modifier"
+                      >
+                        <Edit2 size={16} />
+                      </button>
+                      <button
                         onClick={() => setHistoryAppointment(apt)}
                         className="p-2.5 bg-gray-100 text-gray-400 rounded-xl hover:bg-blue-500 hover:text-white transition active:scale-95"
                         title="Historique"
@@ -482,6 +592,26 @@ const AppointmentsManagement = ({
 
       {/* Modals */}
 
+      {editingAppointment && (
+        <EditAppointmentModal
+          editingAppointment={editingAppointment}
+          onClose={() => {
+            setEditingAppointment(null);
+            setEditAdditionalProps([]);
+            setEditErrors({});
+          }}
+          onSubmit={saveEditAppointment}
+          user={effectiveUser}
+          editForm={editForm}
+          setEditForm={setEditForm}
+          editErrors={editErrors}
+          setEditErrors={setEditErrors}
+          properties={properties}
+          editAdditionalProps={editAdditionalProps}
+          setEditAdditionalProps={setEditAdditionalProps}
+        />
+      )}
+
       {showCalendar && (
         <AppointmentsCalendarModal
           onClose={() => setShowCalendar(false)}
@@ -490,6 +620,7 @@ const AppointmentsManagement = ({
           users={users}
           onUpdateStatus={handleUpdateStatus}
           onDelete={handleDelete}
+          onEdit={openEditAppointment}
         />
       )}
 
@@ -502,6 +633,7 @@ const AppointmentsManagement = ({
           users={users}
           onUpdateStatus={handleUpdateStatus}
           onDelete={handleDelete}
+          onEdit={openEditAppointment}
         />
       )}
     </>

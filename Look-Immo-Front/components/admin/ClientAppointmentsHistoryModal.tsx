@@ -1,6 +1,6 @@
 import React from 'react';
 import { 
-  X, Calendar, Clock, Building2, MessageSquare, Phone, Mail, Trash2, Check, History
+  X, Calendar, Clock, Building2, MessageSquare, Phone, Mail, Trash2, Check, History, Edit2
 } from 'lucide-react';
 import { Appointment, User, Property } from '@/types';
 import { createPortal } from 'react-dom';
@@ -13,6 +13,7 @@ interface ClientAppointmentsHistoryModalProps {
   users: User[];
   onUpdateStatus: (id: string, newStatus: Appointment['status']) => Promise<void>;
   onDelete: (id: string) => Promise<void>;
+  onEdit?: (apt: Appointment) => void;
 }
 
 const ClientAppointmentsHistoryModal: React.FC<ClientAppointmentsHistoryModalProps> = ({
@@ -22,7 +23,8 @@ const ClientAppointmentsHistoryModal: React.FC<ClientAppointmentsHistoryModalPro
   properties,
   users,
   onUpdateStatus,
-  onDelete
+  onDelete,
+  onEdit
 }) => {
   const getDisplayData = (apt: Appointment) => {
     const user = users?.find(u => u.id === apt.userId);
@@ -193,13 +195,24 @@ const ClientAppointmentsHistoryModal: React.FC<ClientAppointmentsHistoryModalPro
                       </div>
                     </div>
 
-                    <button
-                      onClick={() => handleDeleteItem(apt.id)}
-                      className="p-2 bg-white hover:bg-red-50 border border-gray-200 text-gray-400 hover:text-red-500 rounded-lg hover:shadow-sm transition-all flex-shrink-0"
-                      title="Supprimer"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      {onEdit && (
+                        <button
+                          onClick={() => onEdit(apt)}
+                          className="p-2 bg-white hover:bg-brand-teal/10 border border-gray-200 text-gray-400 hover:text-brand-teal rounded-lg hover:shadow-sm transition-all flex-shrink-0"
+                          title="Modifier"
+                        >
+                          <Edit2 size={14} />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDeleteItem(apt.id)}
+                        className="p-2 bg-white hover:bg-red-50 border border-gray-200 text-gray-400 hover:text-red-500 rounded-lg hover:shadow-sm transition-all flex-shrink-0"
+                        title="Supprimer"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </div>
                   </div>
 
                   {/* Middle Section: Properties and Notes */}

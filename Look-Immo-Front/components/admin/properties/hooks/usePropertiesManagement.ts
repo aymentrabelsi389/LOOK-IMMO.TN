@@ -449,28 +449,31 @@ export function usePropertiesManagement({
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     if (!isDragReorderEnabled) return;
+
     const oldIndex = sortedProperties.findIndex(p => p.id === active.id);
     const newIndex = sortedProperties.findIndex(p => p.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
     const newOrder = arrayMove(sortedProperties, oldIndex, newIndex);
     const updates = newOrder.map((p, i) => ({ id: p.id, displayOrder: i + 1 }));
+    const updateMap = new Map(updates.map(u => [u.id, u.displayOrder]));
     
-    // Physically re-sort the array in state as well as updating displayOrder
+    // Optimistically update local state immediately
     setProperties(prev => {
       const updated = prev.map(p => {
-        const up = updates.find(u => u.id === p.id);
-        return up ? { ...p, displayOrder: up.displayOrder } : p;
+        const newOrderVal = updateMap.get(p.id);
+        return newOrderVal !== undefined ? { ...p, displayOrder: newOrderVal } : p;
       });
       return [...updated].sort((a, b) => (a.displayOrder || 999) - (b.displayOrder || 999));
     });
 
     try {
       await propertiesAPI.updateOrder(updates);
-      // Invalidate both global and listings/lands query caches to pull fresh order from database
+      showNotification('success', 'Ordre des propriétés mis à jour');
+    } catch (err) {
+      console.error('Failed to update property order:', err);
       await queryClient.invalidateQueries({ queryKey: ['properties'] });
-      await queryClient.invalidateQueries({ queryKey: ['promotionLands'] });
-      showNotification('success', 'Ordre mis à jour');
-    } catch {
-      showNotification('error', 'Erreur de réorganisation');
+      showNotification('error', 'Erreur lors de la réorganisation');
     }
   };
 

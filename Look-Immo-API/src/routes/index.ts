@@ -174,6 +174,9 @@ router.post(
 // ==================== SETTINGS ====================
 // Anyone can read site settings
 router.get('/settings', settingController.getSettings);
+// Resolve Google Maps link to lat/lng
+router.get('/settings/resolve-map', settingController.resolveGoogleMapsUrl);
+router.post('/settings/resolve-map', settingController.resolveGoogleMapsUrl);
 // Only admin can update settings
 router.put('/settings', authMiddleware, adminOnly, settingController.updateSettings);
 

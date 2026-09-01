@@ -9,6 +9,7 @@ import { useUI } from '@/context/UIContext';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useData } from '@/context/DataContext';
 import { useAdmin } from '@/hooks/useAdmin';
+import { useMetaPixel } from '@/utils/metaPixel';
 
 // Layout Components
 import Navbar from '@/layouts/Navbar';
@@ -64,6 +65,9 @@ const AppContent = () => {
   const { isAdminOrAgent } = useAdmin();
   const { user, handleLogout } = useAuthStore();
   const { siteSettings, isLoading, appointments } = useData();
+
+  // Automatic Meta Pixel tracking on all pages and route changes
+  useMetaPixel(siteSettings?.metaPixelId);
 
   const isAdminView = location.pathname.startsWith('/admin') && isAdminOrAgent;
 

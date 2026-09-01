@@ -206,7 +206,7 @@ const AdminPanel = () => {
           />
         );
       case 'appointments':
-        return <AppointmentsManagement appointments={appointments} setAppointments={setAppointments} users={allUsers} properties={properties} />;
+        return <AppointmentsManagement appointments={appointments} setAppointments={setAppointments} users={allUsers} properties={properties} currentUser={user} />;
       case 'localisations':
         return <LocationsManagement availableLocations={availableLocations} setAvailableLocations={setAvailableLocations} adminLocations={adminLocations} setAdminLocations={setAdminLocations} showNotification={showNotification} />;
       case 'users':

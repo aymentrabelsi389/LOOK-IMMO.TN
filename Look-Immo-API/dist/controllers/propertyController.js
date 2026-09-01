@@ -17,7 +17,7 @@ const getProperties = async (req, res) => {
             res.json(cached);
             return;
         }
-        const { type, category, city, minPrice, maxPrice, status, search, ownerId, minBedrooms, minArea, isHotDeal, page = '1', limit = '24', noLimit } = req.query;
+        const { type, category, city, minPrice, maxPrice, status, search, ownerId, minBedrooms, minArea, isHotDeal, excludeSold, page = '1', limit = '24', noLimit } = req.query;
         // noLimit is an admin-only escape hatch (used for reorder/map views)
         const isNoLimit = noLimit === 'true';
         const p = isNoLimit ? 1 : (parseInt(page) || 1);
@@ -27,7 +27,12 @@ const getProperties = async (req, res) => {
             ...(type && type !== 'all' ? { type: type } : {}),
             ...(category && category !== 'all' ? { category: category } : {}),
             ...(city && city !== 'all' ? { city: { contains: city, mode: 'insensitive' } } : {}),
-            ...(status && status !== 'all' ? { status: status } : {}),
+            // If a specific status filter is provided use it; if excludeSold=true hide sold/rented (public listing)
+            ...(status && status !== 'all'
+                ? { status: status }
+                : excludeSold === 'true'
+                    ? { status: { notIn: ['sold', 'rented'] } }
+                    : {}),
             ...(ownerId ? { ownerId: ownerId } : {}),
             ...(minPrice ? { price: { gte: parseFloat(minPrice) } } : {}),
             ...(maxPrice ? { price: { lte: parseFloat(maxPrice) } } : {}),
@@ -200,10 +205,19 @@ const createProperty = async (req, res) => {
         // demand volume. Fire-and-forget with its own error handling instead.
         (async () => {
             try {
+                const feats = property.features ? property.features : {};
+                const details = [];
+                if (feats.bedrooms)
+                    details.push(`${feats.bedrooms} ch`);
+                if (feats.bathrooms)
+                    details.push(`${feats.bathrooms} sdb`);
+                if (feats.area)
+                    details.push(`${feats.area} m²`);
+                const detailsStr = details.length > 0 ? ` (${details.join(', ')})` : '';
                 await (0, notificationService_1.createNotification)({
                     type: 'property_add',
                     title: 'Nouvelle Propriété',
-                    message: `Une nouvelle propriété a été ajoutée : ${property.title}`,
+                    message: `Une nouvelle propriété a été ajoutée : ${property.title}${detailsStr}`,
                     icon: 'Home',
                     link: `/property/${property.id}`,
                     userId: null, // Send to all admins/agents

@@ -965,6 +965,11 @@ export const settingsAPI = {
         const res = await apiFetch('/settings', { method: 'PUT', body: JSON.stringify(data) });
         return res.json();
     },
+
+    resolveMapUrl: async (url: string): Promise<{ success: boolean; lat?: number; lng?: number; finalUrl?: string }> => {
+        const res = await apiFetch(`/settings/resolve-map?url=${encodeURIComponent(url)}`);
+        return res.json();
+    },
 };
 
 // ==================== UPLOAD API ====================

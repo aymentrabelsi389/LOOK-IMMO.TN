@@ -7,8 +7,12 @@ const meetingTypes = ['visite', 'consultation', 'signature', 'other'];
 const appointmentStatuses = ['pending', 'accepted', 'rejected'];
 // ISO date string validator (YYYY-MM-DD or full ISO timestamp)
 const dateString = zod_1.z.string().refine((val) => !isNaN(Date.parse(val)), { message: "Must be a valid date string (e.g. 2024-06-15)" });
-// HH:MM time validator
+// HH:MM time validator (optional — empty string or undefined means time not yet set)
 const timeString = zod_1.z.string().regex(/^\d{1,2}:\d{2}$/, "Time must be in HH:MM format (e.g. 14:30)");
+const optionalTimeString = zod_1.z.string()
+    .refine((val) => val === '' || /^\d{1,2}:\d{2}$/.test(val), { message: 'L\'heure dans "Heure" doit être au format HH:MM' })
+    .optional()
+    .or(zod_1.z.literal(''));
 // Schema for creating a new appointment (public route)
 exports.createAppointmentSchema = zod_1.z.object({
     body: zod_1.z.object({
@@ -21,7 +25,7 @@ exports.createAppointmentSchema = zod_1.z.object({
             .regex(/^[0-9+\-\s()]*$/, "Phone number contains invalid characters")
             .optional(),
         date: dateString,
-        time: timeString,
+        time: optionalTimeString,
         propertyId: zod_1.z.string().optional().nullable(),
         notes: zod_1.z.string()
             .max(2000, "Notes cannot exceed 2000 characters")
@@ -38,7 +42,7 @@ exports.updateAppointmentSchema = zod_1.z.object({
     body: zod_1.z.object({
         status: zod_1.z.enum(appointmentStatuses).optional(),
         date: dateString.optional(),
-        time: timeString.optional(),
+        time: optionalTimeString,
         notes: zod_1.z.string().max(2000).optional(),
         source: zod_1.z.enum(appointmentSources).optional(),
         meetingType: zod_1.z.enum(meetingTypes).optional(),

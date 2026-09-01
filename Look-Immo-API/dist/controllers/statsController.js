@@ -27,7 +27,7 @@ const trackVisit = async (req, res) => {
         });
         res.json({ success: true });
     }
-    catch (error) {
+    catch (_error) {
         // Silent error for tracking
         res.status(500).json({ error: 'Failed to track visit' });
     }

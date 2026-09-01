@@ -71,7 +71,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
       {/* Admin CRM Stats Grid */}
       {user.role === 'admin' && (
-        <ScrollReveal className="lg:col-span-2 lg:col-start-1" delay={150}>
+        <ScrollReveal className="mb-8 sm:mb-10" delay={150}>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {/* Stat 1 */}
             <div className="bg-white rounded-2xl p-4 sm:p-5 border border-gray-100/80 shadow-soft hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex items-center relative overflow-hidden group">

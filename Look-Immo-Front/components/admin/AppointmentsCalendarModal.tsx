@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { 
   X, ChevronLeft, ChevronRight, Calendar as CalendarIcon, 
   MapPin, Phone, User as UserIcon, CheckCircle2, XCircle, 
-  Clock, TrendingUp, AlertCircle, Trash2, Check, MessageSquare
+  Clock, TrendingUp, AlertCircle, Trash2, Check, MessageSquare, Edit2
 } from 'lucide-react';
 import { Appointment, Property, User } from '@/types';
 import { createPortal } from 'react-dom';
@@ -14,6 +14,7 @@ interface AppointmentsCalendarModalProps {
   users: User[];
   onUpdateStatus: (id: string, status: 'pending' | 'accepted' | 'rejected') => void;
   onDelete: (id: string) => void;
+  onEdit?: (apt: Appointment) => void;
 }
 
 const AppointmentsCalendarModal = ({
@@ -22,7 +23,8 @@ const AppointmentsCalendarModal = ({
   properties,
   users,
   onUpdateStatus,
-  onDelete
+  onDelete,
+  onEdit
 }: AppointmentsCalendarModalProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
@@ -438,7 +440,16 @@ const AppointmentsCalendarModal = ({
                                 </button>
                               </div>
                             )}
-                            <div className="flex justify-end pt-1.5 border-t border-gray-50 mt-1.5">
+                            <div className="flex justify-end gap-1.5 pt-1.5 border-t border-gray-50 mt-1.5">
+                              {onEdit && (
+                                <button
+                                  onClick={() => onEdit(apt)}
+                                  className="p-1.5 text-gray-400 hover:text-brand-teal hover:bg-brand-teal/10 rounded transition"
+                                  title="Modifier"
+                                >
+                                  <Edit2 size={13} />
+                                </button>
+                              )}
                               <button
                                 onClick={() => onDelete(apt.id)}
                                 className="p-1.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition"

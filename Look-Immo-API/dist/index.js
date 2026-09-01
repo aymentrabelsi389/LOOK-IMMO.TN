@@ -146,17 +146,17 @@ app.get('/blog-post/:id', seoInjector_1.seoInjector);
 // ─── API Routes ───────────────────────────────────────────────────────────────
 app.use('/api', routes_1.default);
 // Health check
-app.get('/health', (req, res) => {
+app.get('/health', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 // Test error route for Sentry verification (non-production only)
 if (!isProd) {
-    app.get('/api/test-error', (req, res) => {
+    app.get('/api/test-error', (_req, _res) => {
         throw new Error('Test Sentry Backend Error Spike');
     });
 }
 // 404 handler
-app.use((req, res) => {
+app.use((_req, res) => {
     res.status(404).json({ error: 'Route not found' });
 });
 // Sentry Error Handler (must be registered before custom error handlers and after routes)
@@ -165,7 +165,7 @@ if (process.env.SENTRY_DSN) {
 }
 // ─── Error Handler ────────────────────────────────────────────────────────────
 // In production: log full error server-side but return generic message to client
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
     logger_1.logger.error(err.message, { stack: err.stack, path: req.path, method: req.method });
     const message = isProd ? 'Internal server error' : (err.message || 'Internal server error');
     res.status(500).json({ error: message });

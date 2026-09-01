@@ -46,7 +46,7 @@ interface SortablePropertyItemProps {
   index: number;
 }
 
-const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, handleQuickStatusChange, openHistoryModal, index }: SortablePropertyItemProps) => {
+const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, handleQuickStatusChange, openHistoryModal }: SortablePropertyItemProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: p.id });
   const [activePlanMenu, setActivePlanMenu] = useState(false);
   const [activePaperMenu, setActivePaperMenu] = useState(false);
@@ -59,17 +59,16 @@ const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, handleQuick
 
   const style: React.CSSProperties = {
     transform: CSS.Translate.toString(transform),
-    transition,
-    zIndex: isDragging ? 40 : (activePlanMenu || activePaperMenu) ? 30 : 1,
-    opacity: isDragging ? 0.4 : 1,
-    animationDelay: `${index * 50}ms`,
+    transition: transition || undefined,
+    zIndex: isDragging ? 50 : (activePlanMenu || activePaperMenu) ? 30 : 1,
+    opacity: isDragging ? 0.3 : 1,
   };
 
   return (
     <div 
       ref={setNodeRef} 
       style={style} 
-      className={`group bg-white border-b border-gray-100 last:border-0 hover:bg-blue-50/20 transition-colors p-4 md:p-0 md:flex md:items-center md:min-w-[1000px] w-full overflow-hidden opacity-0 animate-fade-in ${isDragging ? 'shadow-lg ring-2 ring-blue-200 rounded-xl' : ''}`}
+      className={`group bg-white border-b border-gray-100 last:border-0 hover:bg-blue-50/20 p-4 md:p-0 md:flex md:items-center md:min-w-[1000px] w-full overflow-hidden ${isDragging ? 'shadow-xl ring-2 ring-brand-teal/40 rounded-xl bg-teal-50/30' : ''}`}
     >
       {/* Mobile Card Layout */}
       <div className="flex flex-col w-full md:hidden gap-3">
@@ -602,12 +601,12 @@ const PropertiesManagement = ({
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
-        distance: 8,
+        distance: 4,
       },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
-        delay: 200,
+        delay: 150,
         tolerance: 5,
       },
     }),
@@ -743,22 +742,33 @@ const PropertiesManagement = ({
             </SortableContext>
           </div>
           <DragOverlay dropAnimation={{
-            duration: 200,
-            easing: 'cubic-bezier(0.18, 0.67, 0.6, 1.22)',
+            duration: 220,
+            easing: 'cubic-bezier(0.2, 0, 0, 1)',
           }}>
             {activeDragProperty ? (
-              <div className="bg-white rounded-xl shadow-2xl border-2 border-blue-300 p-4 opacity-95 max-w-md">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-lg overflow-hidden border border-gray-200 shrink-0">
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-brand-teal ring-4 ring-brand-teal/15 p-4 flex items-center justify-between gap-4 max-w-2xl cursor-grabbing select-none">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="p-2 text-brand-teal cursor-grabbing shrink-0">
+                    <GripVertical size={20} />
+                  </div>
+                  <div className="w-14 h-14 rounded-xl overflow-hidden border border-gray-200 shrink-0 shadow-sm">
                     <img src={getImageSrc(activeDragProperty.images?.[0], 'thumb')} className="w-full h-full object-cover" alt="" />
                   </div>
                   <div className="min-w-0">
-                    <h4 className="font-bold text-gray-900 text-sm truncate">{activeDragProperty.title}</h4>
-                    <p className="text-xs text-gray-400 flex items-center gap-1">
-                      <MapPin size={10} />
-                      {activeDragProperty.location?.city || 'N/A'}
+                    <h4 className="font-extrabold text-gray-900 text-sm truncate">{activeDragProperty.title}</h4>
+                    <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                      <MapPin size={11} className="text-brand-teal" />
+                      <span>{activeDragProperty.location?.city || 'N/A'}</span>
                     </p>
                   </div>
+                </div>
+                <div className="text-right shrink-0 px-3">
+                  <span className="font-extrabold text-brand-dark text-sm">
+                    <Price amount={activeDragProperty.price} priceType={activeDragProperty.priceType} />
+                  </span>
+                  <span className="block text-[10px] font-black text-brand-teal uppercase tracking-wider">
+                    {activeDragProperty.listingType === 'sale' ? 'Vente' : 'Location'}
+                  </span>
                 </div>
               </div>
             ) : null}

@@ -19,6 +19,7 @@ export function useDemandsManagement({
   const [demands, setDemands] = useState<ClientDemand[]>(initialDemands || []);
   const [loading, setLoading] = useState(!initialDemands);
   const [filter, setFilter] = useState('all');
+  const [contractFilter, setContractFilter] = useState<'all' | 'rent' | 'sale'>('all');
   const [matchFilter, setMatchFilter] = useState('all'); // all, with-matches, no-matches
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'created-desc' | 'created-asc' | 'matches-desc'>('created-desc');
@@ -251,6 +252,8 @@ export function useDemandsManagement({
   const filteredDemands = useMemo(() => {
     return demands.filter(d => {
       const matchesFilter = filter === 'all' || d.status === filter;
+      const matchesContract = contractFilter === 'all' ||
+        (contractFilter === 'rent' ? d.contractType === 'rent' : (d.contractType === 'sale' || !d.contractType));
       const matchesSearch = d.clientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         d.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         d.phone?.includes(searchQuery);
@@ -260,9 +263,9 @@ export function useDemandsManagement({
       if (matchFilter === 'with-matches') matchesMatchFilter = matchesList.length > 0;
       if (matchFilter === 'no-matches') matchesMatchFilter = matchesList.length === 0;
 
-      return matchesFilter && matchesSearch && matchesMatchFilter;
+      return matchesFilter && matchesContract && matchesSearch && matchesMatchFilter;
     });
-  }, [demands, filter, searchQuery, matchFilter, getMatchesForDemand]);
+  }, [demands, filter, contractFilter, searchQuery, matchFilter, getMatchesForDemand]);
 
   const sortedDemands = useMemo(() => {
     return [...filteredDemands].sort((a, b) => {
@@ -296,6 +299,8 @@ export function useDemandsManagement({
     loading,
     filter,
     setFilter,
+    contractFilter,
+    setContractFilter,
     matchFilter,
     setMatchFilter,
     searchQuery,

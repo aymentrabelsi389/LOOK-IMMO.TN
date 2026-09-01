@@ -120,6 +120,8 @@ export interface SiteSettings {
   };
   aboutText?: string;
   discoveryLinks?: { label: string; url: string }[];
+  metaPixelId?: string;
+  googleMapsUrl?: string;
 }
 
 export interface Message {

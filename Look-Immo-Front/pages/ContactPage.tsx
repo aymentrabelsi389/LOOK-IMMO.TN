@@ -8,6 +8,7 @@ import { useSEO } from '@/hooks/useSEO';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useData } from '@/context/DataContext';
 import { notify } from '@/services/notificationStore';
+import { trackLead } from '@/utils/metaPixel';
 import { useClickOutside } from '@/hooks/useClickOutside';
 
 // Helper component to fix Leaflet resize issues
@@ -114,6 +115,7 @@ const ContactPage = () => {
         message: formData.message,
         website: formData.website, // honeypot field — backend rejects if non-empty
       });
+      trackLead('Message de contact', { subject: formData.subject });
       setSubmitted(true);
       setTimeout(() => setSubmitted(false), 5000);
       setFormData({ ...formData, subject: '', message: '' });
@@ -359,7 +361,7 @@ const ContactPage = () => {
               <h3 className="font-bold text-xl text-brand-dark mb-6">Notre Localisation</h3>
               <div className="flex-1 rounded-xl overflow-hidden border border-gray-100 z-10 relative group">
                 <a 
-                  href="https://maps.app.goo.gl/b567Ecfrmc4VLQwYA"
+                  href={settings.googleMapsUrl || `https://www.google.com/maps?q=${settings.location?.lat || 36.8624},${settings.location?.lng || 10.2407}`}
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="absolute inset-0 z-[1000] cursor-pointer group-hover:bg-black/5 transition-colors"

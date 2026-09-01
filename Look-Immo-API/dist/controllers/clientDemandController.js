@@ -6,12 +6,13 @@ const logger_1 = require("../utils/logger");
 // Get all client demands
 const getClientDemands = async (req, res) => {
     try {
-        const { status, type, search } = req.query;
+        const { status, type, contractType, search } = req.query;
         const page = Math.max(1, parseInt(req.query.page) || 1);
         const limit = Math.min(200, Math.max(1, parseInt(req.query.limit) || 100));
         const where = {
             ...(status && status !== 'all' ? { status: status } : {}),
             ...(type && type !== 'all' ? { type: type } : {}),
+            ...(contractType && contractType !== 'all' ? { contractType: contractType } : {}),
             ...(search
                 ? {
                     OR: [
@@ -43,7 +44,7 @@ exports.getClientDemands = getClientDemands;
 // Create client demand
 const createClientDemand = async (req, res) => {
     try {
-        const { clientName, phone, description, location, type, budget, priority, status } = req.body;
+        const { clientName, phone, description, location, type, contractType, budget, priority, status } = req.body;
         if (!clientName || !description || !location || !type) {
             res.status(400).json({ error: 'Client name, description, location, and type are required' });
             return;
@@ -55,6 +56,7 @@ const createClientDemand = async (req, res) => {
                 description,
                 location,
                 type,
+                contractType: contractType || 'sale',
                 budget: budget ? parseFloat(budget) : null,
                 priority: priority || 'medium',
                 status: status || 'searching',

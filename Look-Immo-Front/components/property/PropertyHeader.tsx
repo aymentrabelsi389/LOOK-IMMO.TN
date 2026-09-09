@@ -2,6 +2,8 @@ import React from 'react';
 import { MapPin, Star, Share2, Heart } from 'lucide-react';
 import { Property, User } from '@/types';
 import Price from '@/components/Price';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useAutoTranslate } from '@/hooks/useAutoTranslate';
 
 interface PropertyHeaderProps {
   property: Property;
@@ -16,9 +18,12 @@ export const PropertyHeader: React.FC<PropertyHeaderProps> = ({
   onToggleFavorite,
   onOpenAuth
 }) => {
+  const { t } = useTranslation();
+  const { displayText: displayTitle } = useAutoTranslate(property.title);
+
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href);
-    alert('Lien copié dans le presse-papier !');
+    alert(t('linkCopied'));
   };
 
   const handleFavoriteClick = (e: React.MouseEvent) => {
@@ -36,8 +41,8 @@ export const PropertyHeader: React.FC<PropertyHeaderProps> = ({
     <div className="bg-white rounded-2xl p-6 shadow-sm">
       <div className="flex flex-col sm:flex-row justify-between items-start mb-6 gap-4">
         <div className="flex-1 w-full overflow-hidden">
-          <h1 className="text-xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 truncate" title={property.title}>
-            {property.title}
+          <h1 className="text-xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 truncate" title={displayTitle}>
+            {displayTitle}
           </h1>
           <div className="flex items-center text-gray-600 mb-3">
             <MapPin size={20} className="mr-2 text-brand-teal flex-shrink-0" />
@@ -60,7 +65,7 @@ export const PropertyHeader: React.FC<PropertyHeaderProps> = ({
                 {property.averageRating ? property.averageRating.toFixed(1) : 'N/A'}
               </span>
               <span className="text-gray-500 ml-1 text-[10px] sm:text-sm shadow-sm whitespace-nowrap">
-                ({property.ratingsCount || 0} avis)
+                ({property.ratingsCount || 0} {t('reviewsCount')})
               </span>
             </div>
 
@@ -69,13 +74,14 @@ export const PropertyHeader: React.FC<PropertyHeaderProps> = ({
               <button
                 onClick={handleShare}
                 className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition"
-                title="Partager"
+                title={t('share')}
               >
                 <Share2 size={18} className="text-gray-700" />
               </button>
               <button
                 onClick={handleFavoriteClick}
                 className={`p-2 rounded-full transition ${isFav ? 'bg-red-50 hover:bg-red-100' : 'bg-gray-100 hover:bg-gray-200'}`}
+                title={isFav ? t('removeFromFavorites') : t('addToFavorites')}
               >
                 <Heart size={18} className={isFav ? 'text-red-500' : 'text-gray-400'} fill={isFav ? 'currentColor' : 'none'} />
               </button>
@@ -88,14 +94,14 @@ export const PropertyHeader: React.FC<PropertyHeaderProps> = ({
           <button
             onClick={handleShare}
             className="p-3 bg-gray-100 hover:bg-gray-200 rounded-full transition flex-shrink-0"
-            title="Partager"
+            title={t('share')}
           >
             <Share2 size={20} className="text-gray-700" />
           </button>
           <button
             onClick={handleFavoriteClick}
             className={`p-3 rounded-full transition flex-shrink-0 ${isFav ? 'bg-red-50 hover:bg-red-100' : 'bg-gray-100 hover:bg-gray-200'}`}
-            title={isFav ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            title={isFav ? t('removeFromFavorites') : t('addToFavorites')}
           >
             <Heart size={20} className={isFav ? 'text-red-500' : 'text-gray-400'} fill={isFav ? 'currentColor' : 'none'} />
           </button>
@@ -117,15 +123,15 @@ export const PropertyHeader: React.FC<PropertyHeaderProps> = ({
               : 'sm:items-center'
           }`}
         >
-          <span className="text-xs sm:text-sm text-blue-200/80 uppercase tracking-[0.1em] font-bold mb-1">Prix</span>
+          <span className="text-xs sm:text-sm text-blue-200/80 uppercase tracking-[0.1em] font-bold mb-1">{t('priceLabel')}</span>
           <span className="text-2xl sm:text-3xl lg:text-4xl font-bold whitespace-nowrap drop-shadow-md font-serif">
             <Price amount={property.price} priceType={property.priceType} />
-            {property.listingType === 'rent' && <span className="ml-1 text-[0.6em] sm:text-[0.55em] font-medium">/ Mois</span>}
+            {property.listingType === 'rent' && <span className="ml-1 text-[0.6em] sm:text-[0.55em] font-medium">{t('perMonth')}</span>}
           </span>
         </div>
         {property.priceType === 'per_m2' && property.features?.area && property.features.area > 0 && (
           <div className="flex flex-col items-center sm:items-end w-full sm:w-auto border-t sm:border-t-0 sm:border-l border-white/20 pt-4 sm:pt-0 sm:pl-6 animate-fade-in-up">
-            <span className="text-xs sm:text-sm text-blue-200/80 uppercase tracking-[0.1em] font-bold mb-1">Total estimé</span>
+            <span className="text-xs sm:text-sm text-blue-200/80 uppercase tracking-[0.1em] font-bold mb-1">{t('estimatedTotalLabel')}</span>
             <span className="text-xl sm:text-2xl font-bold text-[#C6A75E] drop-shadow-md whitespace-nowrap">
               <Price amount={property.price * property.features.area} />
             </span>
@@ -135,3 +141,4 @@ export const PropertyHeader: React.FC<PropertyHeaderProps> = ({
     </div>
   );
 };
+

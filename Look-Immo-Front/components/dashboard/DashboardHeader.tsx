@@ -2,6 +2,7 @@ import React from 'react';
 import { User as UserIcon, CalendarDays, Calendar, Activity, CheckCircle } from 'lucide-react';
 import { User } from '@/types';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface DashboardHeaderProps {
   user: User;
@@ -18,6 +19,8 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   activeDemands,
   matchedDemandsCount
 }) => {
+  const { t } = useTranslation();
+
   return (
     <>
       {/* Header with Avatar & Greeting */}
@@ -43,7 +46,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               <div className="space-y-2">
                 <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-3">
                   <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight">
-                    Bienvenue,{' '}
+                    {t('welcomeUser')}{' '}
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-cyan-400 font-bold">
                       {user.name}
                     </span>
@@ -61,7 +64,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                   </span>
                 </div>
                 <p className="text-gray-300 text-sm sm:text-base max-w-xl font-light">
-                  Gérez votre profil, vos rendez-vous et vos favoris immobiliers Look Immo.
+                  {t('dashboardSubtitle')}
                 </p>
               </div>
             </div>
@@ -80,8 +83,8 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 <CalendarDays size={18} className="sm:w-5 sm:h-5" />
               </div>
               <div className="relative z-10 min-w-0">
-                <p className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5 truncate sm:whitespace-normal" title="Rdv Aujourd'hui">
-                  Rdv Aujourd'hui
+                <p className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5 truncate sm:whitespace-normal" title={t('apptsTodayLabel')}>
+                  {t('apptsTodayLabel')}
                 </p>
                 <p className="text-xl sm:text-2xl font-extrabold text-gray-900 leading-tight">{apptsToday}</p>
               </div>
@@ -94,8 +97,8 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 <Calendar size={18} className="sm:w-5 sm:h-5" />
               </div>
               <div className="relative z-10 min-w-0">
-                <p className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5 truncate sm:whitespace-normal" title="Rdv Demain">
-                  Rdv Demain
+                <p className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5 truncate sm:whitespace-normal" title={t('apptsTomorrowLabel')}>
+                  {t('apptsTomorrowLabel')}
                 </p>
                 <p className="text-xl sm:text-2xl font-extrabold text-gray-900 leading-tight">{apptsTomorrow}</p>
               </div>
@@ -108,8 +111,8 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 <Activity size={18} className="sm:w-5 sm:h-5" />
               </div>
               <div className="relative z-10 min-w-0">
-                <p className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5 truncate sm:whitespace-normal" title="Demandes Actives">
-                  Demandes Actives
+                <p className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5 truncate sm:whitespace-normal" title={t('activeDemandsLabel')}>
+                  {t('activeDemandsLabel')}
                 </p>
                 <p className="text-xl sm:text-2xl font-extrabold text-gray-900 leading-tight">{activeDemands}</p>
               </div>
@@ -122,8 +125,8 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                 <CheckCircle size={18} className="sm:w-5 sm:h-5" />
               </div>
               <div className="relative z-10 min-w-0">
-                <p className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5 truncate sm:whitespace-normal" title="Matchées">
-                  Matchées
+                <p className="text-[10px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-0.5 truncate sm:whitespace-normal" title={t('matchedDemandsLabel')}>
+                  {t('matchedDemandsLabel')}
                 </p>
                 <p className="text-xl sm:text-2xl font-extrabold text-gray-900 leading-tight">{matchedDemandsCount}</p>
               </div>

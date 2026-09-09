@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../utils/prisma';
+import { createNotification } from '../services/notificationService';
 import { logger } from '../utils/logger';
 
 // Get all locations
@@ -50,8 +51,8 @@ export const createLocation = async (req: Request, res: Response): Promise<void>
     try {
         const { name, centerLat, centerLng, radius } = req.body;
 
-        if (!name || centerLat === undefined || centerLng === undefined || !radius) {
-            res.status(400).json({ error: 'Name, coordinates, and radius are required' });
+        if (!name || centerLat === undefined || centerLng === undefined || radius === undefined) {
+            res.status(400).json({ error: 'Name, centerLat, centerLng, and radius are required' });
             return;
         }
 
@@ -65,13 +66,19 @@ export const createLocation = async (req: Request, res: Response): Promise<void>
         });
 
         // Create notification
-        await prisma.notification.create({
-            data: {
+        try {
+            await createNotification({
                 type: 'location_add',
-                message: `New location added: ${location.name}`,
-                entityId: location.id,
-            },
-        });
+                title: 'Nouvelle Zone',
+                message: `Nouvelle zone ajoutée : ${location.name}`,
+                icon: 'MapPin',
+                link: '/admin',
+                userId: null,
+                metadata: { locationId: location.id },
+            });
+        } catch (notifError) {
+            logger.error('Failed to create location notification:', notifError);
+        }
 
         res.status(201).json(location);
     } catch (error) {
@@ -106,13 +113,19 @@ export const updateLocation = async (req: Request, res: Response): Promise<void>
         });
 
         // Create notification
-        await prisma.notification.create({
-            data: {
+        try {
+            await createNotification({
                 type: 'location_edit',
-                message: `Location updated: ${location.name}`,
-                entityId: location.id,
-            },
-        });
+                title: 'Zone Modifiée',
+                message: `Zone mise à jour : ${location.name}`,
+                icon: 'MapPin',
+                link: '/admin',
+                userId: null,
+                metadata: { locationId: location.id },
+            });
+        } catch (notifError) {
+            logger.error('Failed to create location update notification:', notifError);
+        }
 
         res.json(location);
     } catch (error) {
@@ -140,13 +153,19 @@ export const deleteLocation = async (req: Request, res: Response): Promise<void>
         });
 
         // Create notification
-        await prisma.notification.create({
-            data: {
+        try {
+            await createNotification({
                 type: 'location_delete',
-                message: `Location deleted: ${location.name}`,
-                entityId: id,
-            },
-        });
+                title: 'Zone Supprimée',
+                message: `Zone supprimée : ${location.name}`,
+                icon: 'MapPin',
+                link: '/admin',
+                userId: null,
+                metadata: { locationId: id },
+            });
+        } catch (notifError) {
+            logger.error('Failed to create location delete notification:', notifError);
+        }
 
         res.json({ message: 'Location deleted successfully' });
     } catch (error) {

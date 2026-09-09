@@ -2,6 +2,7 @@ import React from 'react';
 import { Star } from 'lucide-react';
 import { Property, User } from '@/types';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface PropertyRatingSectionProps {
   property: Property;
@@ -22,6 +23,8 @@ export const PropertyRatingSection: React.FC<PropertyRatingSectionProps> = ({
   setFullProperty,
   onOpenAuth
 }) => {
+  const { t } = useTranslation();
+
   return (
     <ScrollReveal>
       <div className="bg-white rounded-2xl p-6 shadow-sm">
@@ -29,7 +32,7 @@ export const PropertyRatingSection: React.FC<PropertyRatingSectionProps> = ({
           <span className="bg-yellow-100 text-yellow-600 p-2 rounded-lg mr-3">
             <Star size={24} fill="currentColor" />
           </span>
-          Avis Clients
+          {t('customerReviewsTitle')}
         </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
@@ -47,13 +50,13 @@ export const PropertyRatingSection: React.FC<PropertyRatingSectionProps> = ({
                 />
               ))}
             </div>
-            <span className="text-gray-500 font-medium">{property.ratingsCount || 0} avis pour ce bien</span>
+            <span className="text-gray-500 font-medium">{property.ratingsCount || 0} {t('reviewsForThisProperty')}</span>
           </div>
 
           {/* Rating Action */}
           <div className="flex flex-col items-center text-center">
-            <h3 className="text-lg font-bold text-gray-900 mb-2">Une expérience avec ce bien ?</h3>
-            <p className="text-gray-500 mb-6">Partagez votre avis avec notre communauté</p>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">{t('experienceWithProperty')}</h3>
+            <p className="text-gray-500 mb-6">{t('shareYourReview')}</p>
 
             {user ? (
               <div className="flex flex-col items-center animate-fade-in">
@@ -72,7 +75,7 @@ export const PropertyRatingSection: React.FC<PropertyRatingSectionProps> = ({
                           console.error(err);
                         }
                       }}
-                      aria-label={`Noter ${star} étoiles`}
+                      aria-label={t('rateStarAria', { count: star })}
                       className={`p-1 transition-all transform hover:scale-125 hover:-translate-y-1 ${
                         star <= userRating ? 'text-yellow-400 drop-shadow-sm' : 'text-gray-200 hover:text-yellow-300'
                       }`}
@@ -86,7 +89,7 @@ export const PropertyRatingSection: React.FC<PropertyRatingSectionProps> = ({
                     userRating > 0 ? 'text-green-600 opacity-100 translate-y-0' : 'opacity-0 translate-y-2'
                   }`}
                 >
-                  {userRating > 0 ? '✨ Merci pour votre avis !' : ''}
+                  {userRating > 0 ? t('thankYouForReview') : ''}
                 </span>
               </div>
             ) : (
@@ -94,7 +97,7 @@ export const PropertyRatingSection: React.FC<PropertyRatingSectionProps> = ({
                 onClick={onOpenAuth}
                 className="px-6 py-3 bg-gray-900 text-white rounded-xl font-bold hover:bg-black transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
-                Se connecter pour noter
+                {t('loginToRate')}
               </button>
             )}
           </div>
@@ -103,3 +106,4 @@ export const PropertyRatingSection: React.FC<PropertyRatingSectionProps> = ({
     </ScrollReveal>
   );
 };
+

@@ -4,6 +4,8 @@ import { Bath, BedDouble, Crown, Flame, Heart, MapPin, Sparkles, Square, Star } 
 import { Property } from '@/types';
 import Price from './Price';
 import { getImageSrc, buildSrcSet, getLQIP, buildPropertyImageAlt } from '@/utils/imageUtils';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useAutoTranslate } from '@/hooks/useAutoTranslate';
 
 interface PropertyCardProps {
   property: Property;
@@ -15,6 +17,8 @@ interface PropertyCardProps {
 }
 
 const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, isFavorite, userRole, onToggleFavorite, priority = false }) => {
+  const { t } = useTranslation();
+  const { displayText: displayTitle } = useAutoTranslate(property.title);
   const [isAnimating, setIsAnimating] = useState(false);
   const isAdmin = userRole === 'admin';
 
@@ -63,23 +67,23 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, is
           />
           <div className="absolute top-3 left-3 flex flex-col space-y-1 z-20 pointer-events-none">
             <span className={`px-1.5 md:px-3 py-0.5 md:py-1 rounded-full text-[9px] md:text-xs font-bold uppercase tracking-wide md:tracking-wider text-white shadow-md ${property.listingType === 'sale' ? 'bg-blue-600' : 'bg-green-600'}`}>
-              {property.listingType === 'sale' ? 'À VENDRE' : 'À LOUER'}
+              {property.listingType === 'sale' ? t('forSale') : t('forRent')}
             </span>
-            {property.status === 'sold' && <span className="px-1.5 md:px-3 py-0.5 md:py-1 rounded-full text-[9px] md:text-xs font-bold uppercase tracking-wide md:tracking-wider text-white bg-red-600 shadow-md">VENDU</span>}
-            {property.status === 'rented' && <span className="px-1.5 md:px-3 py-0.5 md:py-1 rounded-full text-[9px] md:text-xs font-bold uppercase tracking-wide md:tracking-wider text-white bg-orange-500 shadow-md">LOUÉ</span>}
+            {property.status === 'sold' && <span className="px-1.5 md:px-3 py-0.5 md:py-1 rounded-full text-[9px] md:text-xs font-bold uppercase tracking-wide md:tracking-wider text-white bg-red-600 shadow-md">{t('sold')}</span>}
+            {property.status === 'rented' && <span className="px-1.5 md:px-3 py-0.5 md:py-1 rounded-full text-[9px] md:text-xs font-bold uppercase tracking-wide md:tracking-wider text-white bg-orange-500 shadow-md">{t('rented')}</span>}
             {(property.isFeatured && (property.status === 'available' || !property.status)) && (
               <span className="px-1.5 md:px-3 py-0.5 md:py-1 rounded-full text-[9px] md:text-xs font-black uppercase tracking-wide md:tracking-wider text-amber-950 bg-gradient-to-r from-amber-200 to-amber-500 shadow-md flex items-center w-fit">
-                <Crown size={9} className="mr-1 fill-current" /> EXCLUSIVITÉ
+                <Crown size={9} className="mr-1 fill-current" /> {t('exclusive')}
               </span>
             )}
             {(property.isNew && (property.status === 'available' || !property.status)) && (
               <span className="px-1.5 md:px-3 py-0.5 md:py-1 rounded-full text-[9px] md:text-xs font-bold uppercase tracking-wide md:tracking-wider text-white bg-brand-teal shadow-md flex items-center w-fit">
-                <Sparkles size={9} className="mr-1" /> NOUVEAU
+                <Sparkles size={9} className="mr-1" /> {t('newBadge')}
               </span>
             )}
             {(property.isHotDeal && (property.status === 'available' || !property.status)) && (
               <span className="px-1.5 md:px-3 py-0.5 md:py-1 rounded-full text-[9px] md:text-xs font-bold uppercase tracking-wide md:tracking-wider text-white bg-red-500 shadow-md flex items-center w-fit animate-pulse">
-                <Flame size={9} className="mr-1" /> PROMOTION
+                <Flame size={9} className="mr-1" /> {t('promotion')}
               </span>
             )}
           </div>
@@ -115,8 +119,14 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, is
           >
             <p className="text-lg md:text-2xl font-bold text-white font-serif tracking-wide drop-shadow-md">
               <Price amount={property.price} priceType={property.priceType} />
-              {property.listingType === 'rent' && <span className="ml-1 text-[0.7em] font-medium">/ Mois</span>}
+              {property.listingType === 'rent' && <span className="ml-1 text-[0.7em] font-medium">{t('perMonth')}</span>}
             </p>
+            {property.type === 'land' && (property.priceType === 'per_m2' || (!property.priceType && property.price < 20_000)) && property.features?.area && property.features.area > 0 && (
+              <p className="text-[11px] md:text-xs text-brand-teal font-medium drop-shadow-sm mt-0.5 inline-flex items-baseline gap-1">
+                <span>{t('estimatedTotal')}</span>
+                <Price amount={property.price * property.features.area} />
+              </p>
+            )}
           </div>
         </div>
 
@@ -138,7 +148,7 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, is
                   }}
                   className="hover:text-brand-teal transition"
                 >
-                  {property.title}
+                  {displayTitle || property.title}
                 </Link>
               </h3>
             </div>
@@ -150,7 +160,7 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, is
               <div className="flex items-center mb-4">
                 <div className="flex text-yellow-400"><Star size={14} fill="currentColor" /></div>
                 <span className="text-xs font-bold ml-1 text-gray-700">{property.averageRating?.toFixed(1)}</span>
-                <span className="text-xs text-gray-400 ml-1">({property.ratingsCount} avis)</span>
+                <span className="text-xs text-gray-400 ml-1">({property.ratingsCount} {t('reviewsCount')})</span>
               </div>
             )}
           </div>

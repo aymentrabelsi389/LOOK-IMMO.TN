@@ -159,13 +159,19 @@ export const deleteMessage = async (req: Request, res: Response): Promise<void> 
         });
 
         // Create notification
-        await prisma.notification.create({
-            data: {
+        try {
+            await createNotification({
                 type: 'message_delete',
-                message: `Message deleted from: ${message.name}`,
-                entityId: id,
-            },
-        });
+                title: 'Message Supprimé',
+                message: `Message supprimé de : ${message.name}`,
+                icon: 'Trash',
+                link: '/admin',
+                userId: null,
+                metadata: { messageId: id },
+            });
+        } catch (notifError) {
+            logger.error('Failed to create message delete notification:', notifError);
+        }
 
         res.json({ message: 'Message deleted successfully' });
 

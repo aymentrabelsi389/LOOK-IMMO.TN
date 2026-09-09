@@ -1,9 +1,10 @@
 import React from 'react';
 import { 
-  X, Calendar, Clock, Building2, MessageSquare, Phone, Mail, Trash2, Check, History, Edit2
+  X, Calendar, Clock, Building2, MessageSquare, Phone, Mail, Trash2, Check, History, Edit2, MapPin
 } from 'lucide-react';
 import { Appointment, User, Property } from '@/types';
 import { createPortal } from 'react-dom';
+import Price from '@/components/Price';
 
 interface ClientAppointmentsHistoryModalProps {
   onClose: () => void;
@@ -64,16 +65,18 @@ const ClientAppointmentsHistoryModal: React.FC<ClientAppointmentsHistoryModalPro
   }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const getDisplayProperties = (apt: Appointment) => {
-    const list: { id: string; title: string }[] = [];
+    const list: { id: string; title: string; property?: Property }[] = [];
     if (apt.propertyId) {
       const primaryProp = properties?.find(p => p.id === apt.propertyId);
       if (primaryProp) {
-        list.push({ id: primaryProp.id, title: primaryProp.title });
+        list.push({ id: primaryProp.id, title: primaryProp.title, property: primaryProp });
       } else if (apt.propertyTitle) {
-        list.push({ id: apt.propertyId, title: apt.propertyTitle });
+        const foundByTitle = properties?.find(p => p.title.toLowerCase() === apt.propertyTitle?.toLowerCase());
+        list.push({ id: apt.propertyId, title: apt.propertyTitle, property: foundByTitle });
       }
     } else if (apt.propertyTitle && apt.propertyTitle !== 'Propriété inconnue') {
-      list.push({ id: 'unknown-id', title: apt.propertyTitle });
+      const foundByTitle = properties?.find(p => p.title.toLowerCase() === apt.propertyTitle?.toLowerCase());
+      list.push({ id: foundByTitle?.id || 'unknown-id', title: apt.propertyTitle, property: foundByTitle });
     }
 
     const parseNotesIds = (raw: string | undefined): string[] => {
@@ -87,7 +90,7 @@ const ClientAppointmentsHistoryModal: React.FC<ClientAppointmentsHistoryModalPro
       if (pid === apt.propertyId || list.some(p => p.id === pid)) return;
       const prop = properties?.find(p => p.id === pid);
       if (prop) {
-        list.push({ id: prop.id, title: prop.title });
+        list.push({ id: prop.id, title: prop.title, property: prop });
       }
     });
 
@@ -218,13 +221,55 @@ const ClientAppointmentsHistoryModal: React.FC<ClientAppointmentsHistoryModalPro
                   {/* Middle Section: Properties and Notes */}
                   <div className="space-y-2.5">
                     {/* Properties */}
-                    <div className="space-y-1">
-                      {getDisplayProperties(apt).map((prop, idx) => (
-                        <div key={prop.id + '-' + idx} className="flex items-center text-xs font-black text-gray-700">
-                          <Building2 size={13} className="mr-1.5 text-gray-400 flex-shrink-0" />
-                          <span className="truncate">{prop.title}</span>
-                        </div>
-                      ))}
+                    <div className="space-y-2">
+                      {getDisplayProperties(apt).map((prop, idx) => {
+                        const p = prop.property;
+                        const isLand = p?.type === 'land';
+
+                        const city = p?.location?.city?.trim() || '';
+                        const address = p?.location?.address?.trim() || '';
+                        let location = '';
+                        if (city && address) {
+                          if (city.toLowerCase() === address.toLowerCase()) location = city;
+                          else if (address.toLowerCase().includes(city.toLowerCase())) location = address;
+                          else if (city.toLowerCase().includes(address.toLowerCase())) location = city;
+                          else location = `${city} - ${address}`;
+                        } else {
+                          location = city || address || '';
+                        }
+
+                        const area = p?.features?.area && p.features.area > 0 ? `${p.features.area} m²` : null;
+
+                        const isPerM2 = p?.priceType === 'per_m2' || (!p?.priceType && (p?.price || 0) < 20_000);
+                        const priceVal = isLand
+                          ? (isPerM2 ? p?.price : (p?.features?.area && p.features.area > 0 ? Math.round(p.price / p.features.area) : p?.price))
+                          : p?.price;
+
+                        return (
+                          <div key={prop.id + '-' + idx} className="space-y-0.5">
+                            <div className="flex items-center text-xs font-bold text-gray-800">
+                              <Building2 size={13} className="mr-1.5 text-gray-400 flex-shrink-0" />
+                              <span className="truncate">{prop.title}</span>
+                            </div>
+                            {(location || area || priceVal) && (
+                              <p className="pl-4.5 text-[11px] text-gray-500 font-semibold truncate">
+                                {location && <span>{location}</span>}
+                                {location && area ? <span className="text-gray-400 font-normal"> • </span> : null}
+                                {area && <span>{area}</span>}
+                                {(location || area) && priceVal ? <span className="text-gray-400 font-normal"> • </span> : null}
+                                {priceVal ? (
+                                  <Price 
+                                    amount={priceVal} 
+                                    priceType={isLand ? 'per_m2' : undefined} 
+                                    fontSans={true}
+                                    className="text-gray-500 font-semibold text-[11px]" 
+                                  />
+                                ) : null}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
 
                     {/* Notes */}

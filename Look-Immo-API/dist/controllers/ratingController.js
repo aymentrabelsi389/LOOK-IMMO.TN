@@ -170,12 +170,14 @@ const deleteRating = async (req, res) => {
         await (0, redis_1.deleteCache)(`properties:detail:${rating.propertyId}`);
         // Create notification
         try {
-            await prisma_1.prisma.notification.create({
-                data: {
-                    type: 'rating_delete', // Cast as any just in case it's missing in generated client
-                    message: `Rating deleted: ${rating.stars} stars by ${rating.userName} for ${rating.property.title}`,
-                    entityId: id,
-                },
+            await (0, notificationService_1.createNotification)({
+                type: 'rating_delete',
+                title: 'Avis Supprimé',
+                message: `Avis supprimé : ${rating.stars} étoiles par ${rating.userName} pour ${rating.property.title}`,
+                icon: 'Star',
+                link: `/property/${rating.propertyId}`,
+                userId: null,
+                metadata: { ratingId: id, propertyId: rating.propertyId },
             });
         }
         catch (notifError) {

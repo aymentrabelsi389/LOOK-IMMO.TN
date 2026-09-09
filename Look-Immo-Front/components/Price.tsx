@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useCurrencyStore } from '@/stores/useCurrencyStore';
 
-const Price = ({ amount, priceType, className = '' }: { amount: number; priceType?: 'total' | 'per_m2'; className?: string }) => {
+const Price = ({ amount, priceType, className = '', fontSans = false }: { amount: number; priceType?: 'total' | 'per_m2'; className?: string; fontSans?: boolean }) => {
   const { currency, rates } = useCurrencyStore();
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -26,9 +26,9 @@ const Price = ({ amount, priceType, className = '' }: { amount: number; priceTyp
 
   return (
     <span
-      className={`inline-flex items-baseline whitespace-nowrap transition-opacity duration-300 font-serif tracking-wide ${isUpdating ? 'opacity-50' : 'opacity-100'} ${className}`}
+      className={`inline-flex items-baseline whitespace-nowrap transition-opacity duration-300 ${fontSans ? 'font-sans' : 'font-serif tracking-wide'} ${isUpdating ? 'opacity-50' : 'opacity-100'} ${className}`}
       data-price-base={amount}
-      style={{ fontFamily: "'Playfair Display', serif" }}
+      style={fontSans ? undefined : { fontFamily: "'Playfair Display', serif" }}
     >
       {isPrefix && (
         <span className="font-sans font-medium mr-1 tracking-normal text-[0.7em]" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -37,7 +37,7 @@ const Price = ({ amount, priceType, className = '' }: { amount: number; priceTyp
       )}
       <span className="font-semibold">{formattedNumber}</span>
       {!isPrefix && (
-        <span className="ml-1.5 whitespace-nowrap text-[0.7em] font-medium">
+        <span className="ml-1 whitespace-nowrap text-[0.85em] font-medium">
           {curSymbol}
           {priceType === 'per_m2' ? ' / m²' : ''}
         </span>

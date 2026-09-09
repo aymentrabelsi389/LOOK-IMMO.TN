@@ -151,8 +151,17 @@ const AdminPanel = () => {
       }
 
       // 2. Budget Match
+      const effectivePrice = (() => {
+        const isLand = property.type === 'land';
+        const isPerM2 = property.priceType === 'per_m2' || (!property.priceType && property.price < 20_000);
+        if (isLand && isPerM2 && property.features?.area && property.features.area > 0) {
+          return property.price * property.features.area;
+        }
+        return property.price;
+      })();
+
       if (demand.budget && demand.budget > 0) {
-        const priceDiff = (property.price - demand.budget) / demand.budget;
+        const priceDiff = (effectivePrice - demand.budget) / demand.budget;
         if (priceDiff <= 0) score += 30;
         else if (priceDiff <= 0.1) score += 20;
         else if (priceDiff <= 0.2) score += 10;

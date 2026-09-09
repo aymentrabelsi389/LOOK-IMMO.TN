@@ -1,10 +1,20 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updatePropertyOrder = exports.deleteProperty = exports.updateProperty = exports.createProperty = exports.getProperty = exports.getProperties = void 0;
+exports.updatePropertyOrder = exports.deleteProperty = exports.updateProperty = exports.createProperty = exports.getProperty = exports.getProperties = exports.getPropertyTotalPrice = void 0;
 const redis_1 = require("../utils/redis");
 const prisma_1 = require("../utils/prisma");
 const notificationService_1 = require("../services/notificationService");
 const logger_1 = require("../utils/logger");
+// Helper to compute a property's total price (especially for lands sold per m²)
+const getPropertyTotalPrice = (p) => {
+    const area = p.features && typeof p.features === 'object' && p.features.area ? Number(p.features.area) : null;
+    const isPerM2 = p.priceType === 'per_m2' || (!p.priceType && p.category === 'land' && p.price < 20000);
+    if (isPerM2 && area && area > 0) {
+        return Math.round(p.price * area);
+    }
+    return p.price;
+};
+exports.getPropertyTotalPrice = getPropertyTotalPrice;
 // Get all properties
 const getProperties = async (req, res) => {
     try {
@@ -23,6 +33,8 @@ const getProperties = async (req, res) => {
         const p = isNoLimit ? 1 : (parseInt(page) || 1);
         const l = isNoLimit ? 9999 : (parseInt(limit) || 24);
         const skip = isNoLimit ? 0 : (p - 1) * l;
+        const isLand = category === 'land';
+        const hasPriceFilter = Boolean(minPrice || maxPrice);
         const where = {
             ...(type && type !== 'all' ? { type: type } : {}),
             ...(category && category !== 'all' ? { category: category } : {}),
@@ -34,8 +46,10 @@ const getProperties = async (req, res) => {
                     ? { status: { notIn: ['sold', 'rented'] } }
                     : {}),
             ...(ownerId ? { ownerId: ownerId } : {}),
-            ...(minPrice ? { price: { gte: parseFloat(minPrice) } } : {}),
-            ...(maxPrice ? { price: { lte: parseFloat(maxPrice) } } : {}),
+            // For lands, price in DB is often per m² while min/maxPrice is total price.
+            // When querying lands, filter by total price in-memory to accurately calculate price * area.
+            ...(!isLand && minPrice ? { price: { gte: parseFloat(minPrice) } } : {}),
+            ...(!isLand && maxPrice ? { price: { lte: parseFloat(maxPrice) } } : {}),
             ...(isHotDeal === 'true' ? { isHotDeal: true } : {}),
             ...(search
                 ? {
@@ -59,44 +73,83 @@ const getProperties = async (req, res) => {
         const fullWhere = jsonPathFilters.length > 0
             ? { AND: [where, ...jsonPathFilters] }
             : where;
-        const [properties, total] = await Promise.all([
-            prisma_1.prisma.property.findMany({
+        const propertySelect = {
+            id: true,
+            title: true,
+            price: true,
+            priceType: true,
+            type: true,
+            city: true,
+            zone: true,
+            status: true,
+            images: true,
+            createdAt: true,
+            latitude: true,
+            longitude: true,
+            category: true,
+            features: true,
+            isFeatured: true,
+            isNew: true,
+            isHotDeal: true,
+            displayOrder: true,
+            owner: {
+                select: { id: true, name: true },
+            },
+            averageRating: true,
+            ratingsCount: true,
+            ownerPhone: true,
+        };
+        let properties;
+        let total;
+        if (isLand && hasPriceFilter) {
+            const min = minPrice ? parseFloat(minPrice) : null;
+            const max = maxPrice ? parseFloat(maxPrice) : null;
+            // Fetch candidate lands matching all other filters
+            const allMatchingLands = await prisma_1.prisma.property.findMany({
                 where: fullWhere,
-                select: {
-                    id: true,
-                    title: true,
-                    price: true,
-                    priceType: true,
-                    type: true,
-                    city: true,
-                    zone: true,
-                    status: true,
-                    images: true, // We'll still take the array but only use first in JS
-                    createdAt: true,
-                    latitude: true,
-                    longitude: true,
-                    category: true,
-                    features: true,
-                    isFeatured: true,
-                    isNew: true,
-                    isHotDeal: true,
-                    displayOrder: true,
-                    owner: {
-                        select: { id: true, name: true },
-                    },
-                    averageRating: true,
-                    ratingsCount: true,
-                    ownerPhone: true,
-                },
+                select: propertySelect,
                 orderBy: [
                     { displayOrder: 'asc' },
                     { createdAt: 'desc' }
                 ],
-                skip,
-                take: l,
-            }),
-            prisma_1.prisma.property.count({ where: fullWhere })
-        ]);
+            });
+            // Filter lands by their total estimated price (price * area if per_m2)
+            const filteredLands = allMatchingLands.filter(land => {
+                const totalEstimated = (0, exports.getPropertyTotalPrice)(land);
+                if (min !== null && totalEstimated < min)
+                    return false;
+                if (max !== null && totalEstimated > max)
+                    return false;
+                return true;
+            });
+            total = filteredLands.length;
+            properties = isNoLimit ? filteredLands : filteredLands.slice(skip, skip + l);
+        }
+        else {
+            const [queriedProperties, count] = await Promise.all([
+                prisma_1.prisma.property.findMany({
+                    where: fullWhere,
+                    select: propertySelect,
+                    orderBy: [
+                        { displayOrder: 'asc' },
+                        { createdAt: 'desc' }
+                    ],
+                    skip,
+                    take: l,
+                }),
+                prisma_1.prisma.property.count({ where: fullWhere })
+            ]);
+            properties = queriedProperties;
+            total = count;
+            // If query is across all categories with a max price, ensure any lands don't leak through on unit price
+            if (!isLand && hasPriceFilter && maxPrice) {
+                const maxVal = parseFloat(maxPrice);
+                properties = properties.filter(p => {
+                    const totalEstimated = (0, exports.getPropertyTotalPrice)(p);
+                    return totalEstimated <= maxVal;
+                });
+            }
+        }
         // Post-process to limit images
         const optimizedProperties = properties.map(p => ({
             ...p,
@@ -284,14 +337,20 @@ const updateProperty = async (req, res) => {
             },
         });
         // Create notification
-        await prisma_1.prisma.notification.create({
-            data: {
+        try {
+            await (0, notificationService_1.createNotification)({
                 type: 'property_edit',
-                message: `Property updated: ${property.title}`,
-                entityId: property.id,
-                userId,
-            },
-        });
+                title: 'Propriété Modifiée',
+                message: `Propriété mise à jour : ${property.title}`,
+                icon: 'Home',
+                link: `/property/${property.id}`,
+                userId: null,
+                metadata: { propertyId: property.id },
+            });
+        }
+        catch (notifError) {
+            logger_1.logger.error('Failed to create property update notification:', notifError);
+        }
         // Invalidate caches
         await (0, redis_1.clearCachePattern)('properties:list:*');
         await (0, redis_1.deleteCache)(`properties:detail:${id}`);
@@ -325,14 +384,20 @@ const deleteProperty = async (req, res) => {
             where: { id },
         });
         // Create notification
-        await prisma_1.prisma.notification.create({
-            data: {
+        try {
+            await (0, notificationService_1.createNotification)({
                 type: 'property_delete',
-                message: `Property deleted: ${property.title}`,
-                entityId: id,
-                userId,
-            },
-        });
+                title: 'Propriété Supprimée',
+                message: `Propriété supprimée : ${property.title}`,
+                icon: 'Home',
+                link: '/admin',
+                userId: null,
+                metadata: { propertyId: id },
+            });
+        }
+        catch (notifError) {
+            logger_1.logger.error('Failed to create property delete notification:', notifError);
+        }
         // Invalidate caches
         await (0, redis_1.clearCachePattern)('properties:list:*');
         await (0, redis_1.deleteCache)(`properties:detail:${id}`);

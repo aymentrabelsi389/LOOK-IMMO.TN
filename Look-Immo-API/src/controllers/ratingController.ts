@@ -187,12 +187,14 @@ export const deleteRating = async (req: Request, res: Response): Promise<void> =
 
         // Create notification
         try {
-            await prisma.notification.create({
-                data: {
-                    type: 'rating_delete' as any, // Cast as any just in case it's missing in generated client
-                    message: `Rating deleted: ${rating.stars} stars by ${rating.userName} for ${rating.property.title}`,
-                    entityId: id,
-                },
+            await createNotification({
+                type: 'rating_delete',
+                title: 'Avis Supprimé',
+                message: `Avis supprimé : ${rating.stars} étoiles par ${rating.userName} pour ${rating.property.title}`,
+                icon: 'Star',
+                link: `/property/${rating.propertyId}`,
+                userId: null,
+                metadata: { ratingId: id, propertyId: rating.propertyId },
             });
         } catch (notifError) {
             logger.error('Failed to create notification for rating deletion:', notifError);

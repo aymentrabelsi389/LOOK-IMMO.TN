@@ -2,6 +2,7 @@ import React from 'react';
 import { createPortal } from 'react-dom';
 import { Target, X } from 'lucide-react';
 import { ClientDemand } from '@/types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface AddDemandModalProps {
   show: boolean;
@@ -22,7 +23,52 @@ export const AddDemandModal: React.FC<AddDemandModalProps> = ({
   demandErrors,
   setDemandErrors
 }) => {
+  const { t } = useTranslation();
   if (!show) return null;
+
+  const contractOptions = [
+    {
+      value: 'sale' as const,
+      label: t('demandContractBuy'),
+      active: 'bg-orange-50 border-orange-400 text-orange-700 shadow-sm shadow-orange-100',
+      inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-orange-200 hover:bg-orange-50/50'
+    },
+    {
+      value: 'rent' as const,
+      label: t('demandContractRent'),
+      active: 'bg-orange-50 border-orange-400 text-orange-700 shadow-sm shadow-orange-100',
+      inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-orange-200 hover:bg-orange-50/50'
+    }
+  ];
+
+  const propertyTypeOptions = [
+    { value: 'appartement' as const, label: t('demandTypePropApartment'), emoji: '🏢' },
+    { value: 'villa' as const, label: t('demandTypePropVilla'), emoji: '🏡' },
+    { value: 'terrain' as const, label: t('demandTypePropLand'), emoji: '🌿' },
+    { value: 'bureau' as const, label: t('demandTypePropOffice'), emoji: '💼' },
+    { value: 'commerce' as const, label: t('demandTypePropShop'), emoji: '🏪' }
+  ];
+
+  const priorityOptions = [
+    {
+      value: 'high' as const,
+      label: `🔴 ${t('priorityHigh')}`,
+      active: 'bg-red-50 border-red-400 text-red-700 shadow-sm shadow-red-100',
+      inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-red-200 hover:bg-red-50/50'
+    },
+    {
+      value: 'medium' as const,
+      label: `🟡 ${t('priorityMedium')}`,
+      active: 'bg-amber-50 border-amber-400 text-amber-700 shadow-sm shadow-amber-100',
+      inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-amber-200 hover:bg-amber-50/50'
+    },
+    {
+      value: 'low' as const,
+      label: `🟢 ${t('priorityLow')}`,
+      active: 'bg-green-50 border-green-400 text-green-700 shadow-sm shadow-green-100',
+      inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-green-200 hover:bg-green-50/50'
+    }
+  ];
 
   return createPortal(
     <div
@@ -36,12 +82,12 @@ export const AddDemandModal: React.FC<AddDemandModalProps> = ({
         <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-orange-50/50 flex-shrink-0">
           <h3 className="text-lg font-serif font-bold text-brand-dark flex items-center">
             <Target className="mr-2 text-orange-500 animate-bounce" size={22} />
-            Nouvelle Demande Client
+            {t('newDemandModalTitle')}
           </h3>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition text-gray-400 hover:text-gray-600"
-            title="Fermer"
+            title={t('closeButton')}
           >
             <X size={20} />
           </button>
@@ -49,10 +95,11 @@ export const AddDemandModal: React.FC<AddDemandModalProps> = ({
 
         <form onSubmit={onSubmit} className="flex flex-col min-h-0 flex-1">
           <div className="p-6 space-y-4 overflow-y-auto flex-1 min-h-0">
+            {/* Client Name & Phone */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="demand-client-name" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">
-                  Nom Client *
+                  {t('clientNameLabel')}
                 </label>
                 <input
                   id="demand-client-name"
@@ -66,7 +113,7 @@ export const AddDemandModal: React.FC<AddDemandModalProps> = ({
                     if (formatted.trim().length >= 2)
                       setDemandErrors((prev) => ({ ...prev, clientName: '' }));
                   }}
-                  placeholder="Nom du client"
+                  placeholder={t('clientNamePlaceholder')}
                   className={`w-full px-4 py-2.5 border rounded-2xl focus:ring-2 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm ${
                     demandErrors.clientName
                       ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
@@ -77,22 +124,41 @@ export const AddDemandModal: React.FC<AddDemandModalProps> = ({
               </div>
               <div>
                 <label htmlFor="demand-phone" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">
-                  Téléphone
+                  {t('phoneLabel')}
                 </label>
                 <input
                   id="demand-phone"
-                  type="text"
+                  type="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="tel"
                   value={demandForm.phone || ''}
-                  onChange={(e) => setDemandForm({ ...demandForm, phone: e.target.value })}
-                  placeholder="Téléphone"
+                  onChange={(e) => {
+                    const onlyNumbers = e.target.value.replace(/\D/g, '');
+                    setDemandForm({ ...demandForm, phone: onlyNumbers });
+                  }}
+                  onKeyDown={(e) => {
+                    if (
+                      ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key) ||
+                      (e.ctrlKey || e.metaKey)
+                    ) {
+                      return;
+                    }
+                    if (!/^\d$/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  placeholder={t('demandPhonePlaceholder')}
+                  maxLength={15}
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm"
                 />
               </div>
             </div>
 
+            {/* Description */}
             <div>
               <label htmlFor="demand-description" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">
-                Description / Recherche *
+                {t('demandDescriptionLabel')}
               </label>
               <textarea
                 id="demand-description"
@@ -102,7 +168,7 @@ export const AddDemandModal: React.FC<AddDemandModalProps> = ({
                   if (e.target.value.trim().length > 0) setDemandErrors((prev) => ({ ...prev, description: '' }));
                 }}
                 rows={2}
-                placeholder="Ex: Cherche villa avec piscine..."
+                placeholder={t('demandDescriptionPlaceholder')}
                 className={`w-full px-4 py-2.5 border rounded-2xl focus:ring-2 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm ${
                   demandErrors.description
                     ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
@@ -112,10 +178,11 @@ export const AddDemandModal: React.FC<AddDemandModalProps> = ({
               {demandErrors.description && <p className="text-red-500 text-xs mt-1 font-medium">{demandErrors.description}</p>}
             </div>
 
+            {/* Location & Budget */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="demand-location" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">
-                  Localisation *
+                  {t('demandLocationLabel')}
                 </label>
                 <input
                   id="demand-location"
@@ -125,7 +192,7 @@ export const AddDemandModal: React.FC<AddDemandModalProps> = ({
                     setDemandForm({ ...demandForm, location: e.target.value });
                     if (e.target.value.trim().length > 0) setDemandErrors((prev) => ({ ...prev, location: '' }));
                   }}
-                  placeholder="Ex: La Marsa, Tunis..."
+                  placeholder={t('demandLocationPlaceholder')}
                   className={`w-full px-4 py-2.5 border rounded-2xl focus:ring-2 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm ${
                     demandErrors.location
                       ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
@@ -136,7 +203,7 @@ export const AddDemandModal: React.FC<AddDemandModalProps> = ({
               </div>
               <div>
                 <label htmlFor="demand-budget" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">
-                  Budget Max (DT)
+                  {t('budgetLabel')}
                 </label>
                 <input
                   id="demand-budget"
@@ -148,33 +215,19 @@ export const AddDemandModal: React.FC<AddDemandModalProps> = ({
                       setDemandForm({ ...demandForm, budget: raw ? parseFloat(raw) : 0 });
                     }
                   }}
-                  placeholder="Ex: 500 000"
+                  placeholder={t('budgetPlaceholder')}
                   className="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm"
                 />
               </div>
             </div>
 
+            {/* Contract Type */}
             <div>
               <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
-                Type de transaction *
+                {t('contractTypeLabel')}
               </label>
               <div className="grid grid-cols-2 gap-2">
-                {(
-                  [
-                    {
-                      value: 'sale',
-                      label: '🔑 Achat',
-                      active: 'bg-orange-50 border-orange-400 text-orange-700 shadow-sm shadow-orange-100',
-                      inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-orange-200 hover:bg-orange-50/50'
-                    },
-                    {
-                      value: 'rent',
-                      label: '🏠 Location',
-                      active: 'bg-orange-50 border-orange-400 text-orange-700 shadow-sm shadow-orange-100',
-                      inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-orange-200 hover:bg-orange-50/50'
-                    }
-                  ] as const
-                ).map((opt) => (
+                {contractOptions.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
@@ -189,18 +242,13 @@ export const AddDemandModal: React.FC<AddDemandModalProps> = ({
               </div>
             </div>
 
+            {/* Property Type */}
             <div>
-              <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Type de bien *</label>
+              <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
+                {t('demandTypeLabel')}
+              </label>
               <div className="grid grid-cols-3 sm:grid-cols-5 gap-2">
-                {(
-                  [
-                    { value: 'appartement', label: 'Appartement', emoji: '🏢' },
-                    { value: 'villa', label: 'Villa', emoji: '🏡' },
-                    { value: 'terrain', label: 'Terrain', emoji: '🌿' },
-                    { value: 'bureau', label: 'Bureau', emoji: '💼' },
-                    { value: 'commerce', label: 'Commerce', emoji: '🏪' }
-                  ] as const
-                ).map((opt) => (
+                {propertyTypeOptions.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
@@ -218,31 +266,13 @@ export const AddDemandModal: React.FC<AddDemandModalProps> = ({
               </div>
             </div>
 
+            {/* Priority */}
             <div>
-              <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Priorité</label>
+              <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">
+                {t('priorityLabel')}
+              </label>
               <div className="grid grid-cols-3 gap-2">
-                {(
-                  [
-                    {
-                      value: 'high',
-                      label: '🔴 Haute',
-                      active: 'bg-red-50 border-red-400 text-red-700 shadow-sm shadow-red-100',
-                      inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-red-200 hover:bg-red-50/50'
-                    },
-                    {
-                      value: 'medium',
-                      label: '🟡 Moyenne',
-                      active: 'bg-amber-50 border-amber-400 text-amber-700 shadow-sm shadow-amber-100',
-                      inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-amber-200 hover:bg-amber-50/50'
-                    },
-                    {
-                      value: 'low',
-                      label: '🟢 Basse',
-                      active: 'bg-green-50 border-green-400 text-green-700 shadow-sm shadow-green-100',
-                      inactive: 'bg-gray-50 border-gray-100 text-gray-500 hover:border-green-200 hover:bg-green-50/50'
-                    }
-                  ] as const
-                ).map((opt) => (
+                {priorityOptions.map((opt) => (
                   <button
                     key={opt.value}
                     type="button"
@@ -264,13 +294,13 @@ export const AddDemandModal: React.FC<AddDemandModalProps> = ({
               onClick={onClose}
               className="px-6 py-3 bg-gray-100 text-gray-500 font-bold rounded-2xl hover:bg-gray-200 transition text-sm"
             >
-              Annuler
+              {t('cancelButton')}
             </button>
             <button
               type="submit"
               className="px-6 py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-2xl transition-all duration-300 shadow-md shadow-orange-500/10 text-sm"
             >
-              Enregistrer
+              {t('addDemandButton')}
             </button>
           </div>
         </form>

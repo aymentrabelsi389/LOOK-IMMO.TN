@@ -788,10 +788,11 @@ export const locationsAPI = {
 // ==================== BLOG API ====================
 export const blogAPI = {
     getAll: async (params?: Record<string, string>): Promise<BlogPost[]> => {
-        const query = params ? new URLSearchParams(params).toString() : '';
-        const res = await apiFetch(`/blog${query ? `?${query}` : ''}`);
+        const queryParams = { limit: '1000', ...params };
+        const query = new URLSearchParams(queryParams).toString();
+        const res = await apiFetch(`/blog?${query}`);
         const result = await res.json();
-        const data = result.data || result;
+        const data = result.posts || result.data || (Array.isArray(result) ? result : []);
         return Array.isArray(data) ? data.map(adaptBlogPost) : [];
     },
 
@@ -803,12 +804,14 @@ export const blogAPI = {
 
     create: async (data: Partial<BlogPost>): Promise<BlogPost> => {
         const res = await apiFetch('/blog', { method: 'POST', body: JSON.stringify(data) });
-        return res.json();
+        const post = await res.json();
+        return adaptBlogPost(post);
     },
 
     update: async (id: string, data: Partial<BlogPost>): Promise<BlogPost> => {
         const res = await apiFetch(`/blog/${id}`, { method: 'PUT', body: JSON.stringify(data) });
-        return res.json();
+        const post = await res.json();
+        return adaptBlogPost(post);
     },
 
     delete: async (id: string): Promise<any> => {

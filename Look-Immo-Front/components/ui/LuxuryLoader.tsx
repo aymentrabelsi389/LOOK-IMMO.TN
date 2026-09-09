@@ -65,7 +65,7 @@ const LuxuryLoader: React.FC<LuxuryLoaderProps> = ({
 
         {/* Brand name */}
         <div style={{ textAlign: 'center', animation: 'luxuryFadeUp 0.9s 0.2s ease-out both' }}>
-          <div style={{
+          <div translate="no" className="notranslate" style={{
             fontSize: '28px', fontWeight: '700', letterSpacing: '6px', textTransform: 'uppercase',
             fontFamily: "'Cormorant Garamond', 'Playfair Display', serif",
             background: 'linear-gradient(135deg, #ffffff 0%, #C9A96E 50%, #ffffff 100%)',

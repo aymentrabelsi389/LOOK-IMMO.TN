@@ -2,6 +2,7 @@ import React from 'react';
 import { Property, User } from '@/types';
 import PropertyCarousel from './PropertyCarousel';
 import { SkeletonPropertyCard } from '../ui/SkeletonCard';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const NewPropertiesSection = ({
   properties,
@@ -18,6 +19,7 @@ const NewPropertiesSection = ({
   user: User | null,
   isLoading?: boolean
 }) => {
+  const { t } = useTranslation();
   // Use more items to demonstrate carousel (logic handles if < 4)
   const newProperties = properties
     .filter(p => p.isNew)
@@ -34,10 +36,10 @@ const NewPropertiesSection = ({
     <section className="py-16 bg-white relative z-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 relative">
-          <span className="inline-block px-4 py-1 rounded-full bg-brand-dark text-brand-teal text-xs font-bold tracking-wider uppercase mb-3">Derniers Ajouts</span>
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-brand-dark">Nouveaux Biens</h2>
+          <span className="inline-block px-4 py-1 rounded-full bg-brand-dark text-brand-teal text-xs font-bold tracking-wider uppercase mb-3">{t('newPropertiesBadge')}</span>
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-brand-dark">{t('newPropertiesTitle')}</h2>
           <p className="text-gray-500 mt-4 max-w-2xl mx-auto text-sm md:text-base">
-            Découvrez nos derniers biens immobiliers disponibles à la vente ou à la location.
+            {t('newPropertiesSubtitle')}
           </p>
         </div>
 

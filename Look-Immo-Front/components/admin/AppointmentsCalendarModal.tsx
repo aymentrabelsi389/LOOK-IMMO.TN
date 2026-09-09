@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Appointment, Property, User } from '@/types';
 import { createPortal } from 'react-dom';
+import Price from '@/components/Price';
 
 interface AppointmentsCalendarModalProps {
   onClose: () => void;
@@ -351,16 +352,18 @@ const AppointmentsCalendarModal = ({
                         const user = users?.find(u => u.id === apt.userId);
                         
                         // Parse properties
-                        const aptProps: { id: string; title: string }[] = [];
+                        const aptProps: { id: string; title: string; property?: Property }[] = [];
                         if (apt.propertyId) {
                           const primaryProp = properties?.find(p => p.id === apt.propertyId);
                           if (primaryProp) {
-                            aptProps.push({ id: primaryProp.id, title: primaryProp.title });
+                            aptProps.push({ id: primaryProp.id, title: primaryProp.title, property: primaryProp });
                           } else if (apt.propertyTitle) {
-                            aptProps.push({ id: apt.propertyId, title: apt.propertyTitle });
+                            const foundByTitle = properties?.find(p => p.title.toLowerCase() === apt.propertyTitle?.toLowerCase());
+                            aptProps.push({ id: apt.propertyId, title: apt.propertyTitle, property: foundByTitle });
                           }
                         } else if (apt.propertyTitle && apt.propertyTitle !== 'Propriété inconnue') {
-                          aptProps.push({ id: 'unknown-id', title: apt.propertyTitle });
+                          const foundByTitle = properties?.find(p => p.title.toLowerCase() === apt.propertyTitle?.toLowerCase());
+                          aptProps.push({ id: foundByTitle?.id || 'unknown-id', title: apt.propertyTitle, property: foundByTitle });
                         }
 
                         // parse secondary properties
@@ -372,7 +375,7 @@ const AppointmentsCalendarModal = ({
                           ids.forEach(pid => {
                             if (pid === apt.propertyId || aptProps.some(p => p.id === pid)) return;
                             const prop = properties?.find(p => p.id === pid);
-                            if (prop) aptProps.push({ id: prop.id, title: prop.title });
+                            if (prop) aptProps.push({ id: prop.id, title: prop.title, property: prop });
                           });
                           userNotes = m[2].trimStart();
                         } else {
@@ -397,7 +400,7 @@ const AppointmentsCalendarModal = ({
                               </span>
                             </div>
 
-                            <div className="space-y-1 mb-2">
+                            <div className="space-y-1.5 mb-2">
                               <p className="font-bold text-sm text-gray-900 flex items-center gap-1.5">
                                 <UserIcon size={12} className="text-gray-400 shrink-0" />
                                 {apt.clientName || apt.userName || user?.name || 'Client inconnu'}
@@ -408,13 +411,55 @@ const AppointmentsCalendarModal = ({
                                   {apt.clientPhone || apt.userPhone || user?.phone}
                                 </p>
                               )}
-                              <div className="space-y-1">
-                                {aptProps.map((prop, idx) => (
-                                  <p key={prop.id + '-' + idx} className="text-xs text-gray-600 flex items-center gap-1.5">
-                                    <MapPin size={12} className="text-gray-400 shrink-0" />
-                                    <span className="truncate" title={prop.title}>{prop.title}</span>
-                                  </p>
-                                ))}
+                              <div className="space-y-1.5 pt-0.5">
+                                {aptProps.map((prop, idx) => {
+                                  const p = prop.property;
+                                  const isLand = p?.type === 'land';
+
+                                  const city = p?.location?.city?.trim() || '';
+                                  const address = p?.location?.address?.trim() || '';
+                                  let location = '';
+                                  if (city && address) {
+                                    if (city.toLowerCase() === address.toLowerCase()) location = city;
+                                    else if (address.toLowerCase().includes(city.toLowerCase())) location = address;
+                                    else if (city.toLowerCase().includes(address.toLowerCase())) location = city;
+                                    else location = `${city} - ${address}`;
+                                  } else {
+                                    location = city || address || '';
+                                  }
+
+                                  const area = p?.features?.area && p.features.area > 0 ? `${p.features.area} m²` : null;
+
+                                  const isPerM2 = p?.priceType === 'per_m2' || (!p?.priceType && (p?.price || 0) < 20_000);
+                                  const priceVal = isLand
+                                    ? (isPerM2 ? p?.price : (p?.features?.area && p.features.area > 0 ? Math.round(p.price / p.features.area) : p?.price))
+                                    : p?.price;
+
+                                  return (
+                                    <div key={prop.id + '-' + idx} className="space-y-0.5">
+                                      <p className="text-xs text-gray-800 font-bold flex items-center gap-1.5">
+                                        <MapPin size={12} className="text-brand-teal shrink-0" />
+                                        <span className="truncate" title={prop.title}>{prop.title}</span>
+                                      </p>
+                                      {(location || area || priceVal) && (
+                                        <p className="pl-4 text-[11px] text-gray-500 font-semibold truncate">
+                                          {location && <span>{location}</span>}
+                                          {location && area ? <span className="text-gray-400 font-normal"> • </span> : null}
+                                          {area && <span>{area}</span>}
+                                          {(location || area) && priceVal ? <span className="text-gray-400 font-normal"> • </span> : null}
+                                          {priceVal ? (
+                                            <Price 
+                                              amount={priceVal} 
+                                              priceType={isLand ? 'per_m2' : undefined} 
+                                              fontSans={true}
+                                              className="text-gray-500 font-semibold text-[11px]" 
+                                            />
+                                          ) : null}
+                                        </p>
+                                      )}
+                                    </div>
+                                  );
+                                })}
                               </div>
                               {userNotes && (
                                 <div className="text-[11px] text-gray-500 bg-gray-50 p-2.5 rounded-xl border border-gray-100/60 italic flex items-start gap-1.5 mt-2 leading-relaxed shadow-sm">

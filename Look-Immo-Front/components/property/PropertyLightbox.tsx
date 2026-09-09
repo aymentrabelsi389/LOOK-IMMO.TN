@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Property } from '@/types';
 import { getImageSrc, buildSrcSet, buildPropertyImageAlt } from '@/utils/imageUtils';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useAutoTranslate } from '@/hooks/useAutoTranslate';
 
 interface PropertyLightboxProps {
   property: Property;
@@ -18,6 +20,8 @@ export const PropertyLightbox: React.FC<PropertyLightboxProps> = ({
   currentImageIndex,
   setCurrentImageIndex
 }) => {
+  const { t } = useTranslation();
+  const { displayText: displayTitle } = useAutoTranslate(property?.title);
   const [pointerStartX, setPointerStartX] = useState<number | null>(null);
 
   if (!isOpen) return null;
@@ -53,15 +57,15 @@ export const PropertyLightbox: React.FC<PropertyLightboxProps> = ({
       {/* Header Content */}
       <div className="flex-shrink-0 p-4 sm:p-6 flex justify-between items-center z-10 bg-gradient-to-b from-black/60 to-transparent">
         <div className="flex flex-col text-left">
-          <span className="text-white font-bold text-base sm:text-lg tracking-tight">Vue Plein Écran</span>
+          <span className="text-white font-bold text-base sm:text-lg tracking-tight">{t('fullscreenView')}</span>
           <span className="text-white/60 text-xs font-medium uppercase tracking-widest">
-            {currentImageIndex + 1} SUR {property.images.length}
+            {currentImageIndex + 1} {t('ofTotalImages')} {property.images.length}
           </span>
         </div>
         <button
           onClick={onClose}
           className="p-3 text-white bg-white/10 hover:bg-white/20 rounded-full transition-all duration-300 transform hover:rotate-90 group"
-          aria-label="Fermer la vue plein écran"
+          aria-label={t('closeFullscreen')}
         >
           <X size={24} />
         </button>
@@ -103,14 +107,14 @@ export const PropertyLightbox: React.FC<PropertyLightboxProps> = ({
                 setCurrentImageIndex((currentImageIndex - 1 + property.images.length) % property.images.length)
               }
               className="absolute left-0 sm:left-4 top-1/2 -translate-y-1/2 p-3 sm:p-4 text-white/60 hover:text-white bg-black/20 hover:bg-black/40 rounded-full transition-all transform hover:scale-110 active:scale-95 z-10"
-              aria-label="Image précédente"
+              aria-label={t('prevImage')}
             >
               <ChevronLeft size={32} />
             </button>
             <button
               onClick={() => setCurrentImageIndex((currentImageIndex + 1) % property.images.length)}
               className="absolute right-0 sm:right-4 top-1/2 -translate-y-1/2 p-3 sm:p-4 text-white/60 hover:text-white bg-black/20 hover:bg-black/40 rounded-full transition-all transform hover:scale-110 active:scale-95 z-10"
-              aria-label="Image suivante"
+              aria-label={t('nextImage')}
             >
               <ChevronRight size={32} />
             </button>
@@ -121,9 +125,10 @@ export const PropertyLightbox: React.FC<PropertyLightboxProps> = ({
       {/* Caption Overlay */}
       <div className="flex-shrink-0 py-4 px-6 flex justify-center z-10">
         <span className="px-6 py-2 bg-white/10 backdrop-blur-md rounded-full border border-white/20 text-white/90 text-sm font-medium text-center whitespace-nowrap">
-          {property.title}
+          {displayTitle}
         </span>
       </div>
     </div>
   );
 };
+

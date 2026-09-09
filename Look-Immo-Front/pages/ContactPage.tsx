@@ -7,6 +7,7 @@ import L from 'leaflet';
 import { useSEO } from '@/hooks/useSEO';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useData } from '@/context/DataContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import { notify } from '@/services/notificationStore';
 import { trackLead } from '@/utils/metaPixel';
 import { useClickOutside } from '@/hooks/useClickOutside';
@@ -68,9 +69,11 @@ const ScrollReveal: React.FC<{ children: React.ReactNode; className?: string; de
 };
 
 const ContactPage = () => {
+  const { t, language } = useTranslation();
+
   useSEO({
-    title: "Contactez-nous",
-    description: "Vous avez un projet immobilier en Tunisie ? Contactez l'équipe de Look Immo pour toute demande d'achat, de vente, de location ou de conseil."
+    title: t('contactSeoTitle'),
+    description: t('contactSeoDesc')
   });
 
   const { user } = useAuthStore();
@@ -91,10 +94,10 @@ const ContactPage = () => {
   const subjectDropdownRef = useRef<HTMLDivElement>(null);
 
   const subjects = [
-    { value: 'Information', label: "Demande d'information" },
-    { value: 'Visite', label: "Programmer une visite" },
-    { value: 'Vente', label: "Vendre mon bien" },
-    { value: 'Autre', label: "Autre" }
+    { value: 'Information', label: t('subjectInfo') },
+    { value: 'Visite', label: t('subjectVisit') },
+    { value: 'Vente', label: t('subjectSale') },
+    { value: 'Autre', label: t('subjectOther') }
   ];
 
   // Close subject dropdown on outside click
@@ -103,7 +106,7 @@ const ContactPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.subject) {
-      notify.error('Veuillez sélectionner un sujet pour votre message.');
+      notify.error(t('subjectRequiredError'));
       return;
     }
     try {
@@ -134,9 +137,9 @@ const ContactPage = () => {
       {/* Hero Header */}
       <div className="bg-gradient-to-br from-brand-dark via-[#0d2a45] to-blue-900 text-white py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 animate-fade-in-up">
-          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">Contactez-Nous</h1>
+          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">{t('contactTitle')}</h1>
           <p className="text-xl text-gray-200">
-            Nous sommes là pour répondre à toutes vos questions et vous accompagner dans votre projet immobilier.
+            {t('contactSubtitle')}
           </p>
         </div>
       </div>
@@ -147,12 +150,12 @@ const ContactPage = () => {
           {/* Contact Form */}
           <ScrollReveal className="lg:col-span-2" delay={100}>
             <div className="bg-white rounded-2xl p-8 md:p-10 shadow-xl border border-gray-100">
-              <h2 className="text-2xl font-bold text-brand-dark mb-8">Envoyez-nous un message</h2>
+              <h2 className="text-2xl font-bold text-brand-dark mb-8">{t('sendMessageTitle')}</h2>
               
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="contact-name" className="block text-sm font-bold text-brand-dark mb-2">Nom complet *</label>
+                    <label htmlFor="contact-name" className="block text-sm font-bold text-brand-dark mb-2">{t('fullNameLabel')}</label>
                     <input 
                       id="contact-name"
                       type="text" 
@@ -160,11 +163,11 @@ const ContactPage = () => {
                       onChange={e => setFormData({ ...formData, name: e.target.value })} 
                       required 
                       className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-teal focus:bg-white outline-none transition-all" 
-                      placeholder="Votre nom" 
+                      placeholder={t('fullNamePlaceholder')} 
                     />
                   </div>
                   <div>
-                    <label htmlFor="contact-email" className="block text-sm font-bold text-brand-dark mb-2">Email *</label>
+                    <label htmlFor="contact-email" className="block text-sm font-bold text-brand-dark mb-2">{t('emailLabel')}</label>
                     <input 
                       id="contact-email"
                       type="email" 
@@ -172,25 +175,25 @@ const ContactPage = () => {
                       onChange={e => setFormData({ ...formData, email: e.target.value })} 
                       required 
                       className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-teal focus:bg-white outline-none transition-all" 
-                      placeholder="votre@email.com" 
+                      placeholder={t('emailPlaceholder')} 
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
-                    <label htmlFor="contact-phone" className="block text-sm font-bold text-brand-dark mb-2">Téléphone</label>
+                    <label htmlFor="contact-phone" className="block text-sm font-bold text-brand-dark mb-2">{t('phoneLabel')}</label>
                     <input 
                       id="contact-phone"
                       type="tel" 
                       value={formData.phone} 
                       onChange={e => setFormData({ ...formData, phone: e.target.value })} 
                       className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-teal focus:bg-white outline-none transition-all" 
-                      placeholder="+216 -- --- ---" 
+                      placeholder={t('phonePlaceholder')} 
                     />
                   </div>
                   <div className="relative" ref={subjectDropdownRef}>
-                    <label className="block text-sm font-bold text-brand-dark mb-2">Sujet *</label>
+                    <label className="block text-sm font-bold text-brand-dark mb-2">{t('subjectLabel')}</label>
                     <button
                       type="button"
                       onClick={() => setSubjectDropdownOpen(!subjectDropdownOpen)}
@@ -204,7 +207,7 @@ const ContactPage = () => {
                       `}
                     >
                       <span className={formData.subject ? 'text-gray-900 font-medium' : 'text-gray-400 font-normal'}>
-                        {subjects.find(s => s.value === formData.subject)?.label || 'Sélectionner...'}
+                        {subjects.find(s => s.value === formData.subject)?.label || t('subjectPlaceholder')}
                       </span>
                       <ChevronDown size={18} className={`text-gray-400 transform transition-transform duration-300 ${subjectDropdownOpen ? 'rotate-180 text-brand-teal' : ''}`} />
                     </button>
@@ -237,7 +240,7 @@ const ContactPage = () => {
                 </div>
 
                 <div>
-                  <label htmlFor="contact-message" className="block text-sm font-bold text-brand-dark mb-2">Message *</label>
+                  <label htmlFor="contact-message" className="block text-sm font-bold text-brand-dark mb-2">{t('messageLabel')}</label>
                   <textarea 
                     id="contact-message"
                     value={formData.message} 
@@ -246,7 +249,7 @@ const ContactPage = () => {
                     minLength={10}
                     rows={6} 
                     className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:border-brand-teal focus:bg-white outline-none transition-all resize-none" 
-                    placeholder="Décrivez votre demande (minimum 10 caractères)..." 
+                    placeholder={t('messagePlaceholder')} 
                   />
                 </div>
 
@@ -268,12 +271,12 @@ const ContactPage = () => {
                   type="submit" 
                   className="w-full bg-[#1A365D] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#0B1C2D] transition-all transform active:scale-[0.98] shadow-lg"
                 >
-                  Envoyer le message
+                  {t('sendButton')}
                 </button>
 
                 {submitted && (
                   <div className="p-4 bg-green-50 border border-green-200 text-green-700 rounded-xl flex items-center gap-2 animate-fade-in">
-                    <Check size={20} /> Message envoyé avec succès! Nous vous répondrons dans les plus brefs délais.
+                    <Check size={20} /> {t('messageSuccess')}
                   </div>
                 )}
               </form>
@@ -284,14 +287,14 @@ const ContactPage = () => {
           <ScrollReveal className="space-y-6" delay={250}>
             {/* Coordinates */}
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-              <h3 className="font-bold text-xl text-brand-dark mb-6">Nos Coordonnées</h3>
+              <h3 className="font-bold text-xl text-brand-dark mb-6">{t('ourCoordinatesTitle')}</h3>
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
                   <div className="bg-brand-teal/10 p-3 rounded-xl text-brand-teal">
                     <MapPin size={20} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Adresse</p>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">{t('addressLabel')}</p>
                     <p className="text-brand-dark font-medium">{settings.address}</p>
                   </div>
                 </div>
@@ -300,7 +303,7 @@ const ContactPage = () => {
                     <Phone size={20} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Téléphone</p>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">{t('phoneLabel')}</p>
                     <p className="text-brand-dark font-medium">{settings.phoneNumber}</p>
                   </div>
                 </div>
@@ -309,7 +312,7 @@ const ContactPage = () => {
                     <Mail size={20} />
                   </div>
                   <div>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Email</p>
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">{t('emailLabel')}</p>
                     <p className="text-brand-dark font-medium">{settings.contactEmail}</p>
                   </div>
                 </div>
@@ -318,27 +321,52 @@ const ContactPage = () => {
 
             {/* Opening Hours */}
             <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-              <h3 className="font-bold text-xl text-brand-dark mb-6">Horaires d'ouverture</h3>
+              <h3 className="font-bold text-xl text-brand-dark mb-6">{t('openingHoursTitle')}</h3>
               <div className="space-y-4">
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500">Lundi - Vendredi</span>
-                  <span className="font-bold text-brand-dark">{settings.workingHours?.weekdays || '09:00 - 18:00'}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500">Samedi</span>
-                  <span className="font-bold text-brand-dark">{settings.workingHours?.saturday || '09:00 - 13:00'}</span>
-                </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-gray-500">Dimanche</span>
-                  <span className="font-bold text-red-500">{settings.workingHours?.sunday || 'Fermé'}</span>
-                </div>
+                {(() => {
+                  // Strip any stored day-name prefix (e.g. "Lun - Ven: " → "09:00 - 18:00")
+                  const stripPrefix = (val: string | undefined) => {
+                    if (!val) return null;
+                    const colonIdx = val.indexOf(':');
+                    // Only strip if the part before the colon looks like a day label (no digits)
+                    if (colonIdx > 0 && !/\d/.test(val.slice(0, colonIdx))) {
+                      return val.slice(colonIdx + 1).trim();
+                    }
+                    return val;
+                  };
+                  const rawWeekdays = settings.workingHours?.weekdays;
+                  const rawSaturday = settings.workingHours?.saturday;
+                  const rawSunday   = settings.workingHours?.sunday;
+                  const weekdayTime = stripPrefix(rawWeekdays) || '09:00 - 18:00';
+                  const saturdayTime = stripPrefix(rawSaturday) || '09:00 - 13:00';
+                  const sundayRaw = stripPrefix(rawSunday);
+                  const isClosed = !rawSunday || rawSunday === 'Fermé' || rawSunday === 'Closed' || sundayRaw === 'Fermé' || sundayRaw === 'Closed';
+                  return (
+                    <>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-500">{t('weekdays')}</span>
+                        <span className="font-bold text-brand-dark">{weekdayTime}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-500">{t('saturday')}</span>
+                        <span className="font-bold text-brand-dark">{saturdayTime}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-sm">
+                        <span className="text-gray-500">{t('sunday')}</span>
+                        <span className="font-bold text-red-500">
+                          {isClosed ? t('closed') : sundayRaw}
+                        </span>
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
             </div>
 
             {/* Social Media */}
             <div className="bg-[#0B1C2D] rounded-2xl p-8 shadow-lg text-white">
-              <h3 className="font-bold text-xl mb-4">Suivez-nous</h3>
-              <p className="text-gray-400 text-sm mb-6">Restez informé de nos dernières offres</p>
+              <h3 className="font-bold text-xl mb-4">{t('followUsTitle')}</h3>
+              <p className="text-gray-400 text-sm mb-6">{t('followUsSubtitle')}</p>
               <div className="flex gap-4">
                 <a href={settings.socialMedia.facebook} target="_blank" rel="noopener noreferrer" className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center hover:bg-white/20 transition-all text-white">
                   <Facebook size={22} />
@@ -358,7 +386,7 @@ const ContactPage = () => {
         <ScrollReveal className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-12" delay={100}>
           <div className="lg:col-span-2">
             <div id="notre-localisation" className="bg-white rounded-2xl p-6 shadow-lg border border-gray-100 h-[400px] flex flex-col">
-              <h3 className="font-bold text-xl text-brand-dark mb-6">Notre Localisation</h3>
+              <h3 className="font-bold text-xl text-brand-dark mb-6">{t('ourLocationTitle')}</h3>
               <div className="flex-1 rounded-xl overflow-hidden border border-gray-100 z-10 relative group">
                 <a 
                   href={settings.googleMapsUrl || `https://www.google.com/maps?q=${settings.location?.lat || 36.8624},${settings.location?.lng || 10.2407}`}
@@ -368,7 +396,7 @@ const ContactPage = () => {
                 >
                   <div className="absolute top-4 left-4 bg-white px-4 py-2 rounded-lg shadow-md flex items-center gap-2 text-xs font-bold text-brand-dark hover:bg-gray-50 transition-all border border-gray-100 uppercase tracking-wider">
                     <MapPin size={14} className="text-brand-teal" />
-                    Agrandir le plan
+                    {t('enlargeMap')}
                   </div>
                 </a>
                 <MapContainer 
@@ -400,15 +428,17 @@ const ContactPage = () => {
           </div>
 
           <div id="about" className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100 flex flex-col">
-            <h3 className="font-bold text-xl text-brand-dark mb-6">À propos</h3>
+            <h3 className="font-bold text-xl text-brand-dark mb-6">{t('aboutTitle')}</h3>
             <div className="text-gray-600 leading-relaxed overflow-y-auto max-h-[300px] custom-scrollbar">
-              {settings.aboutText || (
+              {settings.aboutText && language === 'fr' ? (
+                <p className="whitespace-pre-line">{settings.aboutText}</p>
+              ) : (
                 <>
                   <p className="mb-4">
-                    Chez Look Immo, nous vous accompagnons dans tous vos projets immobiliers : achat, vente, location et investissement. Grâce à notre expertise du marché et notre sélection de biens de qualité, nous vous aidons à trouver le bien idéal en toute confiance.
+                    {t('aboutDefaultP1')}
                   </p>
                   <p>
-                    Look Immo — Votre partenaire immobilier de confiance.
+                    {t('aboutDefaultP2')}
                   </p>
                 </>
               )}

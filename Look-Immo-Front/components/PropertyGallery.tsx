@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronRight, ChevronLeft, Image as ImageIcon } from 'lucide-react';
 import { getImageSrc, buildSrcSet, getLQIP, buildPropertyImageAlt, PropertyAltContext } from '@/utils/imageUtils';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface PropertyGalleryProps {
   images: string[];
@@ -22,6 +23,7 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
   setCurrentImageIndex,
   propertyAltContext,
 }) => {
+  const { t } = useTranslation();
   const [touchStart, setTouchStart] = useState<number | null>(null);
   const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const [loadedImages, setLoadedImages] = useState<Record<number, boolean>>({});
@@ -190,7 +192,7 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
         {listingType && (
           <div className="absolute top-4 left-4 z-20">
             <span className={`px-2.5 py-1 md:px-4 md:py-2 rounded-full text-[11px] md:text-sm font-bold uppercase tracking-wider text-white shadow-lg ${listingType === 'sale' ? 'bg-gradient-to-r from-blue-600 to-blue-700' : 'bg-gradient-to-r from-green-600 to-green-700'}`}>
-              {listingType === 'sale' ? 'À VENDRE' : 'À LOUER'}
+              {listingType === 'sale' ? t('forSale') : t('forRent')}
             </span>
           </div>
         )}
@@ -203,14 +205,14 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
             <button
               onClick={(e) => { e.stopPropagation(); prevImage(); }}
               className="absolute left-4 top-1/2 -translate-y-1/2 z-30 bg-white/90 hover:bg-white text-gray-800 p-3 rounded-full shadow-xl transition-all opacity-0 md:group-hover/gallery:opacity-100 transform -translate-x-4 group-hover:translate-x-0 hover:scale-110 active:scale-95"
-              aria-label="Image précédente"
+              aria-label={t('prevImage')}
             >
               <ChevronLeft size={24} />
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); nextImage(); }}
               className="absolute right-4 top-1/2 -translate-y-1/2 z-30 bg-white/90 hover:bg-white text-gray-800 p-3 rounded-full shadow-xl transition-all opacity-0 md:group-hover/gallery:opacity-100 transform translate-x-4 group-hover:translate-x-0 hover:scale-110 active:scale-95"
-              aria-label="Image suivante"
+              aria-label={t('nextImage')}
             >
               <ChevronRight size={24} />
             </button>
@@ -244,7 +246,7 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
               <button
                 key={idx}
                 onClick={() => setCurrentImageIndex(idx)}
-                aria-label={`Voir l'image ${idx + 1}`}
+                aria-label={`${t('viewImage')} ${idx + 1}`}
                 style={{
                   backgroundImage: getLQIP(img) ? `url(${getLQIP(img)})` : undefined,
                   backgroundSize: 'cover',
@@ -288,3 +290,4 @@ export const PropertyGallery: React.FC<PropertyGalleryProps> = ({
     </div>
   );
 };
+

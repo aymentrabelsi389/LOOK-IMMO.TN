@@ -72,12 +72,20 @@ export const checkPropertyMatchesAndNotify = async (property: any) => {
         if ((demand as any).contractType !== property.type) continue;
       }
 
+      // Calculate effective price (total price for land when priceType is per_m2)
+      const isLand = property.category === 'land' || property.type === 'land';
+      const isPerM2 = (property as any).priceType === 'per_m2' || (!(property as any).priceType && property.price < 20_000);
+      const propArea = property.features ? (property.features as any).area : null;
+      const effectivePrice = (isLand && isPerM2 && propArea && propArea > 0)
+        ? property.price * propArea
+        : property.price;
+
       // Budget tolerance: sale → max 15% over budget | rent → max 25% over budget
       if (demand.budget && demand.budget > 0) {
         const upperFactor = (demand as any).contractType === 'rent' ? 1.25 : 1.15;
         const lowerBound = demand.budget * 0.7;
         const upperBound = demand.budget * upperFactor;
-        if (property.price < lowerBound || property.price > upperBound) {
+        if (effectivePrice < lowerBound || effectivePrice > upperBound) {
           continue;
         }
       }
@@ -103,7 +111,7 @@ export const checkPropertyMatchesAndNotify = async (property: any) => {
 
       // 2. Budget Match (Critical: 30 points)
       if (demand.budget && demand.budget > 0) {
-        const priceDiff = (property.price - demand.budget) / demand.budget;
+        const priceDiff = (effectivePrice - demand.budget) / demand.budget;
         if ((demand as any).contractType === 'rent') {
           // Rent: up to 25% over — more tolerant
           if (priceDiff <= 0) score += 30;            // Within budget

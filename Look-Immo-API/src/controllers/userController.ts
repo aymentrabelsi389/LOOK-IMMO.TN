@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { AuthRequest } from '../middleware/auth';
 import { prisma } from '../utils/prisma';
 import { COOKIE_OPTIONS } from './authController';
+import { createNotification } from '../services/notificationService';
 import { logger } from '../utils/logger';
 
 // Get all users (Admin only)
@@ -165,13 +166,19 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
         });
 
         // Create notification
-        await prisma.notification.create({
-            data: {
-                type: 'user_role_change',
-                message: `New user created: ${user.name} (${user.role})`,
-                entityId: user.id,
-            },
-        });
+        try {
+            await createNotification({
+                type: 'user_signup',
+                title: 'Nouvel Utilisateur',
+                message: `Nouvel utilisateur créé : ${user.name} (${user.role})`,
+                icon: 'UserPlus',
+                link: '/admin',
+                userId: null,
+                metadata: { userId: user.id },
+            });
+        } catch (notifError) {
+            logger.error('Failed to create user notification:', notifError);
+        }
 
         res.status(201).json(user);
     } catch (error) {
@@ -258,13 +265,19 @@ export const updateUser = async (req: AuthRequest, res: Response): Promise<void>
 
         // Notification if role changed
         if (role && role !== existingUser.role) {
-            await prisma.notification.create({
-                data: {
+            try {
+                await createNotification({
                     type: 'user_role_change',
-                    message: `User role changed: ${user.name} (${existingUser.role} → ${role})`,
-                    entityId: user.id,
-                },
-            });
+                    title: 'Rôle Modifié',
+                    message: `Rôle utilisateur modifié : ${user.name} (${existingUser.role} → ${role})`,
+                    icon: 'UserCheck',
+                    link: '/admin',
+                    userId: null,
+                    metadata: { userId: user.id },
+                });
+            } catch (notifError) {
+                logger.error('Failed to create user role change notification:', notifError);
+            }
         }
 
         // If the caller changed their own password, their current session's
@@ -302,13 +315,19 @@ export const deleteUser = async (req: Request, res: Response): Promise<void> => 
         });
 
         // Create notification
-        await prisma.notification.create({
-            data: {
+        try {
+            await createNotification({
                 type: 'user_delete',
-                message: `User deleted: ${user.name} (${user.email})`,
-                entityId: id,
-            },
-        });
+                title: 'Utilisateur Supprimé',
+                message: `Utilisateur supprimé : ${user.name} (${user.email})`,
+                icon: 'UserX',
+                link: '/admin',
+                userId: null,
+                metadata: { userId: id },
+            });
+        } catch (notifError) {
+            logger.error('Failed to create user delete notification:', notifError);
+        }
 
         res.json({ message: 'User deleted successfully' });
     } catch (error) {

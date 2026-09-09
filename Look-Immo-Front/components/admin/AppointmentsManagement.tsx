@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { 
   CalendarDays, Search, Calendar, 
   Check, X, Trash2, List, Phone, Mail, Building2, Clock, MessageSquare,
-  History, Edit2
+  History, Edit2, MapPin
 } from 'lucide-react';
 import { Appointment, User, Property } from '@/types';
 import { appointmentsAPI } from '@/services/api';
@@ -15,6 +15,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { notify } from '@/services/notificationStore';
 import CustomDropdown from '../ui/CustomDropdown';
 import Pagination from '../ui/Pagination';
+import Price from '@/components/Price';
 
 interface AppointmentsManagementProps {
   appointments: Appointment[];
@@ -67,19 +68,60 @@ const AppointmentsManagement = ({
     return { propertyIds: [], userNotes: raw };
   };
 
+  const getPropertySubDetails = (p?: Property) => {
+    if (!p) return null;
+    const isLand = p.type === 'land';
+
+    // Format Location cleanly without duplicates
+    const city = p.location?.city?.trim() || '';
+    const address = p.location?.address?.trim() || '';
+    let location = '';
+    if (city && address) {
+      if (city.toLowerCase() === address.toLowerCase()) {
+        location = city;
+      } else if (address.toLowerCase().includes(city.toLowerCase())) {
+        location = address;
+      } else if (city.toLowerCase().includes(address.toLowerCase())) {
+        location = city;
+      } else {
+        location = `${city} - ${address}`;
+      }
+    } else {
+      location = city || address || '';
+    }
+
+    // Format Area (how much square / m²)
+    const area = p.features?.area && p.features.area > 0 ? `${p.features.area} m²` : null;
+
+    // Format Price / m2 for land
+    const isPerM2 = p.priceType === 'per_m2' || (!p.priceType && (p.price || 0) < 20_000);
+    const priceVal = isLand
+      ? (isPerM2 ? p.price : (p.features?.area && p.features.area > 0 ? Math.round(p.price / p.features.area) : p.price))
+      : p.price;
+
+    return {
+      location,
+      area,
+      priceVal,
+      isLand
+    };
+  };
+
   const getDisplayProperties = (apt: Appointment) => {
-    const list: { id: string; title: string }[] = [];
+    const list: { id: string; title: string; property?: Property }[] = [];
     
     // Add primary property if it exists
     if (apt.propertyId) {
       const primaryProp = properties?.find(p => p.id === apt.propertyId);
       if (primaryProp) {
-        list.push({ id: primaryProp.id, title: primaryProp.title });
+        list.push({ id: primaryProp.id, title: primaryProp.title, property: primaryProp });
       } else if (apt.propertyTitle) {
-        list.push({ id: apt.propertyId, title: apt.propertyTitle });
+        const foundByTitle = properties?.find(p => p.title.toLowerCase() === apt.propertyTitle?.toLowerCase());
+        list.push({ id: apt.propertyId, title: apt.propertyTitle, property: foundByTitle });
       }
     } else if (apt.propertyTitle && apt.propertyTitle !== 'Propriété inconnue') {
-      list.push({ id: 'unknown-id', title: apt.propertyTitle });
+      const foundByTitle = properties?.find(p => p.title.toLowerCase() === apt.propertyTitle?.toLowerCase());
+      list.push({ id: foundByTitle?.id || 'unknown-id', title: apt.propertyTitle, property: foundByTitle });
     }
 
     // Add secondary properties
@@ -88,7 +130,7 @@ const AppointmentsManagement = ({
       if (pid === apt.propertyId || list.some(p => p.id === pid)) return;
       const prop = properties?.find(p => p.id === pid);
       if (prop) {
-        list.push({ id: prop.id, title: prop.title });
+        list.push({ id: prop.id, title: prop.title, property: prop });
       }
     });
 
@@ -117,7 +159,12 @@ const AppointmentsManagement = ({
   const filteredAppointments = appointments.filter(apt => {
     const data = getDisplayData(apt);
     const props = getDisplayProperties(apt);
-    const propsMatch = props.some(p => p.title.toLowerCase().includes(searchQuery.toLowerCase()));
+    const propsMatch = props.some(p => {
+      const titleMatch = p.title.toLowerCase().includes(searchQuery.toLowerCase());
+      const cityMatch = p.property?.location?.city?.toLowerCase().includes(searchQuery.toLowerCase());
+      const addressMatch = p.property?.location?.address?.toLowerCase().includes(searchQuery.toLowerCase());
+      return titleMatch || cityMatch || addressMatch;
+    });
     
     // Normalize phone numbers (remove all non-digit characters) to allow spaces, dashes, etc.
     const cleanPhone = data.userPhone.replace(/\D/g, '');
@@ -349,27 +396,62 @@ const AppointmentsManagement = ({
                             </div>
                             <div className="ml-4">
                               <div className="font-black text-gray-900 group-hover:text-brand-dark transition-colors">{data.userName}</div>
-                              <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                <Mail size={10} className="text-brand-teal" /> {data.userEmail}
-                              </div>
-                              {data.userPhone && (
-                                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider flex items-center gap-1.5 mt-0.5">
-                                  <Phone size={10} className="text-brand-teal" /> {data.userPhone}
+                              {data.userEmail && data.userEmail.trim() !== '' && (
+                                <div className="text-[11px] text-gray-400 font-semibold flex items-center gap-1.5 mt-0.5">
+                                  <Mail size={12} className="text-brand-teal shrink-0" /> {data.userEmail}
                                 </div>
+                              )}
+                              {data.userPhone && (
+                                <a 
+                                  href={`tel:${data.userPhone}`}
+                                  className="text-xs text-gray-500 font-semibold flex items-center gap-1.5 mt-1 hover:text-brand-teal transition-colors tracking-wide"
+                                >
+                                  <Phone size={12} className="text-brand-teal shrink-0" /> {data.userPhone}
+                                </a>
                               )}
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-5">
-                          <div className="space-y-1.5 max-w-[260px]">
-                            {getDisplayProperties(apt).map((prop, idx) => (
-                              <div key={prop.id + '-' + idx} className="flex items-center text-xs font-black text-gray-700 group/prop hover:text-brand-dark transition-colors">
-                                <Building2 size={14} className="mr-2 text-gray-400 group-hover/prop:text-brand-teal transition-colors flex-shrink-0" />
-                                <span className="truncate" title={prop.title}>{prop.title}</span>
-                              </div>
-                            ))}
+                          <div className="space-y-2 max-w-[280px]">
+                            {getDisplayProperties(apt).map((prop, idx) => {
+                              const details = getPropertySubDetails(prop.property);
+                              const location = details?.location;
+                              const area = details?.area;
+                              const priceVal = details?.priceVal;
+                              const isLand = details?.isLand;
+
+                              return (
+                                <div key={prop.id + '-' + idx} className="flex items-start gap-2">
+                                  <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0 mt-0.5">
+                                    <Building2 size={11} className="text-gray-500" />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <span className="block text-xs font-bold text-gray-800 truncate" title={prop.title}>
+                                      {prop.title}
+                                    </span>
+                                    {(location || area || priceVal) && (
+                                      <span className="block text-[11px] text-gray-500 font-semibold truncate mt-0.5">
+                                        {location && <span>{location}</span>}
+                                        {location && area ? <span className="text-gray-400 font-normal"> • </span> : null}
+                                        {area && <span>{area}</span>}
+                                        {(location || area) && priceVal ? <span className="text-gray-400 font-normal"> • </span> : null}
+                                        {priceVal ? (
+                                          <Price 
+                                            amount={priceVal} 
+                                            priceType={isLand ? 'per_m2' : undefined} 
+                                            fontSans={true}
+                                            className="text-gray-500 font-semibold text-[11px]" 
+                                          />
+                                        ) : null}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
                             {data.userNotes && (
-                              <div className="mt-2.5 text-[11px] text-gray-500 bg-gray-50 rounded-xl p-2 border border-gray-100/60 max-w-[240px] italic flex items-start gap-1.5 leading-relaxed shadow-sm">
+                              <div className="mt-2 text-[11px] text-gray-500 bg-gray-50 rounded-xl p-2 border border-gray-100/60 max-w-[240px] italic flex items-start gap-1.5 leading-relaxed shadow-sm">
                                 <MessageSquare size={12} className="text-brand-teal/80 mt-0.5 flex-shrink-0" />
                                 <span className="line-clamp-2" title={data.userNotes}>"{data.userNotes}"</span>
                               </div>
@@ -469,9 +551,19 @@ const AppointmentsManagement = ({
                         </div>
                         <div className="ml-3">
                           <h4 className="font-black text-gray-900 leading-none mb-1">{data.userName}</h4>
-                          <div className="flex items-center gap-1 text-[9px] text-gray-400 font-bold uppercase tracking-widest">
-                            <Phone size={10} className="text-brand-teal" /> {data.userPhone || 'N/A'}
-                          </div>
+                          {data.userEmail && data.userEmail.trim() !== '' && (
+                            <div className="flex items-center gap-1.5 text-[11px] text-gray-400 font-semibold mb-0.5">
+                              <Mail size={12} className="text-brand-teal shrink-0" /> {data.userEmail}
+                            </div>
+                          )}
+                          {data.userPhone && (
+                            <a 
+                              href={`tel:${data.userPhone}`}
+                              className="flex items-center gap-1.5 text-xs text-gray-500 font-semibold hover:text-brand-teal transition-colors tracking-wide"
+                            >
+                              <Phone size={12} className="text-brand-teal shrink-0" /> {data.userPhone}
+                            </a>
+                          )}
                         </div>
                       </div>
                       <div className={`px-2 py-1 rounded text-[8px] font-black uppercase tracking-widest ${
@@ -485,12 +577,42 @@ const AppointmentsManagement = ({
 
                     <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 space-y-3">
                       <div className="space-y-2">
-                        {getDisplayProperties(apt).map((prop, idx) => (
-                          <div key={prop.id + '-' + idx} className="flex items-start">
-                            <Building2 size={12} className="mr-2 text-brand-teal mt-0.5 flex-shrink-0" />
-                            <span className="text-[11px] font-black text-gray-700 leading-tight">{prop.title}</span>
-                          </div>
-                        ))}
+                        {getDisplayProperties(apt).map((prop, idx) => {
+                          const details = getPropertySubDetails(prop.property);
+                          const location = details?.location;
+                          const area = details?.area;
+                          const priceVal = details?.priceVal;
+                          const isLand = details?.isLand;
+
+                          return (
+                            <div key={prop.id + '-' + idx} className="flex items-start gap-2">
+                              <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0 mt-0.5">
+                                <Building2 size={11} className="text-gray-500" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <span className="block text-xs font-bold text-gray-800 truncate" title={prop.title}>
+                                  {prop.title}
+                                </span>
+                                {(location || area || priceVal) && (
+                                  <span className="block text-[11px] text-gray-500 font-semibold truncate mt-0.5">
+                                    {location && <span>{location}</span>}
+                                    {location && area ? <span className="text-gray-400 font-normal"> • </span> : null}
+                                    {area && <span>{area}</span>}
+                                    {(location || area) && priceVal ? <span className="text-gray-400 font-normal"> • </span> : null}
+                                    {priceVal ? (
+                                      <Price 
+                                        amount={priceVal} 
+                                        priceType={isLand ? 'per_m2' : undefined} 
+                                        fontSans={true}
+                                        className="text-gray-500 font-semibold text-[11px]" 
+                                      />
+                                    ) : null}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
                       </div>
                       {data.userNotes && (
                         <div className="mt-2.5 text-[11px] text-gray-500 bg-white rounded-xl p-2.5 border border-gray-100/80 italic flex items-start gap-1.5 leading-relaxed shadow-sm">

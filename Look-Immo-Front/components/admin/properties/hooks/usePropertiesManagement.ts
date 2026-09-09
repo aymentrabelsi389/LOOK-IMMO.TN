@@ -272,8 +272,17 @@ export function usePropertiesManagement({
               if (demand.type === 'villa' && newProperty.type === 'apartment') score += 5;
             }
 
+            const effectivePrice = (() => {
+              const isLand = newProperty.type === 'land';
+              const isPerM2 = newProperty.priceType === 'per_m2' || (!newProperty.priceType && newProperty.price < 20_000);
+              if (isLand && isPerM2 && newProperty.features?.area && newProperty.features.area > 0) {
+                return newProperty.price * newProperty.features.area;
+              }
+              return newProperty.price;
+            })();
+
             if (demand.budget && demand.budget > 0) {
-              const priceDiff = (newProperty.price - demand.budget) / demand.budget;
+              const priceDiff = (effectivePrice - demand.budget) / demand.budget;
               if (priceDiff <= 0) score += 30;
               else if (priceDiff <= 0.1) score += 20;
               else if (priceDiff <= 0.2) score += 10;

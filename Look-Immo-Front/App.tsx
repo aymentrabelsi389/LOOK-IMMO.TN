@@ -11,17 +11,24 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
 import { ErrorBoundaryFallback } from './components/ErrorBoundaryFallback';
 
+import { useLanguageStore } from './stores/useLanguageStore';
+
 const queryClient = new QueryClient();
 
 // Root-level effect component — runs once on mount, outside any provider
 const AppInit = () => {
   const initSession = useAuthStore((s) => s.initSession);
   const fetchRatesIfStale = useCurrencyStore((s) => s.fetchRatesIfStale);
+  const language = useLanguageStore((s) => s.language);
 
   useEffect(() => {
     initSession();
     fetchRatesIfStale();
   }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   return null;
 };

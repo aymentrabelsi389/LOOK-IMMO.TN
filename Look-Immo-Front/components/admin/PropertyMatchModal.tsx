@@ -48,7 +48,7 @@ const PropertyMatchModal = ({ isOpen, onClose, demand, matches, onIgnoreMatch }:
               <h3 className="text-base md:text-2xl font-bold text-gray-900 tracking-tight leading-none mb-1">
                 Correspondances pour {demand.clientName}
               </h3>
-              <p className="text-[10px] md:text-sm text-gray-500 font-medium italic line-clamp-1">
+              <p className="text-[10px] md:text-sm text-gray-500 font-medium line-clamp-1">
                 "{demand.description}"
               </p>
             </div>
@@ -65,8 +65,8 @@ const PropertyMatchModal = ({ isOpen, onClose, demand, matches, onIgnoreMatch }:
             <div>
               <span className="text-[9px] font-semibold text-gray-400 tracking-wide block mb-1">Budget max</span>
               {demand.budget ? (
-                <div className="text-sm font-bold text-brand-teal flex items-center gap-1.5">
-                  <Price amount={demand.budget} />
+                <div className="text-base font-black text-brand-teal flex items-center gap-1.5">
+                  <Price amount={demand.budget} fontSans={true} className="text-base font-black text-brand-teal" />
                 </div>
               ) : (
                 <span className="text-xs font-medium text-gray-400 italic">Non spécifié</span>

@@ -5,8 +5,8 @@ export declare const createPropertySchema: z.ZodObject<{
         description: z.ZodOptional<z.ZodString>;
         price: z.ZodUnion<readonly [z.ZodNumber, z.ZodPipe<z.ZodString, z.ZodTransform<number, string>>]>;
         priceType: z.ZodDefault<z.ZodOptional<z.ZodEnum<{
-            total: "total";
             per_m2: "per_m2";
+            total: "total";
             per_month: "per_month";
         }>>>;
         type: z.ZodEnum<{
@@ -22,8 +22,8 @@ export declare const createPropertySchema: z.ZodObject<{
         status: z.ZodDefault<z.ZodOptional<z.ZodEnum<{
             sold: "sold";
             rented: "rented";
-            pending: "pending";
             available: "available";
+            pending: "pending";
             reserved: "reserved";
         }>>>;
         images: z.ZodOptional<z.ZodArray<z.ZodString>>;
@@ -78,8 +78,8 @@ export declare const updatePropertySchema: z.ZodObject<{
         description: z.ZodOptional<z.ZodString>;
         price: z.ZodOptional<z.ZodUnion<readonly [z.ZodNumber, z.ZodPipe<z.ZodString, z.ZodTransform<number, string>>]>>;
         priceType: z.ZodOptional<z.ZodEnum<{
-            total: "total";
             per_m2: "per_m2";
+            total: "total";
             per_month: "per_month";
         }>>;
         type: z.ZodOptional<z.ZodEnum<{
@@ -95,8 +95,8 @@ export declare const updatePropertySchema: z.ZodObject<{
         status: z.ZodOptional<z.ZodEnum<{
             sold: "sold";
             rented: "rented";
-            pending: "pending";
             available: "available";
+            pending: "pending";
             reserved: "reserved";
         }>>;
         images: z.ZodOptional<z.ZodArray<z.ZodString>>;

@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import '@/utils/leafletSetup';
 import { MapContainer, TileLayer, Circle, useMap } from 'react-leaflet';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface PropertyLocationMapProps {
   lat: number;
@@ -27,10 +28,12 @@ const MapUpdater: React.FC<{ center: [number, number] }> = ({ center }) => {
 };
 
 export const PropertyLocationMap: React.FC<PropertyLocationMapProps> = ({ lat, lng }) => {
+  const { t } = useTranslation();
+
   return (
     <ScrollReveal>
       <div className="bg-white rounded-2xl p-6 shadow-sm">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Localisation du Bien</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">{t('propertyLocationTitle')}</h2>
         <div className="rounded-xl overflow-hidden h-[300px] md:h-96 border border-gray-200 relative z-0">
           <MapContainer
             center={[lat, lng]}
@@ -58,3 +61,4 @@ export const PropertyLocationMap: React.FC<PropertyLocationMapProps> = ({ lat, l
     </ScrollReveal>
   );
 };
+

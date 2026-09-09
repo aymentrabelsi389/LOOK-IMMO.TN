@@ -5,6 +5,7 @@ import { propertiesAPI } from '@/services/api';
 import PropertyCarousel from './PropertyCarousel';
 import { SkeletonPropertyCard } from '../ui/SkeletonCard';
 import { LAND_OR_HOTDEAL_MAX_PRICE, PROMOTION_LAND_MIN_AREA } from '@/constants/filterConstants';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const PromotionLandsSection = ({
   onSelectProperty,
@@ -17,6 +18,7 @@ const PromotionLandsSection = ({
   onToggleFavorite: (propertyId: string) => void,
   user: User | null,
 }) => {
+  const { t } = useTranslation();
   // Fetch promotion land properties directly with server-side filters.
   // This bypasses the paginated global context (page 1, limit 24) so these
   // properties always appear even if they have a high displayOrder.
@@ -51,13 +53,13 @@ const PromotionLandsSection = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 relative">
           <span className="inline-block px-4 py-1 rounded-full bg-brand-dark text-brand-teal text-xs font-bold tracking-wider uppercase mb-3">
-            Promotion Immobilière
+            {t('promotionLandsBadge')}
           </span>
           <h2 className="text-3xl md:text-4xl font-serif font-bold text-brand-dark">
-            Terrains Promoteurs
+            {t('promotionLandsTitle')}
           </h2>
           <p className="text-gray-500 mt-4 max-w-2xl mx-auto text-sm md:text-base">
-            Découvrez des terrains à fort potentiel pour vos projets de développement.
+            {t('promotionLandsSubtitle')}
           </p>
         </div>
 

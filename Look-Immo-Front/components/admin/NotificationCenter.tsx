@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Bell, X, Trash2, Trash,
-  UserPlus, MessageSquare, Calendar, Heart,
-  Star, Home, Sparkles, RefreshCw
+  UserPlus, UserCheck, UserX, MessageSquare, Calendar, CalendarCheck, CalendarX, Heart,
+  Star, StarOff, Home, Sparkles, RefreshCw, FileText, MapPin
 } from 'lucide-react';
 import { notificationsAPI } from '@/services/api';
 import { socketService } from '@/services/socket';
@@ -18,43 +18,263 @@ type FilterType = 'today' | 'week' | 'all';
 const getIcon = (iconName?: string, type?: string) => {
   const map: Record<string, React.ReactNode> = {
     UserPlus:     <UserPlus size={16} />,
+    UserCheck:    <UserCheck size={16} />,
+    UserX:        <UserX size={16} />,
     MessageSquare:<MessageSquare size={16} />,
     Calendar:     <Calendar size={16} />,
+    CalendarCheck:<CalendarCheck size={16} />,
+    CalendarX:    <CalendarX size={16} />,
     Heart:        <Heart size={16} />,
     Star:         <Star size={16} />,
+    StarOff:      <StarOff size={16} />,
     Home:         <Home size={16} />,
     Sparkles:     <Sparkles size={16} />,
+    FileText:     <FileText size={16} />,
+    MapPin:       <MapPin size={16} />,
+    Trash:        <Trash size={16} />,
   };
 
   if (iconName && map[iconName]) return map[iconName];
 
   // Fallback by type
   const typeMap: Record<string, React.ReactNode> = {
-    user_signup:      <UserPlus size={16} />,
-    message_new:      <MessageSquare size={16} />,
-    appointment_new:  <Calendar size={16} />,
-    wishlist_add:     <Heart size={16} />,
-    rating_new:       <Star size={16} />,
-    property_add:     <Home size={16} />,
-    demand_match:     <Sparkles size={16} />,
-    morning_reminder: <Calendar size={16} />,
+    user_signup:        <UserPlus size={16} />,
+    user_role_change:   <UserCheck size={16} />,
+    user_delete:        <UserX size={16} />,
+    message_new:        <MessageSquare size={16} />,
+    message_delete:     <Trash size={16} />,
+    appointment_new:    <Calendar size={16} />,
+    appointment_accept: <CalendarCheck size={16} />,
+    appointment_reject: <CalendarX size={16} />,
+    appointment_delete: <CalendarX size={16} />,
+    wishlist_add:       <Heart size={16} />,
+    rating_new:         <Star size={16} />,
+    rating_delete:      <StarOff size={16} />,
+    property_add:       <Home size={16} />,
+    property_edit:      <Home size={16} />,
+    property_delete:    <Home size={16} />,
+    demand_match:       <Sparkles size={16} />,
+    morning_reminder:   <Calendar size={16} />,
+    blog_add:           <FileText size={16} />,
+    blog_edit:          <FileText size={16} />,
+    blog_delete:        <FileText size={16} />,
+    location_add:       <MapPin size={16} />,
+    location_edit:      <MapPin size={16} />,
+    location_delete:    <MapPin size={16} />,
   };
   return typeMap[type || ''] || <Bell size={16} />;
 };
 
 const getIconColors = (type?: string) => {
   const map: Record<string, string> = {
-    user_signup:      'bg-blue-500/10 text-blue-400',
-    message_new:      'bg-purple-500/10 text-purple-400',
-    appointment_new:  'bg-brand-teal/10 text-brand-teal',
-    wishlist_add:     'bg-pink-500/10 text-pink-400',
-    rating_new:       'bg-yellow-500/10 text-yellow-400',
-    property_add:     'bg-emerald-500/10 text-emerald-400',
-    demand_match:     'bg-amber-500/10 text-amber-400',
-    morning_reminder: 'bg-sky-500/10 text-sky-400',
+    user_signup:        'bg-blue-500/10 text-blue-400',
+    user_role_change:   'bg-indigo-500/10 text-indigo-400',
+    user_delete:        'bg-rose-500/10 text-rose-400',
+    message_new:        'bg-purple-500/10 text-purple-400',
+    message_delete:     'bg-rose-500/10 text-rose-400',
+    appointment_new:    'bg-brand-teal/10 text-brand-teal',
+    appointment_accept: 'bg-emerald-500/10 text-emerald-400',
+    appointment_reject: 'bg-rose-500/10 text-rose-400',
+    appointment_delete: 'bg-rose-500/10 text-rose-400',
+    wishlist_add:       'bg-pink-500/10 text-pink-400',
+    rating_new:         'bg-yellow-500/10 text-yellow-400',
+    rating_delete:      'bg-rose-500/10 text-rose-400',
+    property_add:       'bg-emerald-500/10 text-emerald-400',
+    property_edit:      'bg-sky-500/10 text-sky-400',
+    property_delete:    'bg-rose-500/10 text-rose-400',
+    demand_match:       'bg-amber-500/10 text-amber-400',
+    morning_reminder:   'bg-sky-500/10 text-sky-400',
+    blog_add:           'bg-emerald-500/10 text-emerald-400',
+    blog_edit:          'bg-blue-500/10 text-blue-400',
+    blog_delete:        'bg-rose-500/10 text-rose-400',
+    location_add:       'bg-emerald-500/10 text-emerald-400',
+    location_edit:      'bg-blue-500/10 text-blue-400',
+    location_delete:    'bg-rose-500/10 text-rose-400',
   };
   return map[type || ''] || 'bg-white/10 text-white/60';
 };
+
+// ── Notification translation & formatting helper ──────────────────────────────
+export function formatNotificationContent(notif: AppNotification): {
+  title: string;
+  message: string;
+} {
+  let title = notif.title || '';
+  let message = notif.message || '';
+
+  // 1. Translate legacy English messages to French
+  if (/^Appointment accepted:\s*/i.test(message)) {
+    let rest = message.replace(/^Appointment accepted:\s*/i, '');
+    if (rest.startsWith('N/A for ')) {
+      rest = 'pour ' + rest.substring(8);
+    } else if (rest.includes(' for ')) {
+      rest = rest.replace(' for ', ' pour ');
+    }
+    message = `Rendez-vous accepté : ${rest}`;
+    if (!title) title = 'Rendez-vous Accepté';
+  } else if (/^Appointment rejected:\s*/i.test(message)) {
+    let rest = message.replace(/^Appointment rejected:\s*/i, '');
+    if (rest.startsWith('N/A for ')) {
+      rest = 'pour ' + rest.substring(8);
+    } else if (rest.includes(' for ')) {
+      rest = rest.replace(' for ', ' pour ');
+    }
+    message = `Rendez-vous refusé : ${rest}`;
+    if (!title) title = 'Rendez-vous Refusé';
+  } else if (/^Appointment deleted:\s*/i.test(message)) {
+    let rest = message.replace(/^Appointment deleted:\s*/i, '');
+    if (rest.startsWith('N/A for ')) {
+      rest = 'pour ' + rest.substring(8);
+    } else if (rest.includes(' for ')) {
+      rest = rest.replace(' for ', ' pour ');
+    }
+    message = `Rendez-vous supprimé : ${rest}`;
+    if (!title) title = 'Rendez-vous Supprimé';
+  } else if (/^Property updated:\s*/i.test(message)) {
+    message = `Propriété mise à jour : ${message.replace(/^Property updated:\s*/i, '')}`;
+    if (!title) title = 'Propriété Modifiée';
+  } else if (/^Property deleted:\s*/i.test(message)) {
+    message = `Propriété supprimée : ${message.replace(/^Property deleted:\s*/i, '')}`;
+    if (!title) title = 'Propriété Supprimée';
+  } else if (/^New blog post:\s*/i.test(message)) {
+    message = `Nouvel article de blog : ${message.replace(/^New blog post:\s*/i, '')}`;
+    if (!title) title = 'Nouvel Article';
+  } else if (/^Blog post updated:\s*/i.test(message)) {
+    message = `Article de blog mis à jour : ${message.replace(/^Blog post updated:\s*/i, '')}`;
+    if (!title) title = 'Article Modifié';
+  } else if (/^Blog post deleted:\s*/i.test(message)) {
+    message = `Article de blog supprimé : ${message.replace(/^Blog post deleted:\s*/i, '')}`;
+    if (!title) title = 'Article Supprimé';
+  } else if (/^New location added:\s*/i.test(message)) {
+    message = `Nouvelle zone ajoutée : ${message.replace(/^New location added:\s*/i, '')}`;
+    if (!title) title = 'Nouvelle Zone';
+  } else if (/^Location updated:\s*/i.test(message)) {
+    message = `Zone mise à jour : ${message.replace(/^Location updated:\s*/i, '')}`;
+    if (!title) title = 'Zone Modifiée';
+  } else if (/^Location deleted:\s*/i.test(message)) {
+    message = `Zone supprimée : ${message.replace(/^Location deleted:\s*/i, '')}`;
+    if (!title) title = 'Zone Supprimée';
+  } else if (/^Message deleted from:\s*/i.test(message)) {
+    message = `Message supprimé de : ${message.replace(/^Message deleted from:\s*/i, '')}`;
+    if (!title) title = 'Message Supprimé';
+  } else if (/^New user created:\s*/i.test(message)) {
+    message = `Nouvel utilisateur créé : ${message.replace(/^New user created:\s*/i, '')}`;
+    if (!title) title = 'Nouvel Utilisateur';
+  } else if (/^User role changed:\s*/i.test(message)) {
+    message = `Rôle utilisateur modifié : ${message.replace(/^User role changed:\s*/i, '')}`;
+    if (!title) title = 'Rôle Modifié';
+  } else if (/^User deleted:\s*/i.test(message)) {
+    message = `Utilisateur supprimé : ${message.replace(/^User deleted:\s*/i, '')}`;
+    if (!title) title = 'Utilisateur Supprimé';
+  } else if (/^Rating deleted:\s*/i.test(message)) {
+    const match = message.match(/^Rating deleted:\s*(\d+)\s*stars?\s+by\s+(.*?)\s+for\s+(.*)$/i);
+    if (match) {
+      message = `Avis supprimé : ${match[1]} étoiles par ${match[2]} pour ${match[3]}`;
+    } else {
+      message = `Avis supprimé : ${message.replace(/^Rating deleted:\s*/i, '')}`;
+    }
+    if (!title) title = 'Avis Supprimé';
+  }
+
+  // 2. Ensure title is present and translated
+  if (!title) {
+    switch (notif.type) {
+      case 'property_add':
+        title = 'Nouvelle Propriété';
+        break;
+      case 'property_edit':
+        title = 'Propriété Modifiée';
+        break;
+      case 'property_delete':
+        title = 'Propriété Supprimée';
+        break;
+      case 'appointment_new':
+        title = 'Nouveau Rendez-vous';
+        break;
+      case 'appointment_accept':
+        title = 'Rendez-vous Accepté';
+        break;
+      case 'appointment_reject':
+        title = 'Rendez-vous Refusé';
+        break;
+      case 'appointment_delete':
+        title = 'Rendez-vous Supprimé';
+        break;
+      case 'demand_match':
+        title = 'Nouvelle Correspondance';
+        break;
+      case 'morning_reminder':
+        title = "Visites d'Aujourd'hui";
+        break;
+      case 'wishlist_add':
+        title = 'Bien Enregistré';
+        break;
+      case 'rating_new':
+        title = 'Nouvel Avis';
+        break;
+      case 'rating_delete':
+        title = 'Avis Supprimé';
+        break;
+      case 'message_new':
+        title = 'Nouveau Message';
+        break;
+      case 'message_delete':
+        title = 'Message Supprimé';
+        break;
+      case 'user_signup':
+        title = 'Nouvel Utilisateur';
+        break;
+      case 'user_role_change':
+        title = 'Rôle Modifié';
+        break;
+      case 'user_delete':
+        title = 'Utilisateur Supprimé';
+        break;
+      case 'blog_add':
+        title = 'Nouvel Article';
+        break;
+      case 'blog_edit':
+        title = 'Article Modifié';
+        break;
+      case 'blog_delete':
+        title = 'Article Supprimé';
+        break;
+      case 'location_add':
+        title = 'Nouvelle Zone';
+        break;
+      case 'location_edit':
+        title = 'Zone Modifiée';
+        break;
+      case 'location_delete':
+        title = 'Zone Supprimée';
+        break;
+      default:
+        title = 'Notification';
+    }
+  } else {
+    // Translate any English titles
+    if (/^Property updated/i.test(title)) title = 'Propriété Modifiée';
+    else if (/^Property deleted/i.test(title)) title = 'Propriété Supprimée';
+    else if (/^Appointment accepted/i.test(title)) title = 'Rendez-vous Accepté';
+    else if (/^Appointment rejected/i.test(title)) title = 'Rendez-vous Refusé';
+    else if (/^Appointment deleted/i.test(title)) title = 'Rendez-vous Supprimé';
+    else if (/^New blog post/i.test(title)) title = 'Nouvel Article';
+    else if (/^Blog post updated/i.test(title)) title = 'Article Modifié';
+    else if (/^Blog post deleted/i.test(title)) title = 'Article Supprimé';
+    else if (/^New location/i.test(title)) title = 'Nouvelle Zone';
+    else if (/^Location updated/i.test(title)) title = 'Zone Modifiée';
+    else if (/^Location deleted/i.test(title)) title = 'Zone Supprimée';
+    else if (/^New user/i.test(title)) title = 'Nouvel Utilisateur';
+    else if (/^User role/i.test(title)) title = 'Rôle Modifié';
+    else if (/^User deleted/i.test(title)) title = 'Utilisateur Supprimé';
+    else if (/^New rating/i.test(title)) title = 'Nouvel Avis';
+    else if (/^Rating deleted/i.test(title)) title = 'Avis Supprimé';
+    else if (/^New message/i.test(title)) title = 'Nouveau Message';
+    else if (/^Message deleted/i.test(title)) title = 'Message Supprimé';
+  }
+
+  return { title, message };
+}
 
 // ── Relative time formatter ───────────────────────────────────────────────────
 const formatRelativeTime = (dateStr: string): string => {
@@ -87,6 +307,8 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notif, onRead, onDe
     onNavigate(notif);
   };
 
+  const { title, message } = formatNotificationContent(notif);
+
   return (
     <div
       onClick={handleClick}
@@ -106,13 +328,13 @@ const NotificationItem: React.FC<NotificationItemProps> = ({ notif, onRead, onDe
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        {notif.title && (
+        {title && (
           <h4 className="text-[11px] font-bold text-[#C6A75E] uppercase tracking-wider mb-0.5">
-            {notif.title}
+            {title}
           </h4>
         )}
         <p className="text-[13px] text-white/80 font-medium leading-relaxed break-words">
-          {notif.message}
+          {message}
         </p>
         <span className="text-[10px] text-white/30 font-medium mt-1 block">
           {formatRelativeTime(notif.createdAt)}

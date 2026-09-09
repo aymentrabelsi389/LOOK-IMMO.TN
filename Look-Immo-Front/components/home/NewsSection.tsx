@@ -3,12 +3,14 @@ import { Link } from 'react-router-dom';
 import { Calendar, ArrowRight } from 'lucide-react';
 import { BlogPost } from '@/types';
 import InfiniteCarousel from './InfiniteCarousel';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const NewsSection = ({ blogPosts, onSelectPost }: { blogPosts: BlogPost[], onSelectPost: (id: string) => void }) => {
+  const { t, language } = useTranslation();
   if (blogPosts.length === 0) return null;
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString('fr-FR', {
+    return new Date(timestamp).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
       day: 'numeric',
       month: 'long',
       year: 'numeric'
@@ -19,10 +21,10 @@ const NewsSection = ({ blogPosts, onSelectPost }: { blogPosts: BlogPost[], onSel
     <section className="py-16 bg-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
-          <span className="inline-block px-4 py-1 rounded-full bg-brand-dark text-brand-teal text-xs font-bold tracking-wider uppercase mb-3">Blog & Actualités</span>
-          <h2 className="text-3xl md:text-4xl font-serif font-bold text-brand-dark">Actualités Immo</h2>
+          <span className="inline-block px-4 py-1 rounded-full bg-brand-dark text-brand-teal text-xs font-bold tracking-wider uppercase mb-3">{t('newsBadge')}</span>
+          <h2 className="text-3xl md:text-4xl font-serif font-bold text-brand-dark">{t('newsTitle')}</h2>
           <p className="text-gray-500 mt-4 max-w-2xl mx-auto text-sm md:text-base">
-            Restez informé des dernières tendances, conseils et actualités du marché immobilier tunisien.
+            {t('newsSubtitle')}
           </p>
         </div>
 
@@ -69,7 +71,7 @@ const NewsSection = ({ blogPosts, onSelectPost }: { blogPosts: BlogPost[], onSel
                       {post.excerpt}
                     </p>
                     <div className="mt-auto flex items-center text-sm text-brand-teal font-medium [@media(hover:hover)]:group-hover:translate-x-1 transition-transform">
-                      Lire la suite <ArrowRight size={14} className="ml-1" />
+                      {t('readMore')} <ArrowRight size={14} className="ml-1" />
                     </div>
                   </div>
                   </article>

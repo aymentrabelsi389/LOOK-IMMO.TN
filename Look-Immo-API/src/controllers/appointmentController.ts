@@ -282,12 +282,22 @@ export const updateAppointment = async (req: AuthRequest, res: Response): Promis
 
             if (notificationType) {
                 try {
-                    await prisma.notification.create({
-                        data: {
-                            type: notificationType,
-                            message: `Appointment ${status}: ${existingAppointment.clientName}${existingAppointment.property ? ` for ${existingAppointment.property.title}` : ''}`,
-                            entityId: id,
-                        },
+                    const isAccepted = status === 'accepted';
+                    const statusFr = isAccepted ? 'accepté' : 'refusé';
+                    const clientLabel = existingAppointment.clientName && existingAppointment.clientName !== 'N/A'
+                        ? ` de ${existingAppointment.clientName}`
+                        : '';
+                    const propLabel = existingAppointment.property ? ` pour ${existingAppointment.property.title}` : '';
+                    const message = `Rendez-vous ${statusFr}${clientLabel}${propLabel}`;
+
+                    await createNotification({
+                        type: notificationType,
+                        title: isAccepted ? 'Rendez-vous Accepté' : 'Rendez-vous Refusé',
+                        message,
+                        icon: 'Calendar',
+                        link: '/admin',
+                        userId: null,
+                        metadata: { appointmentId: id },
                     });
                 } catch (notificationError) {
                     logger.error('Failed to create status notification:', notificationError);
@@ -361,12 +371,18 @@ export const deleteAppointment = async (req: Request, res: Response): Promise<vo
 
         // Create notification
         try {
-            await prisma.notification.create({
-                data: {
-                    type: 'appointment_delete',
-                    message: `Appointment deleted: ${appointment.clientName}${appointment.property ? ` for ${appointment.property.title}` : ''}`,
-                    entityId: id,
-                },
+            const clientLabel = appointment.clientName && appointment.clientName !== 'N/A'
+                ? ` de ${appointment.clientName}`
+                : '';
+            const propLabel = appointment.property ? ` pour ${appointment.property.title}` : '';
+            await createNotification({
+                type: 'appointment_delete',
+                title: 'Rendez-vous Supprimé',
+                message: `Rendez-vous supprimé${clientLabel}${propLabel}`,
+                icon: 'Calendar',
+                link: '/admin',
+                userId: null,
+                metadata: { appointmentId: id },
             });
         } catch (notificationError) {
             logger.error('Failed to create delete notification:', notificationError);

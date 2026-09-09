@@ -2,6 +2,7 @@ import React from 'react';
 import { User as UserIcon, Phone, ChevronRight, Edit } from 'lucide-react';
 import { User } from '@/types';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface AccountSettingsProps {
   user: User;
@@ -21,6 +22,8 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
   onSave,
   onCancel,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <ScrollReveal delay={300}>
       <div className="bg-white rounded-3xl shadow-soft border border-gray-100/80 p-6 sm:p-8 clean-ui-scope relative overflow-hidden mt-10">
@@ -29,7 +32,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
       <div className="flex justify-between items-center mb-8 border-b border-gray-100 pb-5">
         <h2 className="text-xl font-serif font-bold text-brand-dark flex items-center">
           <UserIcon className="mr-3 text-brand-teal" size={24} />
-          Paramètres du Compte
+          {t('accountSettingsTitle')}
         </h2>
         {!isEditing && (
           <button
@@ -37,7 +40,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
             className="text-brand-teal hover:text-brand-dark font-bold text-sm flex items-center transition-colors gap-1.5"
             type="button"
           >
-            <Edit size={16} /> Modifier
+            <Edit size={16} /> {t('editAction')}
           </button>
         )}
       </div>
@@ -47,7 +50,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
           <div className="group">
             <label htmlFor="account-fullname" className="text-xs font-bold text-gray-500 mb-2 flex items-center uppercase tracking-wider">
               <UserIcon size={14} className="mr-2 text-gray-400 group-focus-within:text-brand-teal transition-colors" />
-              Nom Complet
+              {t('accountFullNameLabel')}
             </label>
             <input
               id="account-fullname"
@@ -60,14 +63,14 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
                   ? 'bg-white border-gray-200 shadow-sm'
                   : 'bg-gray-50/80 border-transparent text-gray-600 cursor-not-allowed'
               }`}
-              placeholder="Votre nom"
+              placeholder={t('accountFullNamePlaceholder')}
             />
           </div>
 
           <div className="group">
             <label htmlFor="account-email" className="text-xs font-bold text-gray-500 mb-2 flex items-center uppercase tracking-wider">
               <span className="mr-2 text-gray-400 group-focus-within:text-brand-teal transition-colors">@</span>
-              Email
+              {t('accountEmailLabel')}
             </label>
             <input
               id="account-email"
@@ -80,14 +83,14 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
                   ? 'bg-white border-gray-200 shadow-sm'
                   : 'bg-gray-50/80 border-transparent text-gray-600 cursor-not-allowed'
               }`}
-              placeholder="votre@email.com"
+              placeholder={t('accountEmailPlaceholder')}
             />
           </div>
 
           <div className="group">
             <label htmlFor="account-phone" className="text-xs font-bold text-gray-500 mb-2 flex items-center uppercase tracking-wider">
               <Phone size={14} className="mr-2 text-gray-400 group-focus-within:text-brand-teal transition-colors" />
-              Numéro de téléphone
+              {t('accountPhoneLabel')}
             </label>
             <input
               id="account-phone"
@@ -105,7 +108,7 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
                   ? 'bg-white border-gray-200 shadow-sm'
                   : 'bg-gray-50/80 border-transparent text-gray-600 cursor-not-allowed'
               }`}
-              placeholder="+216 00 000 000"
+              placeholder={t('accountPhonePlaceholder')}
             />
           </div>
         </div>
@@ -117,13 +120,13 @@ export const AccountSettings: React.FC<AccountSettingsProps> = ({
               onClick={onCancel}
               className="px-6 py-3.5 rounded-2xl font-bold text-sm text-gray-500 hover:bg-gray-100 transition-colors"
             >
-              Annuler
+              {t('cancelButton')}
             </button>
             <button
               type="submit"
               className="bg-brand-dark hover:bg-brand-primary text-white px-8 py-3.5 rounded-2xl font-bold text-sm transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0 flex items-center shadow-brand-dark/10"
             >
-              <span className="mr-2">Enregistrer</span>
+              <span className="mr-2">{t('saveChangesButton')}</span>
               <ChevronRight size={16} />
             </button>
           </div>

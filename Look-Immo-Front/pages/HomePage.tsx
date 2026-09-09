@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MapPin, ChevronDown } from 'lucide-react';
 import {
   DEFAULT_MAX_PRICE, DEFAULT_MIN_PRICE, DEFAULT_MIN_BEDROOMS, DEFAULT_MIN_AREA,
@@ -12,6 +12,7 @@ import { useSEO } from '@/hooks/useSEO';
 import { useUI } from '@/context/UIContext';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useData } from '@/context/DataContext';
+import { useTranslation } from '@/hooks/useTranslation';
 
 import hero1 from '../photo-1613490493576-7fde63acd811.webp';
 import hero2 from '../photo-1512917774080-9991f1c4c750.webp';
@@ -25,13 +26,14 @@ const heroImages = [
 
 const HomePage = () => {
   useSEO({
-    title: "L'adresse de vos rêves",
+    title: "Look Immo | Agence Immobilière de Prestige en Tunisie",
     description: "Look Immo est votre agence immobilière de prestige en Tunisie. Découvrez nos villas d'exception, appartements de luxe et terrains haut de gamme à vendre ou à louer."
   });
 
   const { handleNavigate: onNavigate, handleSearch: onSearch, setShowAuthModal } = useUI();
   const { properties, availableLocations, blogPosts, handleSelectBlogPost: onSelectPost, isLoading, handleSelectProperty: onSelectProperty } = useData();
   const { user, handleToggleFavorite } = useAuthStore();
+  const { t } = useTranslation();
   const onToggleFavorite = (propertyId: string) =>
     handleToggleFavorite(propertyId, () => setShowAuthModal(true));
   const userRole = user?.role;
@@ -41,6 +43,26 @@ const HomePage = () => {
   const [showLocationDropdown, setShowLocationDropdown] = useState(false);
   const [forceShowAllLocations, setForceShowAllLocations] = useState(false);
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
+  const locationDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      if (
+        locationDropdownRef.current &&
+        !locationDropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowLocationDropdown(false);
+        setForceShowAllLocations(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("touchstart", handleClickOutside, { passive: true });
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -97,10 +119,10 @@ const HomePage = () => {
         <div className="relative max-w-[1440px] mx-auto px-4 h-full flex flex-col justify-center items-center">
           <div className="text-center mb-8">
             <h1 className="text-4xl md:text-7xl font-bold text-white mb-2 font-serif tracking-tight drop-shadow-2xl opacity-0 animate-fade-in-up">
-              L'adresse de vos <span className="text-brand-teal italic">  rêves</span>
+              {t('heroTitlePrefix')}<span className="text-brand-teal italic"> {t('heroTitleHighlight')}</span>
             </h1>
             <p className="text-base md:text-xl text-gray-200 max-w-2xl mx-auto font-light leading-relaxed drop-shadow-lg opacity-0 animate-fade-in-up delay-100">
-              Trouvez des biens soigneusement sélectionnés pour vivre ou investir.
+              {t('heroSubtitle')}
             </p>
           </div>
 
@@ -113,12 +135,12 @@ const HomePage = () => {
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
-                    className={`px-6 md:px-10 py-3 rounded-full text-sm md:text-base font-semibold transition-all duration-300 capitalize tracking-wide ${activeTab === tab
+                    className={`w-28 md:w-36 py-3 rounded-full text-sm md:text-base font-semibold transition-all duration-300 capitalize tracking-wide text-center ${activeTab === tab
                       ? 'bg-white text-brand-dark shadow-lg scale-105'
                       : 'text-gray-300 hover:text-white hover:bg-white/5'
                       }`}
                   >
-                    {tab === 'buy' ? 'Acheter' : 'Louer'}
+                    {tab === 'buy' ? t('tabBuy') : t('tabRent')}
                   </button>
                 ))}
               </div>
@@ -127,42 +149,38 @@ const HomePage = () => {
             {/* Input Row */}
             <div className="flex flex-col md:flex-row gap-4 relative">
               {/* Location Search with Dropdown */}
-              <div className="relative flex-1 group z-30 min-h-[70px]">
+              <div ref={locationDropdownRef} className="relative flex-1 group z-30 min-h-[70px]">
                 <div className="absolute left-5 top-1/2 transform -translate-y-1/2 text-white pointer-events-none z-10">
                   <MapPin size={24} />
                 </div>
                 <input
                   type="text"
                   readOnly
-                  placeholder="Choisir une ville..."
-                  className="absolute inset-0 w-full h-full bg-white/20 backdrop-blur-md text-white pl-14 pr-12 py-5 rounded-2xl border-2 border-white/30 focus:outline-none focus:border-brand-teal transition-all duration-300 white-placeholder text-lg shadow-lg cursor-pointer"
+                  placeholder={t('searchCityPlaceholder')}
+                  className="absolute inset-0 w-full h-full bg-white/20 backdrop-blur-md text-white pl-14 pr-14 py-5 rounded-2xl border-2 border-white/30 focus:outline-none focus:border-brand-teal transition-all duration-300 white-placeholder text-lg shadow-lg cursor-pointer select-none"
                   value={searchQuery}
-                  onFocus={() => {
-                    setForceShowAllLocations(true);
-                    setShowLocationDropdown(true);
-                  }}
                   onClick={() => {
                     setForceShowAllLocations(true);
-                    setShowLocationDropdown(true);
+                    setShowLocationDropdown((prev) => !prev);
                   }}
-                  onBlur={() => setTimeout(() => setShowLocationDropdown(false), 200)}
                   autoComplete="off"
                 />
-                <div
-                  className="absolute right-5 top-1/2 transform -translate-y-1/2 text-white/70 cursor-pointer z-40"
-                  onMouseDown={(e) => {
+                <button
+                  type="button"
+                  aria-label="Toggle location list"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/80 hover:text-white p-3 z-40 rounded-full transition-colors flex items-center justify-center cursor-pointer focus:outline-none"
+                  onClick={(e) => {
+                    e.stopPropagation();
                     e.preventDefault();
-                    if (showLocationDropdown) {
-                      setShowLocationDropdown(false);
-                      setForceShowAllLocations(false);
-                    } else {
-                      setForceShowAllLocations(true);
-                      setShowLocationDropdown(true);
-                    }
+                    setShowLocationDropdown((prev) => {
+                      const next = !prev;
+                      setForceShowAllLocations(next);
+                      return next;
+                    });
                   }}
                 >
-                  <ChevronDown size={20} className={`transition-transform duration-300 ${showLocationDropdown ? "rotate-180" : ""}`} />
-                </div>
+                  <ChevronDown size={22} className={`transition-transform duration-300 ${showLocationDropdown ? "rotate-180" : ""}`} />
+                </button>
 
                 {/* Search Dropdown */}
                 {showLocationDropdown && (filteredLocations.length > 0) && (
@@ -190,9 +208,9 @@ const HomePage = () => {
               {/* Search Button */}
               <button
                 onClick={handleSearch}
-                className="md:w-auto bg-brand-teal hover:bg-cyan-600 text-white font-bold px-12 py-5 rounded-2xl shadow-lg shadow-brand-teal/30 transform hover:scale-105 transition-all duration-300 flex items-center justify-center text-lg z-20"
+                className="min-w-[170px] md:w-auto bg-brand-teal hover:bg-cyan-600 text-white font-bold px-10 py-5 rounded-2xl shadow-lg shadow-brand-teal/30 transform hover:scale-105 transition-all duration-300 flex items-center justify-center text-lg z-20"
               >
-                Rechercher
+                {t('searchButton')}
               </button>
             </div>
           </div>

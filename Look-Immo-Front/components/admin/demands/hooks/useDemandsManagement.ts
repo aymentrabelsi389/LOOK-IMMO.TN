@@ -158,6 +158,16 @@ export function useDemandsManagement({
         ...localIgnored
       ]);
 
+      const getEffectivePrice = (property: Property): number => {
+        if (property.type === 'land') {
+          const isPerM2 = property.priceType === 'per_m2' || (!property.priceType && property.price < 20_000);
+          if (isPerM2 && property.features?.area && property.features.area > 0) {
+            return property.price * property.features.area;
+          }
+        }
+        return property.price;
+      };
+
       const matches = properties
         .filter(property => {
           if (ignoredIds.has(property.id)) return false;
@@ -165,15 +175,17 @@ export function useDemandsManagement({
           if (demand.contractType && property.listingType && demand.contractType !== property.listingType) return false;
           // Budget tolerance: sale → max 15% over | rent → max 25% over
           if (demand.budget && demand.budget > 0) {
+            const effectivePrice = getEffectivePrice(property);
             const upperFactor = demand.contractType === 'rent' ? 1.25 : 1.15;
             const lowerBound = demand.budget * 0.7;
             const upperBound = demand.budget * upperFactor;
-            if (property.price < lowerBound || property.price > upperBound) return false;
+            if (effectivePrice < lowerBound || effectivePrice > upperBound) return false;
           }
           return true;
         })
         .map(property => {
           let score = 0;
+          const effectivePrice = getEffectivePrice(property);
 
           // 0. Contract Type Match (Rent / Sale) — 20 points
           if (demand.contractType && property.listingType) {
@@ -191,9 +203,9 @@ export function useDemandsManagement({
             if (demand.type === 'villa' && property.type === 'apartment') score += 5;
           }
 
-          // 2. Budget Match — 30 points (tiers adjusted per contract type)
+          // 2. Budget Match — 30 points (tiers adjusted per contract type, using total price for land)
           if (demand.budget && demand.budget > 0) {
-            const priceDiff = (property.price - demand.budget) / demand.budget;
+            const priceDiff = (effectivePrice - demand.budget) / demand.budget;
             if (demand.contractType === 'rent') {
               // Rent: up to 25% over — more tolerant
               if (priceDiff <= 0) score += 30;
@@ -204,7 +216,7 @@ export function useDemandsManagement({
               // Sale: up to 15% over — stricter
               if (priceDiff <= 0) score += 30;
               else if (priceDiff <= 0.1) score += 20;
-              else score += 10; // 10–15%
+              else if (priceDiff <= 0.15) score += 10; // 10–15%
             }
           } else {
             score += 15;

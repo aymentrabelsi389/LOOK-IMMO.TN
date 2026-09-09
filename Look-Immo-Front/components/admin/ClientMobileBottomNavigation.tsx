@@ -3,12 +3,14 @@ import { Link, useLocation } from 'react-router-dom';
 import { Home, Search, User, Building, Coins } from 'lucide-react';
 import { useUI } from '@/context/UIContext';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useTranslation } from '@/hooks/useTranslation';
 import PropertySearchSheet from '../ui/PropertySearchSheet';
 
 const ClientMobileBottomNavigation = () => {
   const location = useLocation();
   const { user } = useAuthStore();
   const { filters, handleSearch } = useUI();
+  const { t } = useTranslation();
   const currentPath = location.pathname;
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
@@ -92,7 +94,7 @@ const ClientMobileBottomNavigation = () => {
           <Link
             to="/"
             className="flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-200"
-            aria-label="Accueil"
+            aria-label={t('bottomHome')}
           >
             <Home
               size={22}
@@ -105,7 +107,7 @@ const ClientMobileBottomNavigation = () => {
                 isActive('home') ? 'text-brand-teal' : 'text-white/40'
               }`}
             >
-              Accueil
+              {t('bottomHome')}
             </span>
           </Link>
  
@@ -116,7 +118,7 @@ const ClientMobileBottomNavigation = () => {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             className="flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-200 cursor-pointer border-none bg-transparent"
-            aria-label="Vente"
+            aria-label={t('bottomSale')}
           >
             <Coins
               size={22}
@@ -129,7 +131,7 @@ const ClientMobileBottomNavigation = () => {
                 isActive('vente') ? 'text-brand-teal' : 'text-white/40'
               }`}
             >
-              Vente
+              {t('bottomSale')}
             </span>
           </button>
  
@@ -160,7 +162,7 @@ const ClientMobileBottomNavigation = () => {
               window.scrollTo({ top: 0, behavior: 'smooth' });
             }}
             className="flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-200 cursor-pointer border-none bg-transparent"
-            aria-label="Location"
+            aria-label={t('bottomRent')}
           >
             <Building
               size={22}
@@ -173,7 +175,7 @@ const ClientMobileBottomNavigation = () => {
                 isActive('location') ? 'text-brand-teal' : 'text-white/40'
               }`}
             >
-              Location
+              {t('bottomRent')}
             </span>
           </button>
 
@@ -181,7 +183,7 @@ const ClientMobileBottomNavigation = () => {
           <Link
             to="/dashboard"
             className="flex flex-col items-center justify-center flex-1 h-full py-1 transition-all duration-200"
-            aria-label="Mon Compte"
+            aria-label={t('bottomAccount')}
           >
             {renderAvatar()}
             <span
@@ -189,7 +191,7 @@ const ClientMobileBottomNavigation = () => {
                 isActive('compte') ? 'text-brand-teal' : 'text-white/40'
               }`}
             >
-              Compte
+              {t('bottomAccount')}
             </span>
           </Link>
 

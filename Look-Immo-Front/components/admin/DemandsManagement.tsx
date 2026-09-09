@@ -224,14 +224,19 @@ const DemandsManagement = ({
                               </div>
                               <div className="ml-4">
                                 <div className="font-black text-gray-900 group-hover:text-brand-dark transition-colors leading-none mb-1">{demand.clientName}</div>
-                                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
-                                  <Phone size={10} className="text-brand-teal" /> {demand.phone}
-                                </div>
+                                {demand.phone && (
+                                  <a 
+                                    href={`tel:${demand.phone}`}
+                                    className="text-xs text-gray-500 font-semibold flex items-center gap-1.5 hover:text-brand-teal transition-colors tracking-wide"
+                                  >
+                                    <Phone size={12} className="text-brand-teal shrink-0" /> {demand.phone}
+                                  </a>
+                                )}
                               </div>
                             </div>
                           </td>
                           <td className="px-6 py-5 max-w-xs">
-                            <div className="text-xs font-bold text-gray-800 line-clamp-2 leading-relaxed italic mb-2">
+                            <div className="text-xs font-bold text-gray-800 line-clamp-2 leading-relaxed mb-2">
                               "{demand.description}"
                             </div>
                             <div className="flex flex-wrap items-center gap-2">
@@ -255,8 +260,8 @@ const DemandsManagement = ({
                             </div>
                           </td>
                           <td className="px-6 py-5">
-                            <div className="font-black text-brand-dark text-sm leading-none mb-1">
-                              {demand.budget ? <Price amount={demand.budget} /> : 'Non spécifié'}
+                            <div className="font-black text-brand-dark text-base leading-tight mb-1">
+                              {demand.budget ? <Price amount={demand.budget} fontSans={true} className="text-base font-black text-brand-dark" /> : 'Non spécifié'}
                             </div>
                             <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider flex items-center gap-1">
                               <MapPin size={10} className="text-brand-teal" /> {demand.location}
@@ -331,9 +336,14 @@ const DemandsManagement = ({
                           </div>
                           <div className="ml-3">
                             <h4 className="font-black text-gray-900 leading-none mb-1">{demand.clientName}</h4>
-                            <div className="flex items-center gap-1 text-[9px] text-gray-400 font-bold uppercase tracking-widest">
-                              <Phone size={10} className="text-brand-teal" /> {demand.phone}
-                            </div>
+                            {demand.phone && (
+                              <a 
+                                href={`tel:${demand.phone}`}
+                                className="flex items-center gap-1.5 text-xs text-gray-500 font-semibold hover:text-brand-teal transition-colors tracking-wide"
+                              >
+                                <Phone size={12} className="text-brand-teal shrink-0" /> {demand.phone}
+                              </a>
+                            )}
                           </div>
                         </div>
                         <div className="flex gap-2">
@@ -353,23 +363,23 @@ const DemandsManagement = ({
                         </div>
                       </div>
 
-                      <div className="text-xs font-bold text-gray-700 bg-gray-50/80 p-3 rounded-xl border border-gray-100 italic">
+                      <div className="text-xs font-bold text-gray-700 bg-gray-50/80 p-3 rounded-xl border border-gray-100">
                         "{demand.description}"
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 text-[10px] uppercase font-black tracking-wider">
-                        <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                        <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100 flex flex-col justify-center">
                           <span className="text-gray-400 block mb-0.5 text-[8px]">Type & Lieu</span>
-                          <span className="text-gray-900">
+                          <span className="text-gray-900 text-[11px] leading-tight font-black">
                             {demand.type}
                             {demand.contractType && ` (${demand.contractType === 'rent' ? 'Loc.' : 'Vente'})`}
                             {` • ${demand.location}`}
                           </span>
                         </div>
-                        <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100">
+                        <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100 flex flex-col justify-center">
                           <span className="text-gray-400 block mb-0.5 text-[8px]">Budget</span>
-                          <span className="text-brand-teal font-black">
-                            {demand.budget ? <Price amount={demand.budget} /> : 'Non spécifié'}
+                          <span className="text-brand-teal font-black text-sm sm:text-base leading-tight">
+                            {demand.budget ? <Price amount={demand.budget} fontSans={true} className="text-sm sm:text-base text-brand-teal font-black" /> : 'Non spécifié'}
                           </span>
                         </div>
                       </div>
@@ -522,17 +532,41 @@ const DemandsManagement = ({
                   <input
                     required
                     type="text"
+                    autoCapitalize="words"
+                    autoComplete="name"
                     value={editingDemand.clientName}
-                    onChange={e => setEditingDemand({ ...editingDemand, clientName: e.target.value })}
+                    onChange={e => {
+                      const formatted = e.target.value.replace(/(?:^|\s)\S/g, (match) => match.toUpperCase());
+                      setEditingDemand({ ...editingDemand, clientName: formatted });
+                    }}
                     className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium transition-all"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1">Téléphone</label>
                   <input
-                    type="text"
+                    type="tel"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    autoComplete="tel"
                     value={editingDemand.phone || ''}
-                    onChange={e => setEditingDemand({ ...editingDemand, phone: e.target.value })}
+                    onChange={e => {
+                      const onlyNumbers = e.target.value.replace(/\D/g, '');
+                      setEditingDemand({ ...editingDemand, phone: onlyNumbers });
+                    }}
+                    onKeyDown={e => {
+                      if (
+                        ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key) ||
+                        (e.ctrlKey || e.metaKey)
+                      ) {
+                        return;
+                      }
+                      if (!/^\d$/.test(e.key)) {
+                        e.preventDefault();
+                      }
+                    }}
+                    placeholder="Téléphone (chiffres uniquement)"
+                    maxLength={15}
                     className="w-full px-4 py-3 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 text-sm font-medium transition-all"
                   />
                 </div>

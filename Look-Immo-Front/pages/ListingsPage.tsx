@@ -20,6 +20,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useData } from '@/context/DataContext';
 import { propertiesAPI } from '@/services/api';
 import { formatPropertyType } from '@/utils/propertyUtils';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const ListingsPage = () => {
   useSEO({
@@ -30,6 +31,7 @@ const ListingsPage = () => {
   const { filters, setFilters, setShowAuthModal } = useUI();
   const { availableLocations, handleSelectProperty: onSelectProperty } = useData();
   const { user, handleToggleFavorite } = useAuthStore();
+  const { t } = useTranslation();
   const onToggleFavorite = (propertyId: string) =>
     handleToggleFavorite(propertyId, () => setShowAuthModal(true));
   const userRole = user?.role;
@@ -48,6 +50,14 @@ const ListingsPage = () => {
   useEffect(() => {
     setLocalMaxPrice(filters.maxPrice);
   }, [filters.maxPrice]);
+
+  // When filtering lands, if maxPrice is at DEFAULT_MAX_PRICE, initialize it to LAND_OR_HOTDEAL_MAX_PRICE
+  useEffect(() => {
+    if (filters.propertyType === 'land' && filters.maxPrice === DEFAULT_MAX_PRICE) {
+      setFilters(prev => ({ ...prev, maxPrice: LAND_OR_HOTDEAL_MAX_PRICE }));
+      setLocalMaxPrice(LAND_OR_HOTDEAL_MAX_PRICE);
+    }
+  }, [filters.propertyType]);
 
   // Debounce updating parent filters state to avoid performance lag and API spamming
   useEffect(() => {
@@ -142,13 +152,11 @@ const ListingsPage = () => {
       {/* Statut Filter */}
       <div className="relative" ref={listingTypeDropdownRef}>
         <label className="text-sm font-bold text-gray-700 mb-3 flex items-center">
-          <RefreshCw size={16} className="mr-2 text-brand-teal" strokeWidth={1.5} /> Statut
+          <RefreshCw size={16} className="mr-2 text-brand-teal" strokeWidth={1.5} /> {t('status')}
         </label>
         {filters.listingType !== 'all' ? (
           <div className="w-full p-3.5 border-2 border-gray-50 rounded-xl bg-gray-50 text-gray-500 font-medium flex justify-between items-center cursor-not-allowed">
-            <span className="truncate">
-              {filters.listingType === 'sale' ? 'Ventes' : 'Locations'}
-            </span>
+            <span className="truncate">{filters.listingType === 'sale' ? t('navSales') : t('navRentals')}</span>
             <Lock size={16} className="text-gray-300" />
           </div>
         ) : (
@@ -163,7 +171,11 @@ const ListingsPage = () => {
               `}
             >
               <span className="truncate">
-                {filters.listingType === 'all' ? 'Tout' : (filters.listingType === 'sale' ? 'Ventes' : 'Locations')}
+                {filters.listingType === 'all'
+                  ? t('allStatus')
+                  : filters.listingType === 'sale'
+                  ? t('navSales')
+                  : t('navRentals')}
               </span>
               <ChevronDown size={16} className={`text-gray-400 transition-transform duration-300 ${isListingTypeOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -173,9 +185,9 @@ const ListingsPage = () => {
                 <div className="p-1.5">
                   {(
                     [
-                      { id: 'all', label: 'Tout' },
-                      { id: 'sale', label: 'Ventes' },
-                      { id: 'rent', label: 'Locations' }
+                      { id: 'all', label: t('allStatus') },
+                      { id: 'sale', label: t('navSales') },
+                      { id: 'rent', label: t('navRentals') }
                     ] as const
                   ).map((type) => (
                     <button
@@ -206,11 +218,11 @@ const ListingsPage = () => {
       {/* Type de Bien Filter */}
       <div className="relative" ref={typeDropdownRef}>
         <label className="text-sm font-bold text-gray-700 mb-3 flex items-center">
-          <HomeIcon size={16} className="mr-2 text-brand-teal" strokeWidth={1.5} /> Type de Bien
+          <HomeIcon size={16} className="mr-2 text-brand-teal" strokeWidth={1.5} /> {t('propertyType')}
         </label>
         {filters.propertyType === 'land' ? (
           <div className="w-full p-3.5 border-2 border-gray-50 rounded-xl bg-gray-50 text-gray-500 font-medium flex justify-between items-center cursor-not-allowed">
-            <span className="truncate">Terrain</span>
+            <span className="truncate">{t('typeLand')}</span>
             <Lock size={16} className="text-gray-300" />
           </div>
         ) : (
@@ -225,7 +237,7 @@ const ListingsPage = () => {
               `}
             >
               <span className="truncate">
-                {filters.propertyType === 'all' ? 'Tous les types' : formatPropertyType(filters.propertyType, 'Bureau / Local')}
+                {filters.propertyType === 'all' ? t('allTypes') : formatPropertyType(filters.propertyType, t('typeCommercial'))}
               </span>
               <ChevronDown size={16} className={`text-gray-400 transition-transform duration-300 ${isTypeOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -235,17 +247,17 @@ const ListingsPage = () => {
                 <div className="max-h-60 overflow-y-auto custom-scrollbar p-1.5">
                   {(
                     [
-                      { id: 'all', label: 'Tous les types' },
-                      { id: 'apartment', label: 'Appartement' },
-                      { id: 'villa', label: 'Villa' },
-                      { id: 'duplex', label: 'Duplex' },
-                      { id: 'triplex', label: 'Triplex' },
-                      { id: 'land', label: 'Terrain' },
-                      { id: 'penthouse', label: 'Penthouse' },
-                      { id: 'depot', label: 'Dépôt' },
-                      { id: 'studio', label: 'Studio' },
-                      { id: 'commerce', label: 'Commerce' },
-                      { id: 'commercial', label: 'Bureau / Local' }
+                      { id: 'all', label: t('allTypes') },
+                      { id: 'apartment', label: t('typeApartment') },
+                      { id: 'villa', label: t('typeVilla') },
+                      { id: 'duplex', label: t('typeDuplex') },
+                      { id: 'triplex', label: t('typeTriplex') },
+                      { id: 'land', label: t('typeLand') },
+                      { id: 'penthouse', label: t('typePenthouse') },
+                      { id: 'depot', label: t('typeDepot') },
+                      { id: 'studio', label: t('typeStudio') },
+                      { id: 'commerce', label: t('typeCommerce') },
+                      { id: 'commercial', label: t('typeCommercial') }
                     ] as const
                   ).map((type) => (
                     <button
@@ -276,7 +288,7 @@ const ListingsPage = () => {
       {/* Location Filter */}
       <div className="relative" ref={cityDropdownRef}>
         <label className="text-sm font-bold text-gray-700 mb-3 flex items-center">
-          <MapPin size={16} className="mr-2 text-brand-teal" strokeWidth={1.5} /> Emplacement
+          <MapPin size={16} className="mr-2 text-brand-teal" strokeWidth={1.5} /> {t('location')}
         </label>
         <button
           type="button"
@@ -288,7 +300,7 @@ const ListingsPage = () => {
           `}
         >
           <span className="truncate">
-            {filters.city === 'all' ? 'Toutes les villes' : filters.city}
+            {filters.city === 'all' ? t('allCities') : filters.city}
           </span>
           <ChevronDown size={16} className={`text-gray-400 transition-transform duration-300 ${isCityOpen ? 'rotate-180' : ''}`} />
         </button>
@@ -306,7 +318,7 @@ const ListingsPage = () => {
                     : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}
                 `}
               >
-                <span>Toutes les villes</span>
+                <span>{t('allCities')}</span>
                 {filters.city === 'all' && <Check size={16} className="text-brand-teal animate-in zoom-in" />}
               </button>
               {uniqueCities.map(city => (
@@ -333,7 +345,8 @@ const ListingsPage = () => {
       {/* Prix Max Filter — touch-friendly range slider */}
       <div>
         <label className="text-sm font-bold text-gray-700 mb-3 flex items-center">
-          <DollarSign size={16} className="mr-2 text-brand-teal" strokeWidth={1.5} /> Prix Maximum
+          <DollarSign size={16} className="mr-2 text-brand-teal" strokeWidth={1.5} />
+          {filters.propertyType === 'land' ? t('maxTotalPrice') : t('maxPrice')}
         </label>
         {/* Custom range slider with large touch target — updates local state on drag, commits to filters only on release to avoid perf issues on mobile */}
         <div className="relative py-3">
@@ -356,7 +369,7 @@ const ListingsPage = () => {
               cursor: 'pointer',
               touchAction: 'none',
               willChange: 'background',
-              background: `linear-gradient(to right, #0EA5E9 0%, #0EA5E9 ${(localMaxPrice / maxPriceLimit) * 100}%, #E5E7EB ${(localMaxPrice / maxPriceLimit) * 100}%, #E5E7EB 100%)`
+              background: `linear-gradient(to right, #00A896 0%, #00A896 ${((localMaxPrice - DEFAULT_MIN_PRICE) / (maxPriceLimit - DEFAULT_MIN_PRICE)) * 100}%, #e2e8f0 ${((localMaxPrice - DEFAULT_MIN_PRICE) / (maxPriceLimit - DEFAULT_MIN_PRICE)) * 100}%, #e2e8f0 100%)`
             }}
             className="range-slider-thumb w-full"
             aria-label="Prix maximum"
@@ -376,7 +389,7 @@ const ListingsPage = () => {
       {filters.propertyType === 'land' ? (
         <div>
           <label className="text-sm font-bold text-gray-700 mb-3 flex items-center">
-            <Square size={16} className="mr-2 text-brand-teal" strokeWidth={1.5} /> Surface Minimum (m²)
+            <Square size={16} className="mr-2 text-brand-teal" strokeWidth={1.5} /> {t('minArea')}
           </label>
           <div className="flex items-center space-x-2">
             <button
@@ -399,7 +412,7 @@ const ListingsPage = () => {
       ) : (
         <div>
           <label className="text-sm font-bold text-gray-700 mb-3 flex items-center">
-            <BedDouble size={16} className="mr-2 text-brand-teal" strokeWidth={1.5} /> Chambres Minimum
+            <BedDouble size={16} className="mr-2 text-brand-teal" strokeWidth={1.5} /> {t('minBedrooms')}
           </label>
           <div className="flex items-center gap-2 flex-wrap">
             {BEDROOM_OPTIONS.map(num => (
@@ -423,21 +436,24 @@ const ListingsPage = () => {
 
       {/* Reset Filter Button */}
       <button
-        onClick={() => setFilters({
-          ...filters,
-          minPrice: DEFAULT_MIN_PRICE,
-          maxPrice: DEFAULT_MAX_PRICE,
-          minBedrooms: DEFAULT_MIN_BEDROOMS,
-          minArea: DEFAULT_MIN_AREA,
-          listingType: 'all',
-          propertyType: 'all',
-          city: 'all',
-          isHotDeal: false
-        })}
+        onClick={() => {
+          const isLand = filters.propertyType === 'land';
+          setFilters({
+            ...filters,
+            minPrice: DEFAULT_MIN_PRICE,
+            maxPrice: isLand || filters.isHotDeal ? LAND_OR_HOTDEAL_MAX_PRICE : DEFAULT_MAX_PRICE,
+            minBedrooms: DEFAULT_MIN_BEDROOMS,
+            minArea: DEFAULT_MIN_AREA,
+            listingType: isLand ? 'sale' : 'all',
+            propertyType: isLand ? 'land' : 'all',
+            city: 'all',
+            isHotDeal: false
+          });
+        }}
         className="w-full mt-4 py-3 px-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl transition-all flex items-center justify-center gap-2"
       >
         <RefreshCw size={16} />
-        Réinitialiser
+        {t('resetFilters')}
       </button>
     </div>
   );
@@ -453,7 +469,7 @@ const ListingsPage = () => {
           id="mobile-filter-toggle"
         >
           <SlidersHorizontal size={16} className="text-brand-teal" />
-          <span className="font-bold text-sm tracking-wide">Filtres</span>
+          <span className="font-bold text-sm tracking-wide">{t('filters')}</span>
           {/* Active filter count badge */}
           {(() => {
             const activeCount = [
@@ -487,7 +503,7 @@ const ListingsPage = () => {
           />
           {/* Drawer */}
           <div
-            className={`absolute bottom-[64px] left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col transition-transform duration-300 ease-in-out ${
+            className={`absolute bottom-[64px] left-0 right-0 bg-white rounded-t-3xl shadow-2xl max-h-[65vh] flex flex-col transition-transform duration-300 ease-in-out ${
               isFilterAnimating ? 'translate-y-0' : 'translate-y-full'
             }`}
             onClick={(e) => e.stopPropagation()}
@@ -500,7 +516,7 @@ const ListingsPage = () => {
                   <div className="bg-brand-teal/10 p-2 rounded-lg">
                     <Filter size={18} className="text-brand-teal" />
                   </div>
-                  <h3 className="font-bold text-lg text-brand-dark">Filtres</h3>
+                  <h3 className="font-bold text-lg text-brand-dark">{t('filters')}</h3>
                 </div>
                 <button
                   onClick={closeFilter}
@@ -520,7 +536,7 @@ const ListingsPage = () => {
                 onClick={closeFilter}
                 className="w-full py-4 bg-gradient-to-r from-brand-teal to-cyan-500 text-white font-bold rounded-2xl text-base shadow-lg shadow-brand-teal/20 hover:from-cyan-500 hover:to-brand-teal transition-all duration-300"
               >
-                Afficher {isListingsLoading ? '...' : pagination.total} résultats
+                {t('showResults', { count: isListingsLoading ? '...' : pagination.total })}
               </button>
             </div>
           </div>
@@ -535,7 +551,7 @@ const ListingsPage = () => {
               <div className="bg-brand-teal/10 p-2 rounded-lg">
                 <Filter size={20} className="text-brand-teal" />
               </div>
-              <h3 className="font-bold text-lg text-brand-dark">Filtres</h3>
+              <h3 className="font-bold text-lg text-brand-dark">{t('filters')}</h3>
             </div>
             {filterContent}
           </div>
@@ -545,16 +561,16 @@ const ListingsPage = () => {
         <div className="flex-1">
           {/* Mobile header */}
           <div className="md:hidden mb-5">
-            <h1 className="text-xl font-serif font-bold text-brand-dark">Propriétés</h1>
+            <h1 className="text-xl font-serif font-bold text-brand-dark">{t('propertiesTitle')}</h1>
             <p className="text-brand-grey text-sm mt-0.5">
-              {isListingsLoading ? 'Chargement...' : `${pagination.total} résultat${pagination.total !== 1 ? 's' : ''} trouvé${pagination.total !== 1 ? 's' : ''}`}
+              {isListingsLoading ? t('loading') : `${pagination.total} ${pagination.total !== 1 ? t('results') : t('result')} ${pagination.total !== 1 ? t('foundPlural') : t('found')}`}
             </p>
           </div>
           {/* Desktop header */}
           <div className="hidden md:block mb-6">
-            <h2 className="text-2xl font-serif font-bold text-brand-dark">Propriétés</h2>
+            <h2 className="text-2xl font-serif font-bold text-brand-dark">{t('propertiesTitle')}</h2>
             <p className="text-brand-grey text-sm md:text-base">
-              {isListingsLoading ? 'Chargement...' : `${pagination.total} résultat${pagination.total !== 1 ? 's' : ''} trouvé${pagination.total !== 1 ? 's' : ''}`}
+              {isListingsLoading ? t('loading') : `${pagination.total} ${pagination.total !== 1 ? t('results') : t('result')} ${pagination.total !== 1 ? t('foundPlural') : t('found')}`}
             </p>
           </div>
 

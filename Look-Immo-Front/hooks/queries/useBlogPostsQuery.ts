@@ -8,7 +8,7 @@ export const useBlogPostsQuery = () => {
   const { data: qBlogPosts, isFetched, isLoading, refetch } = useQuery({
     queryKey: ['blogPosts'],
     queryFn: () => blogAPI.getAll(),
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30 * 1000, // 30 s — short enough to always re-fetch after a write
   });
 
   const blogPosts = qBlogPosts ?? [];

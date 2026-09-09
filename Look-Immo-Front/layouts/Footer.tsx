@@ -2,6 +2,7 @@ import React from "react";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { FilterState, SiteSettings } from "../types";
 import logo from "./../look-immo-footer-icon-gold.png";
+import { useTranslation } from "@/hooks/useTranslation";
 
 const smoothScrollTo = (targetId: string, duration: number = 2500) => {
   const target = document.getElementById(targetId);
@@ -48,6 +49,7 @@ const Footer = ({
   onOpenTerms: () => void;
   onOpenPrivacy: () => void;
 }) => {
+  const { t } = useTranslation();
   const handleFooterNavigate = (page: string, targetId?: string) => {
     (window as any)._forceInstantScroll = true;
     onNavigate(page);
@@ -75,19 +77,19 @@ const Footer = ({
                     decoding="async"
                   />
                 </div>
-                <span className="text-[24px] md:text-[28px] font-bold text-[#C6A75E] font-luxury tracking-[0.12em] uppercase">
-                  Look Immo
+                <span translate="no" className="notranslate text-[24px] md:text-[28px] font-bold text-[#C6A75E] font-luxury tracking-[0.12em] uppercase">
+                  LOOK IMMO
                 </span>
               </div>
               <span className="text-xs md:text-sm font-medium text-[#C6A75E] font-luxury tracking-[0.2em] uppercase pl-1 border-t border-[#C6A75E]/30 pt-2 w-full text-center">
-                Agence immobilière
+                {t('footerAgencySubtitle')}
               </span>
             </div>
           </div>
 
           <div>
             <h4 className="font-bold text-lg mb-4 text-brand-teal">
-              Découvrir
+              {t('footerDiscover')}
             </h4>
             <ul className="space-y-3 text-sm text-gray-400">
               {settings?.discoveryLinks &&
@@ -139,31 +141,31 @@ const Footer = ({
           </div>
 
           <div>
-            <h4 className="font-bold text-lg mb-4 text-brand-teal">Société</h4>
+            <h4 className="font-bold text-lg mb-4 text-brand-teal">{t('footerCompany')}</h4>
             <ul className="space-y-3 text-sm text-gray-400">
               <li
                 className="hover:text-white cursor-pointer transition-colors duration-200"
                 onClick={() => handleFooterNavigate("contact", "about")}
               >
-                À propos
+                {t('footerAbout')}
               </li>
               <li
                 className="hover:text-white cursor-pointer transition-colors duration-200"
                 onClick={() => handleFooterNavigate("blog")}
               >
-                Blog
+                {t('footerBlog')}
               </li>
               <li
                 className="hover:text-white cursor-pointer transition-colors duration-200"
                 onClick={() => handleFooterNavigate("contact")}
               >
-                Contact
+                {t('footerContact')}
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="font-bold text-lg mb-4 text-brand-teal">Contact</h4>
+            <h4 className="font-bold text-lg mb-4 text-brand-teal">{t('footerContact')}</h4>
             <ul className="space-y-3 text-sm text-gray-400">
               <li className="flex items-start">
                 <Mail
@@ -209,20 +211,20 @@ const Footer = ({
 
         <div className="border-t border-gray-800 pt-6 flex flex-col md:flex-row justify-between items-center text-xs text-gray-500">
           <p>
-            &copy; {new Date().getFullYear()} Look Immo. Tous droits réservés.
+            &copy; {new Date().getFullYear()} Look Immo. {t('footerRights')}
           </p>
           <div className="flex space-x-4 mt-4 md:mt-0">
             <span
               className="cursor-pointer hover:text-white"
               onClick={onOpenPrivacy}
             >
-              Politique de confidentialité
+              {t('footerPrivacy')}
             </span>
             <span
               className="cursor-pointer hover:text-white"
               onClick={onOpenTerms}
             >
-              Conditions d'utilisation
+              {t('footerTerms')}
             </span>
           </div>
         </div>

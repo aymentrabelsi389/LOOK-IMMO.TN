@@ -5,6 +5,7 @@ import { Property, User } from '@/types';
 import Price from '@/components/Price';
 import { getImageSrc, getLQIP } from '@/utils/imageUtils';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface FavoritesSectionProps {
   user: User;
@@ -12,6 +13,7 @@ interface FavoritesSectionProps {
   onSelectProperty: (id: string) => void;
   onToggleFavorite: (id: string) => void;
   onNavigateHome: () => void;
+  className?: string;
 }
 
 export const FavoritesSection: React.FC<FavoritesSectionProps> = ({
@@ -19,16 +21,18 @@ export const FavoritesSection: React.FC<FavoritesSectionProps> = ({
   properties,
   onSelectProperty,
   onToggleFavorite,
-  onNavigateHome
+  onNavigateHome,
+  className = ''
 }) => {
+  const { t } = useTranslation();
   const favoriteProperties = properties.filter((p) => user.favorites.includes(p.id));
 
   return (
-    <ScrollReveal className="lg:col-span-2 lg:row-start-1" delay={200}>
+    <ScrollReveal className={`lg:col-span-2 ${className}`} delay={200}>
       <div className="bg-white rounded-3xl shadow-soft border border-gray-100/80 p-4 sm:p-6 md:p-8">
       <h2 className="text-xl font-serif font-bold text-brand-dark mb-6 flex items-center">
         <Heart className="mr-2.5 text-red-500 animate-pulse" size={24} fill="currentColor" />
-        Mes Favoris
+        {t('myFavorites')}
         {user.favorites.length > 0 && (
           <span className="ml-2 px-2.5 py-0.5 bg-red-50 text-red-600 text-xs font-extrabold rounded-full border border-red-100">
             {user.favorites.length}
@@ -100,11 +104,11 @@ export const FavoritesSection: React.FC<FavoritesSectionProps> = ({
                       <>
                         <span className="flex items-center bg-gray-50 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md flex-shrink-0">
                           <BedDouble size={12} className="mr-1 sm:mr-1.5 text-brand-teal flex-shrink-0" />
-                          {property.features.bedrooms} ch.
+                          {property.features.bedrooms} {t('bedroomsShort')}
                         </span>
                         <span className="flex items-center bg-gray-50 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-md flex-shrink-0">
                           <Bath size={12} className="mr-1 sm:mr-1.5 text-brand-teal flex-shrink-0" />
-                          {property.features.bathrooms} sdb
+                          {property.features.bathrooms} {t('bathroomsShort')}
                         </span>
                       </>
                     )}
@@ -123,7 +127,7 @@ export const FavoritesSection: React.FC<FavoritesSectionProps> = ({
                     <Price amount={property.price} priceType={property.priceType} />
                   </p>
                   {property.listingType === 'rent' && (
-                    <p className="text-[10px] text-gray-400 uppercase font-sans font-bold tracking-wider"> / Mois</p>
+                    <p className="text-[10px] text-gray-400 uppercase font-sans font-bold tracking-wider"> {t('perMonth')}</p>
                   )}
                 </div>
 
@@ -133,7 +137,7 @@ export const FavoritesSection: React.FC<FavoritesSectionProps> = ({
                     onToggleFavorite(property.id);
                   }}
                   className="p-2 hover:bg-red-50 rounded-full transition text-red-500 hover:scale-105 active:scale-95"
-                  title="Retirer des favoris"
+                  title={t('removeFromFavorites')}
                 >
                   <Heart size={18} fill="currentColor" />
                 </button>
@@ -144,14 +148,14 @@ export const FavoritesSection: React.FC<FavoritesSectionProps> = ({
       ) : (
         <div className="text-center py-14 text-gray-500 bg-gray-50/30 rounded-2xl border border-dashed border-gray-200">
           <Heart className="mx-auto text-gray-300 mb-3" size={44} />
-          <h4 className="font-serif font-bold text-brand-dark text-lg mb-1.5">Aucun favori</h4>
-          <p className="text-sm text-gray-500 mb-6">Vous n'avez pas encore ajouté de propriétés à vos favoris.</p>
+          <h4 className="font-serif font-bold text-brand-dark text-lg mb-1.5">{t('noFavoritesTitle')}</h4>
+          <p className="text-sm text-gray-500 mb-6">{t('noFavoritesDesc')}</p>
           <button
             onClick={onNavigateHome}
             className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-brand-teal to-cyan-500 hover:from-cyan-500 hover:to-brand-teal text-white rounded-2xl font-bold transition-all duration-300 shadow-md shadow-brand-teal/15 hover:shadow-brand-teal/25"
           >
             <Search size={16} className="mr-2" />
-            Explorer les propriétés
+            {t('exploreProperties')}
           </button>
         </div>
       )}

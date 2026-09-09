@@ -2,6 +2,7 @@ import React from 'react';
 import { CalendarDays, Calendar, Clock, User as UserIcon, Phone, Home as HomeIcon, Check, X, Edit2, Trash2 } from 'lucide-react';
 import { Appointment, Property } from '@/types';
 import { ScrollReveal } from '@/components/ui/ScrollReveal';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface AppointmentsWidgetProps {
   upcomingAppointments: Appointment[];
@@ -12,6 +13,7 @@ interface AppointmentsWidgetProps {
   onOpenEditAppointment: (apt: Appointment) => void;
   onCancelAppointment: (apt: Appointment) => void;
   parseNotes: (raw: string | undefined) => { propertyIds: string[]; userNotes: string };
+  className?: string;
 }
 
 export const AppointmentsWidget: React.FC<AppointmentsWidgetProps> = ({
@@ -22,15 +24,18 @@ export const AppointmentsWidget: React.FC<AppointmentsWidgetProps> = ({
   onRefuseAppointment,
   onOpenEditAppointment,
   onCancelAppointment,
-  parseNotes
+  parseNotes,
+  className = ''
 }) => {
+  const { t, language } = useTranslation();
+
   return (
-    <ScrollReveal className="lg:col-span-1 w-full" delay={250}>
+    <ScrollReveal className={`lg:col-span-1 w-full ${className}`} delay={250}>
       <div className="bg-white rounded-3xl shadow-soft border border-gray-100/80 p-6 relative overflow-hidden h-full">
         <div className="absolute top-0 left-0 w-1.5 h-full bg-gradient-to-b from-brand-teal to-blue-500"></div>
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center font-sans">
           <CalendarDays className="mr-2 text-brand-teal" size={18} />
-          Prochains Rendez-vous
+          {t('upcomingAppointmentsTitle')}
         </h2>
 
         {upcomingAppointments.length > 0 ? (
@@ -51,21 +56,15 @@ export const AppointmentsWidget: React.FC<AppointmentsWidgetProps> = ({
                       {(() => {
                         const d = new Date(apt.date);
                         const day = d.getUTCDate();
-                        const monthNames = [
-                          'janv.',
-                          'févr.',
-                          'mars',
-                          'avr.',
-                          'mai',
-                          'juin',
-                          'juil.',
-                          'août',
-                          'sept.',
-                          'oct.',
-                          'nov.',
-                          'déc.'
+                        const monthNamesFr = [
+                          'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
+                          'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'
                         ];
-                        const month = monthNames[d.getUTCMonth()];
+                        const monthNamesEn = [
+                          'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                          'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+                        ];
+                        const month = language === 'en' ? monthNamesEn[d.getUTCMonth()] : monthNamesFr[d.getUTCMonth()];
 
                         const now = new Date();
                         const isToday =
@@ -82,15 +81,15 @@ export const AppointmentsWidget: React.FC<AppointmentsWidgetProps> = ({
 
                         return (
                           <span className="flex items-center gap-2">
-                            {day} {month}
+                            {language === 'en' ? `${month} ${day}` : `${day} ${month}`}
                             {isToday && (
                               <span className="px-2 py-0.5 text-[10px] font-bold bg-brand-teal/15 text-brand-teal rounded-full uppercase tracking-wider">
-                                Aujourd'hui
+                                {t('todayBadge')}
                               </span>
                             )}
                             {isTomorrow && (
                               <span className="px-2 py-0.5 text-[10px] font-bold bg-indigo-500/15 text-indigo-500 rounded-full uppercase tracking-wider">
-                                Demain
+                                {t('tomorrowBadge')}
                               </span>
                             )}
                           </span>
@@ -100,10 +99,10 @@ export const AppointmentsWidget: React.FC<AppointmentsWidgetProps> = ({
                     <p className="text-xs text-gray-400 font-medium mt-0.5 flex items-center gap-1.5">
                       <Clock size={12} className="text-gray-400" />
                       {apt.time ? (
-                        <span>{apt.time.replace(':', 'h')}</span>
+                        <span>{language === 'en' ? apt.time : apt.time.replace(':', 'h')}</span>
                       ) : (
                         <span className="text-amber-500 font-semibold bg-amber-50 px-1.5 py-0.5 rounded-md border border-amber-100">
-                          Heure non fixée
+                          {t('timeNotSet')}
                         </span>
                       )}
                     </p>
@@ -129,9 +128,9 @@ export const AppointmentsWidget: React.FC<AppointmentsWidgetProps> = ({
                   {/* Primary property row */}
                   {(() => {
                     const p = properties.find((pr) => pr.id === apt.propertyId);
-                    const title = p?.title || apt.propertyTitle || 'Aucune';
+                    const title = p?.title || apt.propertyTitle || t('noPropertyAssigned');
                     const details = p
-                      ? `${p.location.city}${p.price ? ` • ${p.price.toLocaleString('fr-TN')} DT` : ''}`
+                      ? `${p.location.city}${p.price ? ` • ${p.price.toLocaleString(language === 'en' ? 'en-US' : 'fr-TN')} DT` : ''}`
                       : '';
                     return (
                       <div className="flex items-start gap-2.5">
@@ -157,7 +156,7 @@ export const AppointmentsWidget: React.FC<AppointmentsWidgetProps> = ({
                     return propertyIds.map((pid) => {
                       const p = properties.find((pr) => pr.id === pid);
                       if (!p) return null;
-                      const details = `${p.location.city}${p.price ? ` • ${p.price.toLocaleString('fr-TN')} DT` : ''}`;
+                      const details = `${p.location.city}${p.price ? ` • ${p.price.toLocaleString(language === 'en' ? 'en-US' : 'fr-TN')} DT` : ''}`;
                       return (
                         <div key={pid} className="flex items-start gap-2.5">
                           <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0 mt-0.5">
@@ -194,7 +193,7 @@ export const AppointmentsWidget: React.FC<AppointmentsWidgetProps> = ({
                           : 'bg-amber-500 animate-pulse'
                       }`}
                     ></span>
-                    {apt.status === 'accepted' ? 'Confirmé' : apt.status === 'rejected' ? 'Annulé' : 'En attente'}
+                    {apt.status === 'accepted' ? t('statusConfirmed') : apt.status === 'rejected' ? t('statusCancelled') : t('statusPending')}
                   </span>
 
                   {(apt.status === 'pending' || apt.status === 'accepted' || apt.status === 'rejected') && (
@@ -203,7 +202,7 @@ export const AppointmentsWidget: React.FC<AppointmentsWidgetProps> = ({
                         <button
                           onClick={() => onConfirmAppointment(apt.id)}
                           className="p-2 text-green-600 hover:bg-green-50 rounded-xl transition-all duration-200"
-                          title="Confirmer"
+                          title={t('confirmAction')}
                         >
                           <Check size={16} />
                         </button>
@@ -212,7 +211,7 @@ export const AppointmentsWidget: React.FC<AppointmentsWidgetProps> = ({
                         <button
                           onClick={() => onRefuseAppointment(apt.id)}
                           className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all duration-200"
-                          title="Refuser"
+                          title={t('refuseAction')}
                         >
                           <X size={16} />
                         </button>
@@ -220,14 +219,14 @@ export const AppointmentsWidget: React.FC<AppointmentsWidgetProps> = ({
                       <button
                         onClick={() => onOpenEditAppointment(apt)}
                         className="p-2 text-brand-teal hover:bg-brand-teal/5 rounded-xl transition-all duration-200"
-                        title="Modifier"
+                        title={t('editAction')}
                       >
                         <Edit2 size={16} />
                       </button>
                       <button
                         onClick={() => onCancelAppointment(apt)}
                         className="p-2 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all duration-200"
-                        title={apt.status === 'rejected' ? 'Supprimer' : 'Annuler'}
+                        title={apt.status === 'rejected' ? t('deleteAction') : t('cancelAction')}
                       >
                         <Trash2 size={16} />
                       </button>
@@ -240,7 +239,7 @@ export const AppointmentsWidget: React.FC<AppointmentsWidgetProps> = ({
         ) : (
           <div className="text-center py-10 bg-gray-50/50 rounded-2xl border border-dashed border-gray-200">
             <CalendarDays className="mx-auto text-gray-300 mb-2.5" size={32} />
-            <p className="text-sm font-semibold text-gray-500">Aucun rendez-vous à venir</p>
+            <p className="text-sm font-semibold text-gray-500">{t('noUpcomingAppointments')}</p>
           </div>
         )}
       </div>

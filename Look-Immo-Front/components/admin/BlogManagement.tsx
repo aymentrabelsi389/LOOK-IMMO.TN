@@ -6,8 +6,9 @@ import {
   List, Calendar
 } from 'lucide-react';
 import { BlogPost } from '@/types';
-import { blogAPI } from '@/services/api';
+import { blogAPI, uploadAPI } from '@/services/api';
 import { useConfirm } from '@/context/ConfirmContext';
+import { useQueryClient } from '@tanstack/react-query';
 import CustomDropdown from '../ui/CustomDropdown';
 import Pagination from '../ui/Pagination';
 import { createPortal } from 'react-dom';
@@ -24,6 +25,7 @@ const BlogManagement = ({
   showNotification
 }: BlogManagementProps) => {
   const { confirm } = useConfirm();
+  const queryClient = useQueryClient();
   const [sortBy, setSortBy] = useState<'date-desc' | 'date-asc' | 'title'>('date-desc');
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -31,6 +33,8 @@ const BlogManagement = ({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [showAll, setShowAll] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -49,19 +53,33 @@ const BlogManagement = ({
     });
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // 1. Show local preview immediately
       const reader = new FileReader();
       reader.onloadend = () => {
-        setFormData({ ...formData, image: reader.result as string });
+        setFormData(prev => ({ ...prev, image: reader.result as string }));
       };
       reader.readAsDataURL(file);
+
+      // 2. Upload to server to get optimized webp file in uploads/blog/
+      setIsUploadingImage(true);
+      try {
+        const res = await uploadAPI.uploadBlogImage(file);
+        if (res?.url) {
+          setFormData(prev => ({ ...prev, image: res.url }));
+        }
+      } catch (uploadErr) {
+        console.warn("Direct image upload failed, keeping local preview", uploadErr);
+      } finally {
+        setIsUploadingImage(false);
+      }
     }
   };
 
   const openAddModal = () => {
-    setFormData({ title: '', category: '', excerpt: '', content: '', image: '', published: true });
+    setFormData({ title: '', category: 'Actualités', excerpt: '', content: '', image: '', published: true });
     setIsEditing(false);
     setEditingPost(null);
     setShowModal(true);
@@ -84,30 +102,41 @@ const BlogManagement = ({
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!formData.title.trim()) {
+      showNotification('error', 'Le titre est obligatoire');
+      return;
+    }
+    if (!formData.content.trim()) {
+      showNotification('error', 'Le contenu est obligatoire');
+      return;
+    }
+
     // Auto-generate excerpt from content (first 150 chars)
     const generatedExcerpt = formData.content.substring(0, 150) + (formData.content.length > 150 ? '...' : '');
 
-    // Prepare data to save
     const dataToSave = {
       ...formData,
       excerpt: generatedExcerpt,
       published: true // Always publish immediately
     };
 
+    setIsSaving(true);
     try {
       if (isEditing && editingPost) {
         await blogAPI.update(editingPost.id, dataToSave);
-        setBlogPosts(prev => prev.map(p => p.id === editingPost.id ? { ...p, ...dataToSave, updatedAt: Date.now() } : p));
         showNotification('success', 'Article mis à jour');
       } else {
-        const newPost = await blogAPI.create(dataToSave);
-        setBlogPosts(prev => [newPost, ...prev]);
+        await blogAPI.create(dataToSave);
         showNotification('success', 'Article créé avec succès');
       }
+      // Force a fresh fetch from the server so the list is always in sync
+      await queryClient.invalidateQueries({ queryKey: ['blogPosts'] });
       setShowModal(false);
     } catch (error) {
       console.error("Failed to save blog post:", error);
-      showNotification('error', 'Erreur lors de l\'enregistrement');
+      showNotification('error', 'Erreur lors de l\'enregistrement de l\'article');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -122,7 +151,8 @@ const BlogManagement = ({
     if (confirmed) {
       try {
         await blogAPI.delete(id);
-        setBlogPosts(prev => prev.filter(p => p.id !== id));
+        // Force a fresh fetch from the server
+        await queryClient.invalidateQueries({ queryKey: ['blogPosts'] });
         showNotification('success', 'Article supprimé');
       } catch (error) {
         console.error("Failed to delete blog post:", error);
@@ -331,7 +361,7 @@ const BlogManagement = ({
 
       {/* Add/Edit Modal */}
       {showModal && createPortal(
-        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setShowModal(false)}>
+        <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in" onClick={() => setShowModal(false)}>
           <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl flex flex-col scale-100 animate-fade-in-up" onClick={e => e.stopPropagation()}>
             <div className="px-8 py-6 border-b border-gray-100 flex justify-between items-center sticky top-0 bg-white/80 backdrop-blur-md z-10">
               <div>
@@ -372,6 +402,12 @@ const BlogManagement = ({
                 <div>
                   <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Image de couverture</label>
                   <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-4 flex flex-col items-center justify-center text-center h-[145px] relative group hover:border-brand-teal/50 transition-all overflow-hidden">
+                    {isUploadingImage && (
+                      <div className="absolute inset-0 bg-black/40 backdrop-blur-xs flex flex-col items-center justify-center z-20 text-white">
+                        <RefreshCw size={24} className="animate-spin mb-1 text-white" />
+                        <span className="text-[10px] font-bold">Optimisation...</span>
+                      </div>
+                    )}
                     {formData.image ? (
                       <>
                         <img src={formData.image} alt="Preview" className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -403,8 +439,24 @@ const BlogManagement = ({
 
               <div className="pt-6 border-t border-gray-100 flex flex-col sm:flex-row justify-end gap-3 sticky bottom-0 bg-white pb-2">
                 <button type="button" onClick={() => setShowModal(false)} className="px-6 py-3 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition">Annuler</button>
-                <button type="submit" className="px-8 py-3 bg-brand-dark text-white font-bold rounded-xl shadow-lg shadow-brand-dark/20 hover:bg-brand-primary transition transform active:scale-95 flex items-center justify-center">
-                  {isEditing ? <><RefreshCw size={18} className="mr-2" /> Mettre à jour</> : <><Plus size={18} className="mr-2" /> Publier l'article</>}
+                <button
+                  type="submit"
+                  disabled={isSaving || isUploadingImage}
+                  className="px-8 py-3 bg-brand-dark text-white font-bold rounded-xl shadow-lg shadow-brand-dark/20 hover:bg-brand-primary transition transform active:scale-95 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSaving ? (
+                    <>
+                      <RefreshCw size={18} className="mr-2 animate-spin" /> Enregistrement...
+                    </>
+                  ) : isEditing ? (
+                    <>
+                      <RefreshCw size={18} className="mr-2" /> Mettre à jour
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={18} className="mr-2" /> Publier l'article
+                    </>
+                  )}
                 </button>
               </div>
             </form>

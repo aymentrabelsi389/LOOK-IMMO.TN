@@ -6,6 +6,7 @@ import { useSEO } from '@/hooks/useSEO';
 import { useUI } from '@/context/UIContext';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useData } from '@/context/DataContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import { notify } from '@/services/notificationStore';
 import { useConfirm } from '@/context/ConfirmContext';
 import { useAdmin } from '@/hooks/useAdmin';
@@ -21,10 +22,11 @@ import { EditAppointmentModal } from '@/components/dashboard/modals/EditAppointm
 import { AddDemandModal } from '@/components/dashboard/modals/AddDemandModal';
 
 const DashboardPage: React.FC = () => {
+  const { t } = useTranslation();
+
   useSEO({
-    title: 'Mon Tableau de Bord',
-    description:
-      'Gérez vos favoris, vos demandes de visites, vos rendez-vous et vos informations personnelles sur votre espace client Look Immo.'
+    title: t('dashboardSeoTitle'),
+    description: t('dashboardSeoDesc')
   });
 
   const { handleNavigate } = useUI();
@@ -161,17 +163,17 @@ const DashboardPage: React.FC = () => {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!editForm.clientName || editForm.clientName.trim().length < 2)
-      errs.clientName = 'Le nom du client est obligatoire.';
+      errs.clientName = t('validationNameRequired');
     if (!editForm.clientPhone || editForm.clientPhone.replace(/\D/g, '').length === 0)
-      errs.clientPhone = 'Veuillez renseigner un numéro de téléphone.';
+      errs.clientPhone = t('validationPhoneRequired');
     else if (editForm.clientPhone.replace(/\D/g, '').length < 8)
-      errs.clientPhone = 'Le numéro doit contenir au moins 8 chiffres.';
-    if (!editForm.date) errs.date = 'Veuillez saisir une date.';
+      errs.clientPhone = t('validationPhoneMin');
+    if (!editForm.date) errs.date = t('validationDateRequired');
 
     setEditErrors(errs);
     if (Object.keys(errs).length > 0) {
       vibrateError();
-      notify.error('Veuillez corriger les champs en rouge.');
+      notify.error(t('fixErrorsToast'));
       focusFirstError(['edit-apt-client-name', 'edit-apt-client-phone', 'edit-apt-date', 'edit-apt-time']);
       return;
     }
@@ -209,17 +211,17 @@ const DashboardPage: React.FC = () => {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!aptForm.clientName || aptForm.clientName.trim().length < 2)
-      errs.clientName = 'Le nom du client est obligatoire.';
+      errs.clientName = t('validationNameRequired');
     if (!aptForm.clientPhone || aptForm.clientPhone.replace(/\D/g, '').length === 0)
-      errs.clientPhone = 'Veuillez renseigner un numéro de téléphone.';
+      errs.clientPhone = t('validationPhoneRequired');
     else if (aptForm.clientPhone.replace(/\D/g, '').length < 8)
-      errs.clientPhone = 'Le numéro doit contenir au moins 8 chiffres.';
-    if (!aptForm.date) errs.date = 'Veuillez saisir une date.';
+      errs.clientPhone = t('validationPhoneMin');
+    if (!aptForm.date) errs.date = t('validationDateRequired');
 
     setAptErrors(errs);
     if (Object.keys(errs).length > 0) {
       vibrateError();
-      notify.error('Veuillez corriger les champs en rouge.');
+      notify.error(t('fixErrorsToast'));
       focusFirstError(['apt-client-name', 'apt-client-phone', 'apt-date', 'apt-time']);
       return;
     }
@@ -241,10 +243,10 @@ const DashboardPage: React.FC = () => {
         propertyId: ''
       });
       setAddAdditionalProps([]);
-      notify.success('Rendez-vous ajouté avec succès ! 🗓️');
+      notify.success(t('appointmentAddedSuccess'));
     } catch (err) {
       console.error(err);
-      notify.error("Erreur lors de l'ajout du rendez-vous.");
+      notify.error(t('appointmentAddError'));
     }
   };
 
@@ -282,16 +284,16 @@ const DashboardPage: React.FC = () => {
     e.preventDefault();
     const errs: Record<string, string> = {};
     if (!demandForm.clientName || (demandForm.clientName as string).trim().length < 2)
-      errs.clientName = 'Le nom du client est obligatoire.';
+      errs.clientName = t('validationNameRequired');
     if (!demandForm.description || (demandForm.description as string).trim().length === 0)
-      errs.description = 'La description est obligatoire.';
+      errs.description = t('validationDescRequired');
     if (!demandForm.location || (demandForm.location as string).trim().length === 0)
-      errs.location = 'La localisation est obligatoire.';
+      errs.location = t('validationLocationRequired');
 
     setDemandErrors(errs);
     if (Object.keys(errs).length > 0) {
       vibrateError();
-      notify.error('Veuillez corriger les champs en rouge.');
+      notify.error(t('fixErrorsToast'));
       focusFirstError(['demand-client-name', 'demand-description', 'demand-location']);
       return;
     }
@@ -311,7 +313,7 @@ const DashboardPage: React.FC = () => {
         priority: 'medium',
         status: 'searching'
       });
-      notify.success('Demande client ajoutée avec succès.');
+      notify.success(t('demandAddedSuccess'));
     } catch (err) {
       console.error('Failed to add demand:', err);
     }
@@ -434,12 +436,12 @@ const DashboardPage: React.FC = () => {
   const handleAppointmentCancel = async (apt: Appointment) => {
     const isRejected = apt.status === 'rejected';
     const confirmed = await confirm({
-      title: isRejected ? 'Supprimer ?' : 'Annuler le rendez-vous ?',
+      title: isRejected ? t('deleteAppointmentTitle') : t('cancelAppointmentTitle'),
       message: isRejected
-        ? 'Êtes-vous sûr de vouloir supprimer définitivement ce rendez-vous ? Cette action est irréversible.'
-        : 'Êtes-vous sûr de vouloir annuler ce rendez-vous ?',
-      confirmText: isRejected ? 'Supprimer' : 'Annuler',
-      cancelText: 'Retour',
+        ? t('deleteAppointmentMessage')
+        : t('cancelAppointmentMessage'),
+      confirmText: isRejected ? t('deleteAction') : t('cancelAction'),
+      cancelText: t('backButton'),
       variant: 'danger'
     });
     if (confirmed) {
@@ -459,7 +461,7 @@ const DashboardPage: React.FC = () => {
       />
 
       {/* Main Content Grid: Left Column (Admin Actions / Favorites) + Right Sidebar (Upcoming Appointments) */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 items-start gap-6 lg:gap-8 mb-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 items-start gap-8 mb-10">
         {/* Left Column Content (2 columns) */}
         {user.role === 'admin' ? (
           <AdminQuickActions
@@ -471,6 +473,7 @@ const DashboardPage: React.FC = () => {
             onSetEditingHours={setIsEditingHours}
             onSetHoursForm={setHoursForm}
             onUpdateHours={handleUpdateHours}
+            className="order-2 lg:order-1"
           />
         ) : (
           <FavoritesSection
@@ -479,10 +482,11 @@ const DashboardPage: React.FC = () => {
             onSelectProperty={onSelectProperty}
             onToggleFavorite={handleToggleFavorite}
             onNavigateHome={() => handleNavigate('home')}
+            className="order-1 lg:order-1"
           />
         )}
 
-        {/* Right Sidebar: Appointments Reminder Widget (1 column) */}
+        {/* Right Sidebar: Appointments Reminder Widget (1 column on desktop; order-1 on mobile for admin) */}
         <AppointmentsWidget
           upcomingAppointments={upcomingAppointments}
           properties={properties}
@@ -492,6 +496,7 @@ const DashboardPage: React.FC = () => {
           onOpenEditAppointment={openEditAppointment}
           onCancelAppointment={handleAppointmentCancel}
           parseNotes={parseNotes}
+          className={user.role === 'admin' ? 'order-1 lg:order-2' : 'order-2 lg:order-2'}
         />
       </div>
 

@@ -11,6 +11,8 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useData } from '@/context/DataContext';
 import { formatPropertyType } from '@/utils/propertyUtils';
 import { trackViewContent } from '@/utils/metaPixel';
+import { useTranslation } from '@/hooks/useTranslation';
+import { useAutoTranslate } from '@/hooks/useAutoTranslate';
 import Breadcrumb from '@/components/ui/Breadcrumb';
 
 // Modular Subcomponents
@@ -23,6 +25,7 @@ import { PropertySimilarListings } from '@/components/property/PropertySimilarLi
 import { PropertyLightbox } from '@/components/property/PropertyLightbox';
 
 const PropertyDetailsPage: React.FC = () => {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const { selectedPropertyId: contextPropertyId, handleNavigate, setAuthModalReason, setShowAuthModal } = useUI();
   const propertyId = id || contextPropertyId;
@@ -47,6 +50,8 @@ const PropertyDetailsPage: React.FC = () => {
   const baseProperty = properties.find((p) => p.id === propertyId);
   const [fullProperty, setFullProperty] = useState<Property | null>(null);
   const property = fullProperty || baseProperty;
+
+  const { displayText: displayTitle } = useAutoTranslate(property?.title);
 
   const [userRating, setUserRating] = useState(0);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -82,10 +87,10 @@ const PropertyDetailsPage: React.FC = () => {
 
   useSEO({
     title: property
-      ? `${property.title} - ${formatPropertyType(property.type)} à ${property.listingType === 'sale' ? 'Vente' : 'Location'} à ${property.location.city}`
-      : 'Détails de la propriété',
+      ? `${displayTitle || property.title} - ${formatPropertyType(property.type, undefined, t)} à ${property.listingType === 'sale' ? (t('forSale') || 'Vente') : (t('forRent') || 'Location')} à ${property.location.city}`
+      : t('propertyNotFound'),
     description: property
-      ? `${formatPropertyType(property.type)} à ${property.listingType === 'sale' ? 'vendre' : 'louer'} située à ${property.location.city}, ${property.location.address}. ${property.features.bedrooms ? `${property.features.bedrooms} chambres, ` : ''}${property.features.bathrooms ? `${property.features.bathrooms} SDB, ` : ''}${property.features.area}m². Découvrez les photos et détails de cette propriété d'exception.`
+      ? `${formatPropertyType(property.type, undefined, t)} à ${property.listingType === 'sale' ? (t('tabBuy') || 'vendre') : (t('tabRent') || 'louer')} située à ${property.location.city}, ${property.location.address}. ${property.features.bedrooms ? `${property.features.bedrooms} chambres, ` : ''}${property.features.bathrooms ? `${property.features.bathrooms} SDB, ` : ''}${property.features.area}m². Découvrez les photos et détails de cette propriété d'exception.`
       : "Découvrez les détails de cette propriété d'exception sur Look Immo."
   });
 
@@ -95,8 +100,8 @@ const PropertyDetailsPage: React.FC = () => {
     return {
       '@context': 'https://schema.org',
       '@type': 'RealEstateListing',
-      name: property.title,
-      description: property.description || `${formatPropertyType(property.type)} à ${property.location.city}`,
+      name: displayTitle || property.title,
+      description: property.description || `${formatPropertyType(property.type, undefined, t)} à ${property.location.city}`,
       url: window.location.href,
       image: property.images,
       datePosted: property.createdAt ? new Date(property.createdAt).toISOString() : undefined,
@@ -127,25 +132,25 @@ const PropertyDetailsPage: React.FC = () => {
             }
           : undefined
     };
-  }, [property]);
+  }, [property, t, displayTitle]);
 
   const breadcrumbItems = useMemo(
-    () => [{ label: 'Accueil', href: '/' }, { label: 'Propriétés', href: '/listings' }, { label: property?.title || 'Propriété' }],
-    [property?.title]
+    () => [{ label: t('navHome'), href: '/' }, { label: t('propertiesTitle'), href: '/listings' }, { label: displayTitle || property?.title || t('propertyFallback') }],
+    [displayTitle, property?.title, t]
   );
 
   const breadcrumbSchemaItems = useMemo(
     () => [
-      { name: 'Accueil', item: `${window.location.origin}/` },
-      { name: 'Propriétés', item: `${window.location.origin}/listings` },
-      { name: property?.title || 'Propriété' }
+      { name: t('navHome'), item: `${window.location.origin}/` },
+      { name: t('propertiesTitle'), item: `${window.location.origin}/listings` },
+      { name: displayTitle || property?.title || t('propertyFallback') }
     ],
-    [property?.title]
+    [displayTitle, property?.title, t]
   );
 
   useBreadcrumbSchema(breadcrumbSchemaItems);
 
-  if (!property) return <div className="p-8 text-center text-gray-500 font-medium">Propriété introuvable</div>;
+  if (!property) return <div className="p-8 text-center text-gray-500 font-medium">{t('propertyNotFound')}</div>;
 
   const similarProperties = properties
     .filter((p) => p.id !== property.id && p.listingType === property.listingType && p.type === property.type)
@@ -166,7 +171,7 @@ const PropertyDetailsPage: React.FC = () => {
           <div className="max-w-7xl mx-auto flex items-center gap-3">
             <button
               onClick={onBack}
-              aria-label="Retour aux propriétés"
+              aria-label={t('backToProperties')}
               className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 text-brand-grey hover:text-brand-teal hover:border-brand-teal transition-colors duration-150"
             >
               <ChevronRight className="rotate-180" size={16} />

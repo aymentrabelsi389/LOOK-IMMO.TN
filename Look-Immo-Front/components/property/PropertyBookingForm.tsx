@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { MessageSquare, Calendar, User as UserIcon, Send, Check } from 'lucide-react';
 import { Property, User } from '@/types';
 import { CustomDatePicker, CustomTimePicker } from '@/components/ui/DateTimePicker';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface PropertyBookingFormProps {
   property: Property;
@@ -18,6 +19,7 @@ export const PropertyBookingForm: React.FC<PropertyBookingFormProps> = ({
   onSendMessage,
   onBookAppointment
 }) => {
+  const { t } = useTranslation();
   const [contactTab, setContactTab] = useState<'message' | 'appointment'>('message');
   const [contactForm, setContactForm] = useState({ message: '' });
   const [appointmentForm, setAppointmentForm] = useState({ date: '', time: '', message: '' });
@@ -35,7 +37,7 @@ export const PropertyBookingForm: React.FC<PropertyBookingFormProps> = ({
         fullName: user.name,
         email: user.email,
         phone: user.phone || '',
-        subject: `À propos de: ${property.title}`,
+        subject: `${t('aboutPropertySubject')}: ${property.title}`,
         message: contactForm.message
       });
       setFormSubmitted(true);
@@ -81,7 +83,7 @@ export const PropertyBookingForm: React.FC<PropertyBookingFormProps> = ({
           }`}
         >
           <MessageSquare size={18} />
-          Envoyer un Message
+          {t('sendMessageTab')}
         </button>
         <button
           onClick={() => setContactTab('appointment')}
@@ -92,7 +94,7 @@ export const PropertyBookingForm: React.FC<PropertyBookingFormProps> = ({
           }`}
         >
           <Calendar size={18} />
-          Prendre Rendez-vous
+          {t('bookAppointmentTab')}
         </button>
       </div>
 
@@ -102,16 +104,16 @@ export const PropertyBookingForm: React.FC<PropertyBookingFormProps> = ({
             <div className="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mx-auto mb-4">
               <UserIcon size={32} className="text-blue-600" />
             </div>
-            <h4 className="text-lg font-bold text-gray-900 mb-2">Connexion requise</h4>
+            <h4 className="text-lg font-bold text-gray-900 mb-2">{t('loginRequiredTitle')}</h4>
             <p className="text-gray-500 text-sm mb-6 leading-relaxed">
-              Veuillez vous connecter pour envoyer un message ou prendre un rendez-vous.
+              {t('loginRequiredDesc')}
             </p>
             <button
               onClick={onOpenAuth}
               className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition shadow-md flex items-center justify-center gap-2"
             >
               <UserIcon size={18} />
-              Se connecter
+              {t('signInButton')}
             </button>
           </div>
         ) : (
@@ -120,13 +122,13 @@ export const PropertyBookingForm: React.FC<PropertyBookingFormProps> = ({
             {contactTab === 'message' && (
               <form onSubmit={handleContactSubmit} className="space-y-4">
                 <div className="bg-gray-50 rounded-xl p-3 mb-4">
-                  <p className="text-xs text-gray-500 mb-1">Connecté en tant que</p>
+                  <p className="text-xs text-gray-500 mb-1">{t('loggedInAs')}</p>
                   <p className="font-semibold text-gray-900">{user.name}</p>
                   <p className="text-sm text-gray-600">{user.email}</p>
                 </div>
                 <div>
                   <label htmlFor="property-contact-message" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Votre message
+                    {t('yourMessageLabel')}
                   </label>
                   <textarea
                     id="property-contact-message"
@@ -135,7 +137,7 @@ export const PropertyBookingForm: React.FC<PropertyBookingFormProps> = ({
                     required
                     minLength={10}
                     rows={5}
-                    placeholder="Écrivez votre message (minimum 10 caractères)…"
+                    placeholder={t('writeMessagePlaceholder')}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-50 resize-none text-gray-900"
                   />
                 </div>
@@ -144,12 +146,12 @@ export const PropertyBookingForm: React.FC<PropertyBookingFormProps> = ({
                   className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition shadow-md flex items-center justify-center gap-2"
                 >
                   <Send size={18} />
-                  Envoyer le message
+                  {t('sendMessageButton')}
                 </button>
                 {formSubmitted && (
                   <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
                     <Check size={16} />
-                    Message envoyé avec succès!
+                    {t('messageSentSuccess')}
                   </div>
                 )}
               </form>
@@ -159,13 +161,13 @@ export const PropertyBookingForm: React.FC<PropertyBookingFormProps> = ({
             {contactTab === 'appointment' && (
               <form onSubmit={handleAppointmentSubmit} className="space-y-4">
                 <div className="bg-gray-50 rounded-xl p-3 mb-4">
-                  <p className="text-xs text-gray-500 mb-1">Connecté en tant que</p>
+                  <p className="text-xs text-gray-500 mb-1">{t('loggedInAs')}</p>
                   <p className="font-semibold text-gray-900">{user.name}</p>
                   <p className="text-sm text-gray-600">{user.email}</p>
                 </div>
                 <div>
                   <label htmlFor="booking-apt-date" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Choisir une date
+                    {t('chooseDateLabel')}
                   </label>
                   <CustomDatePicker
                     id="booking-apt-date"
@@ -176,7 +178,7 @@ export const PropertyBookingForm: React.FC<PropertyBookingFormProps> = ({
                 </div>
                 <div>
                   <label htmlFor="booking-apt-time" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Choisir une heure
+                    {t('chooseTimeLabel')}
                   </label>
                   <CustomTimePicker
                     id="booking-apt-time"
@@ -187,14 +189,14 @@ export const PropertyBookingForm: React.FC<PropertyBookingFormProps> = ({
                 </div>
                 <div>
                   <label htmlFor="booking-apt-message" className="block text-sm font-semibold text-gray-700 mb-2">
-                    Message (optionnel)
+                    {t('messageOptionalLabel')}
                   </label>
                   <textarea
                     id="booking-apt-message"
                     value={appointmentForm.message}
                     onChange={(e) => setAppointmentForm({ ...appointmentForm, message: e.target.value })}
                     rows={3}
-                    placeholder="Précisez vos préférences ou questions..."
+                    placeholder={t('appointmentMessagePlaceholder')}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-50 resize-none text-gray-900"
                   />
                 </div>
@@ -203,12 +205,12 @@ export const PropertyBookingForm: React.FC<PropertyBookingFormProps> = ({
                   className="w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition shadow-md flex items-center justify-center gap-2"
                 >
                   <Calendar size={18} />
-                  Réserver maintenant
+                  {t('bookNowButton')}
                 </button>
                 {appointmentSubmitted && (
                   <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
                     <Check size={16} />
-                    Rendez-vous demandé avec succès!
+                    {t('appointmentRequestedSuccess')}
                   </div>
                 )}
               </form>
@@ -219,3 +221,4 @@ export const PropertyBookingForm: React.FC<PropertyBookingFormProps> = ({
     </div>
   );
 };
+

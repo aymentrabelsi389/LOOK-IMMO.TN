@@ -4,17 +4,20 @@ import { Calendar, ArrowRight, FileText } from 'lucide-react';
 
 import { useSEO } from '@/hooks/useSEO';
 import { useData } from '@/context/DataContext';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const BlogPage = () => {
+  const { t, language } = useTranslation();
+
   useSEO({
-    title: "Blog & Actualités Immobilières",
-    description: "Suivez les dernières tendances du marché de l'immobilier en Tunisie, conseils de vente, guides d'achat et actualités de notre agence."
+    title: t('blogSeoTitle'),
+    description: t('blogSeoDesc')
   });
 
   const { blogPosts, handleSelectBlogPost: onSelectPost } = useData();
 
   const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString('fr-FR', {
+    return new Date(timestamp).toLocaleDateString(language === 'en' ? 'en-US' : 'fr-FR', {
       day: 'numeric', month: 'long', year: 'numeric'
     });
   };
@@ -25,8 +28,8 @@ const BlogPage = () => {
     <div className="min-h-screen bg-brand-light">
       <div className="bg-gradient-to-r from-brand-dark to-blue-900 text-white py-20">
         <div className="max-w-7xl mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">Blog & Actualités</h1>
-          <p className="text-xl text-gray-200">Conseils d'investissement et tendances du secteur.</p>
+          <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4">{t('blogTitle')}</h1>
+          <p className="text-xl text-gray-200">{t('blogSubtitle')}</p>
         </div>
       </div>
 
@@ -68,7 +71,7 @@ const BlogPage = () => {
                 </div>
                 <div className="px-6 pb-6 pt-0">
                   <div className="inline-flex items-center text-brand-teal font-semibold group-hover:translate-x-1 transition-transform">
-                    Lire la suite <ArrowRight size={16} className="ml-2" />
+                    {t('readMore')} <ArrowRight size={16} className="ml-2" />
                   </div>
                 </div>
                 </Link>
@@ -79,7 +82,7 @@ const BlogPage = () => {
         {visiblePosts.length === 0 && (
           <div className="text-center py-16 text-gray-500">
             <FileText size={48} className="mx-auto mb-4 opacity-20" />
-            <p>Aucun article disponible pour le moment.</p>
+            <p>{t('noArticles')}</p>
           </div>
         )}
       </div>

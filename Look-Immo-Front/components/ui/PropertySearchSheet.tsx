@@ -5,6 +5,7 @@ import { propertiesAPI } from '@/services/api';
 import { getImageSrc } from '@/utils/imageUtils';
 import { useData } from '@/context/DataContext';
 import { PROPERTY_TYPE_LABELS } from '@/utils/propertyUtils';
+import Price from '@/components/Price';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface PropertySearchSheetProps {
@@ -17,6 +18,8 @@ interface SearchResult {
   title: string;
   city: string;
   price: number;
+  priceType?: 'total' | 'per_m2';
+  area?: number;
   type: string;       // 'villa' | 'apartment' | 'land' | …
   listingType: string; // 'sale' | 'rent'
   images: string[];
@@ -70,11 +73,23 @@ const LISTING_LABELS: Record<string, string> = {
   rent: 'Location',
 };
 
-// ─── Price formatter ──────────────────────────────────────────────────────────
-function formatPrice(price: number): string {
-  if (price >= 1_000_000) return `${(price / 1_000_000).toFixed(1)}M TND`;
-  if (price >= 1_000) return `${Math.round(price / 1_000)}K TND`;
-  return `${price.toLocaleString('fr-TN')} TND`;
+
+function getLandPricing(property: SearchResult): {
+  totalPrice: number;
+  pricePerM2: number | null;
+} {
+  const area = property.area && property.area > 0 ? property.area : null;
+  const isPerM2 = property.priceType === 'per_m2' || (!property.priceType && property.price < 20_000);
+
+  if (isPerM2) {
+    const pricePerM2 = property.price;
+    const totalPrice = area ? pricePerM2 * area : pricePerM2;
+    return { totalPrice, pricePerM2 };
+  } else {
+    const totalPrice = property.price;
+    const pricePerM2 = area ? Math.round(totalPrice / area) : null;
+    return { totalPrice, pricePerM2 };
+  }
 }
 
 // ─── Local storage helpers ────────────────────────────────────────────────────
@@ -191,8 +206,10 @@ const PropertySearchSheet: React.FC<PropertySearchSheetProps> = ({ isOpen, onClo
       setResults(data.map((p) => ({
         id: p.id,
         title: p.title,
-        city: p.location?.city || 'Tunis',
+        city: p.location?.city || (p as any).city || 'Tunis',
         price: p.price,
+        priceType: p.priceType,
+        area: p.features?.area,
         type: p.type,
         listingType: p.listingType,
         images: p.images,
@@ -426,14 +443,42 @@ const PropertySearchSheet: React.FC<PropertySearchSheetProps> = ({ isOpen, onClo
                           <span className="text-[10px] text-white/30">
                             {LISTING_LABELS[property.listingType] || property.listingType}
                           </span>
+                          {property.type === 'land' && property.area && property.area > 0 && (
+                            <span className="text-[10px] text-white/40 font-medium">
+                              {property.area.toLocaleString('fr-TN')} m²
+                            </span>
+                          )}
                         </div>
                       </div>
 
                       {/* Price */}
                       <div className="flex-shrink-0 text-right">
-                        <p className="text-[12px] font-bold text-white/90">
-                          {formatPrice(property.price)}
-                        </p>
+                        {property.type === 'land' ? (
+                          (() => {
+                            const { totalPrice, pricePerM2 } = getLandPricing(property);
+                            return (
+                              <div className="flex flex-col items-end">
+                                <p className="text-[12px] font-bold text-white/95 leading-tight">
+                                  <Price amount={totalPrice} />
+                                </p>
+                                {pricePerM2 !== null && (
+                                  <p className="text-[10px] sm:text-[11px] font-semibold text-brand-teal mt-0.5 whitespace-nowrap">
+                                    <Price amount={pricePerM2} priceType="per_m2" />
+                                  </p>
+                                )}
+                              </div>
+                            );
+                          })()
+                        ) : (
+                          <div className="flex flex-col items-end">
+                            <p className="text-[12px] font-bold text-white/90">
+                              <Price amount={property.price} />
+                            </p>
+                            {property.listingType === 'rent' && (
+                              <span className="text-[10px] text-white/40 block mt-0.5">/ Mois</span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </button>
                   ))}

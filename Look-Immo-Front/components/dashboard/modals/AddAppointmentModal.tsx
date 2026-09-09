@@ -4,6 +4,7 @@ import { CalendarDays, X, Search, Check } from 'lucide-react';
 import { Appointment, Property } from '@/types';
 import { CustomDatePicker, CustomTimePicker } from '@/components/ui/DateTimePicker';
 import { getImageSrc } from '@/utils/imageUtils';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface AddAppointmentModalProps {
   show: boolean;
@@ -30,6 +31,7 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
   addAdditionalProps,
   setAddAdditionalProps
 }) => {
+  const { t, language } = useTranslation();
   if (!show) return null;
 
   return createPortal(
@@ -44,12 +46,12 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
         <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 flex-shrink-0">
           <h3 className="text-lg font-serif font-bold text-brand-dark flex items-center">
             <CalendarDays className="mr-2 text-brand-teal animate-pulse" size={22} />
-            Nouveau Rendez-vous
+            {t('newAppointmentModalTitle')}
           </h3>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 rounded-full transition text-gray-400 hover:text-gray-600"
-            title="Fermer"
+            title={t('cancelButton')}
           >
             <X size={20} />
           </button>
@@ -60,7 +62,7 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="apt-client-name" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">
-                  Nom Client *
+                  {t('clientNameLabel')}
                 </label>
                 <input
                   id="apt-client-name"
@@ -73,7 +75,7 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
                     setAptForm({ ...aptForm, clientName: formatted });
                     if (formatted.trim().length >= 2) setAptErrors((prev) => ({ ...prev, clientName: '' }));
                   }}
-                  placeholder="Nom du client"
+                  placeholder={t('clientNamePlaceholder')}
                   className={`w-full px-4 py-2.5 border rounded-2xl focus:ring-2 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm ${
                     aptErrors.clientName
                       ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
@@ -85,20 +87,33 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
 
               <div>
                 <label htmlFor="apt-client-phone" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">
-                  Téléphone *
+                  {t('clientPhoneLabel')}
                 </label>
                 <input
                   id="apt-client-phone"
                   type="tel"
-                  inputMode="tel"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  autoComplete="tel"
                   value={aptForm.clientPhone || ''}
                   onChange={(e) => {
-                    const val = e.target.value.replace(/[^0-9+\s\-().]/g, '');
-                    setAptForm({ ...aptForm, clientPhone: val });
-                    if (val.replace(/\D/g, '').length >= 8) setAptErrors((prev) => ({ ...prev, clientPhone: '' }));
+                    const onlyNumbers = e.target.value.replace(/\D/g, '');
+                    setAptForm({ ...aptForm, clientPhone: onlyNumbers });
+                    if (onlyNumbers.length >= 8) setAptErrors((prev) => ({ ...prev, clientPhone: '' }));
                   }}
-                  placeholder="Ex: 21 234 567"
-                  maxLength={20}
+                  onKeyDown={(e) => {
+                    if (
+                      ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 'ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key) ||
+                      (e.ctrlKey || e.metaKey)
+                    ) {
+                      return;
+                    }
+                    if (!/^\d$/.test(e.key)) {
+                      e.preventDefault();
+                    }
+                  }}
+                  placeholder={t('clientPhonePlaceholder')}
+                  maxLength={15}
                   className={`w-full px-4 py-2.5 border rounded-2xl focus:ring-2 focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm ${
                     aptErrors.clientPhone
                       ? 'border-red-400 focus:border-red-500 focus:ring-red-100'
@@ -112,7 +127,7 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label htmlFor="apt-date" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">
-                  Date *
+                  {t('dateLabel')}
                 </label>
                 <CustomDatePicker
                   value={aptForm.date || ''}
@@ -128,7 +143,7 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
 
               <div>
                 <label htmlFor="apt-time" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">
-                  Heure <span className="font-normal normal-case text-gray-400">(optionnel)</span>
+                  {t('timeLabel')}
                 </label>
                 <CustomTimePicker
                   value={aptForm.time || ''}
@@ -144,12 +159,12 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
 
             {/* Primary + additional properties picker */}
             <div>
-              <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">Propriétés à visiter</label>
+              <label className="block text-xs font-bold text-gray-500 mb-2 uppercase tracking-wider">{t('additionalPropertiesLabel')}</label>
               {(aptForm.propertyId || addAdditionalProps.some(Boolean)) && (
                 <div className="flex flex-wrap gap-2 mb-2">
                   {aptForm.propertyId && (() => {
                     const prop = properties.find((p) => p.id === aptForm.propertyId);
-                    const priceStr = prop?.price ? prop.price.toLocaleString('fr-TN') + ' DT' : null;
+                    const priceStr = prop?.price ? prop.price.toLocaleString(language === 'en' ? 'en-US' : 'fr-TN') + ' DT' : null;
                     return (
                       <span className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 bg-brand-teal/10 text-brand-teal text-xs font-bold rounded-full border border-brand-teal/20 max-w-full min-w-0 overflow-hidden">
                         {prop?.images?.[0] ? (
@@ -168,7 +183,7 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
                           </span>
                         )}
                         <span className="flex flex-col leading-tight min-w-0">
-                          <span className="truncate max-w-[110px]">{prop?.title || 'Propriété'}</span>
+                          <span className="truncate max-w-[110px]">{prop?.title || t('propertyFallback')}</span>
                           {priceStr && <span className="text-[10px] font-semibold text-brand-teal/70 truncate">{priceStr}</span>}
                         </span>
                         <button
@@ -183,7 +198,7 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
                   })()}
                   {addAdditionalProps.filter(Boolean).map((pid, i) => {
                     const prop = properties.find((p) => p.id === pid);
-                    const priceStr = prop?.price ? prop.price.toLocaleString('fr-TN') + ' DT' : null;
+                    const priceStr = prop?.price ? prop.price.toLocaleString(language === 'en' ? 'en-US' : 'fr-TN') + ' DT' : null;
                     return (
                       <span
                         key={i}
@@ -205,7 +220,7 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
                           </span>
                         )}
                         <span className="flex flex-col leading-tight min-w-0">
-                          <span className="truncate max-w-[110px]">{prop?.title || 'Propriété'}</span>
+                          <span className="truncate max-w-[110px]">{prop?.title || t('propertyFallback')}</span>
                           {priceStr && <span className="text-[10px] font-semibold text-gray-400 truncate">{priceStr}</span>}
                         </span>
                         <button
@@ -227,7 +242,7 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
                     <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                     <input
                       type="text"
-                      placeholder="Rechercher une propriété..."
+                      placeholder={t('searchPropertyPlaceholder')}
                       className="w-full pl-7 pr-3 py-1.5 text-xs bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:border-brand-teal transition-all"
                       onChange={(e) => {
                         const q = e.target.value.toLowerCase();
@@ -256,13 +271,13 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
                     >
                       {!aptForm.propertyId && <Check size={10} className="text-white" />}
                     </span>
-                    Aucune
+                    {t('noPropertyAssigned')}
                   </button>
                   {properties.map((p) => {
                     const isMain = aptForm.propertyId === p.id;
                     const isExtra = addAdditionalProps.includes(p.id);
                     const isSelected = isMain || isExtra;
-                    const priceStr = p.price ? p.price.toLocaleString('fr-TN') + ' DT' : '';
+                    const priceStr = p.price ? p.price.toLocaleString(language === 'en' ? 'en-US' : 'fr-TN') + ' DT' : '';
                     return (
                       <button
                         key={p.id}
@@ -317,7 +332,7 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
                         </span>
                         {isMain && (
                           <span className="text-[9px] font-black text-brand-teal uppercase tracking-wider bg-brand-teal/10 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                            Principal
+                            {language === 'en' ? 'Main' : 'Principal'}
                           </span>
                         )}
                       </button>
@@ -329,13 +344,13 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
 
             <div>
               <label htmlFor="apt-notes" className="block text-xs font-bold text-gray-500 mb-1.5 uppercase tracking-wider">
-                Notes
+                {t('notesLabel')}
               </label>
               <textarea
                 id="apt-notes"
                 value={aptForm.message}
                 onChange={(e) => setAptForm({ ...aptForm, message: e.target.value })}
-                placeholder="Notes ou remarques..."
+                placeholder={t('notesPlaceholder')}
                 rows={2}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-brand-teal/20 focus:border-brand-teal focus:outline-none bg-gray-50/50 focus:bg-white transition-all text-sm"
               ></textarea>
@@ -348,13 +363,13 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
               onClick={onClose}
               className="px-6 py-3 bg-gray-100 text-gray-500 font-bold rounded-2xl hover:bg-gray-200 transition text-sm"
             >
-              Annuler
+              {t('cancelButton')}
             </button>
             <button
               type="submit"
               className="px-6 py-3 bg-gradient-to-r from-brand-teal to-cyan-500 hover:from-cyan-500 hover:to-brand-teal text-white font-bold rounded-2xl transition-all duration-300 shadow-md shadow-brand-teal/10 text-sm"
             >
-              Enregistrer
+              {t('addAppointmentButton')}
             </button>
           </div>
         </form>

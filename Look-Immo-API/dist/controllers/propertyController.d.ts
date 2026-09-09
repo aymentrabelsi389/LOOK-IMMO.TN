@@ -1,5 +1,11 @@
 import { Request, Response } from 'express';
 import { AuthRequest } from '../middleware/auth';
+export declare const getPropertyTotalPrice: (p: {
+    price: number;
+    priceType?: string | null;
+    category?: string | null;
+    features?: any;
+}) => number;
 export declare const getProperties: (req: Request, res: Response) => Promise<void>;
 export declare const getProperty: (req: Request, res: Response) => Promise<void>;
 export declare const createProperty: (req: AuthRequest, res: Response) => Promise<void>;

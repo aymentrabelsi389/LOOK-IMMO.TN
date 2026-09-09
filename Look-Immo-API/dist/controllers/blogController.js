@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteBlogPost = exports.updateBlogPost = exports.createBlogPost = exports.getBlogPost = exports.getBlogPosts = void 0;
 const prisma_1 = require("../utils/prisma");
 const sanitize_1 = require("../utils/sanitize");
+const notificationService_1 = require("../services/notificationService");
 const logger_1 = require("../utils/logger");
 // Get all blog posts
 const getBlogPosts = async (req, res) => {
@@ -18,6 +19,7 @@ const getBlogPosts = async (req, res) => {
                     OR: [
                         { title: { contains: search, mode: 'insensitive' } },
                         { excerpt: { contains: search, mode: 'insensitive' } },
+                        { content: { contains: search, mode: 'insensitive' } },
                     ],
                 }
                 : {}),
@@ -25,31 +27,18 @@ const getBlogPosts = async (req, res) => {
         const [posts, total] = await Promise.all([
             prisma_1.prisma.blog.findMany({
                 where,
-                select: {
-                    id: true,
-                    title: true,
-                    excerpt: true,
-                    image: true,
-                    category: true,
-                    published: true,
-                    createdAt: true,
-                    updatedAt: true,
-                    // Note: 'content' is omitted here to keep payload small for lists
-                },
                 orderBy: { createdAt: 'desc' },
                 skip,
                 take: l,
             }),
-            prisma_1.prisma.blog.count({ where })
+            prisma_1.prisma.blog.count({ where }),
         ]);
         res.json({
-            data: posts,
-            pagination: {
-                total,
-                page: p,
-                limit: l,
-                totalPages: Math.ceil(total / l)
-            }
+            posts,
+            total,
+            page: p,
+            limit: l,
+            totalPages: Math.ceil(total / l),
         });
     }
     catch (error) {
@@ -85,8 +74,9 @@ const createBlogPost = async (req, res) => {
             res.status(400).json({ error: 'Title and content are required' });
             return;
         }
+        // Sanitize rich text inputs before persisting to DB
         const sanitizedContent = (0, sanitize_1.sanitizeHTML)(content);
-        const sanitizedExcerpt = excerpt ? (0, sanitize_1.sanitizeHTML)(excerpt) : '';
+        const sanitizedExcerpt = excerpt ? (0, sanitize_1.sanitizeHTML)(excerpt) : undefined;
         const post = await prisma_1.prisma.blog.create({
             data: {
                 title,
@@ -98,13 +88,20 @@ const createBlogPost = async (req, res) => {
             },
         });
         // Create notification
-        await prisma_1.prisma.notification.create({
-            data: {
+        try {
+            await (0, notificationService_1.createNotification)({
                 type: 'blog_add',
-                message: `New blog post: ${post.title}`,
-                entityId: post.id,
-            },
-        });
+                title: 'Nouvel Article',
+                message: `Nouvel article de blog : ${post.title}`,
+                icon: 'FileText',
+                link: '/admin',
+                userId: null,
+                metadata: { blogId: post.id },
+            });
+        }
+        catch (notifError) {
+            logger_1.logger.error('Failed to create blog notification:', notifError);
+        }
         res.status(201).json(post);
     }
     catch (error) {
@@ -137,13 +134,20 @@ const updateBlogPost = async (req, res) => {
             },
         });
         // Create notification
-        await prisma_1.prisma.notification.create({
-            data: {
+        try {
+            await (0, notificationService_1.createNotification)({
                 type: 'blog_edit',
-                message: `Blog post updated: ${post.title}`,
-                entityId: post.id,
-            },
-        });
+                title: 'Article Modifié',
+                message: `Article de blog mis à jour : ${post.title}`,
+                icon: 'FileText',
+                link: '/admin',
+                userId: null,
+                metadata: { blogId: post.id },
+            });
+        }
+        catch (notifError) {
+            logger_1.logger.error('Failed to create blog update notification:', notifError);
+        }
         res.json(post);
     }
     catch (error) {
@@ -167,13 +171,20 @@ const deleteBlogPost = async (req, res) => {
             where: { id },
         });
         // Create notification
-        await prisma_1.prisma.notification.create({
-            data: {
+        try {
+            await (0, notificationService_1.createNotification)({
                 type: 'blog_delete',
-                message: `Blog post deleted: ${post.title}`,
-                entityId: id,
-            },
-        });
+                title: 'Article Supprimé',
+                message: `Article de blog supprimé : ${post.title}`,
+                icon: 'FileText',
+                link: '/admin',
+                userId: null,
+                metadata: { blogId: id },
+            });
+        }
+        catch (notifError) {
+            logger_1.logger.error('Failed to create blog delete notification:', notifError);
+        }
         res.json({ message: 'Blog post deleted successfully' });
     }
     catch (error) {

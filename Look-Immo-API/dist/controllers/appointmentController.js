@@ -256,12 +256,21 @@ const updateAppointment = async (req, res) => {
             const notificationType = status === 'accepted' ? 'appointment_accept' : status === 'rejected' ? 'appointment_reject' : null;
             if (notificationType) {
                 try {
-                    await prisma_1.prisma.notification.create({
-                        data: {
-                            type: notificationType,
-                            message: `Appointment ${status}: ${existingAppointment.clientName}${existingAppointment.property ? ` for ${existingAppointment.property.title}` : ''}`,
-                            entityId: id,
-                        },
+                    const isAccepted = status === 'accepted';
+                    const statusFr = isAccepted ? 'accepté' : 'refusé';
+                    const clientLabel = existingAppointment.clientName && existingAppointment.clientName !== 'N/A'
+                        ? ` de ${existingAppointment.clientName}`
+                        : '';
+                    const propLabel = existingAppointment.property ? ` pour ${existingAppointment.property.title}` : '';
+                    const message = `Rendez-vous ${statusFr}${clientLabel}${propLabel}`;
+                    await (0, notificationService_1.createNotification)({
+                        type: notificationType,
+                        title: isAccepted ? 'Rendez-vous Accepté' : 'Rendez-vous Refusé',
+                        message,
+                        icon: 'Calendar',
+                        link: '/admin',
+                        userId: null,
+                        metadata: { appointmentId: id },
                     });
                 }
                 catch (notificationError) {
@@ -327,12 +336,18 @@ const deleteAppointment = async (req, res) => {
         });
         // Create notification
         try {
-            await prisma_1.prisma.notification.create({
-                data: {
-                    type: 'appointment_delete',
-                    message: `Appointment deleted: ${appointment.clientName}${appointment.property ? ` for ${appointment.property.title}` : ''}`,
-                    entityId: id,
-                },
+            const clientLabel = appointment.clientName && appointment.clientName !== 'N/A'
+                ? ` de ${appointment.clientName}`
+                : '';
+            const propLabel = appointment.property ? ` pour ${appointment.property.title}` : '';
+            await (0, notificationService_1.createNotification)({
+                type: 'appointment_delete',
+                title: 'Rendez-vous Supprimé',
+                message: `Rendez-vous supprimé${clientLabel}${propLabel}`,
+                icon: 'Calendar',
+                link: '/admin',
+                userId: null,
+                metadata: { appointmentId: id },
             });
         }
         catch (notificationError) {

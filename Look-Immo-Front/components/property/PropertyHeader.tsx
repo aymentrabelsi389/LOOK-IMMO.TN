@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, Star, Share2, Heart } from 'lucide-react';
+import { MapPin, Star, Share2, Heart, Pencil } from 'lucide-react';
 import { Property, User } from '@/types';
 import Price from '@/components/Price';
 import { useTranslation } from '@/hooks/useTranslation';
@@ -10,13 +10,15 @@ interface PropertyHeaderProps {
   user: User | null;
   onToggleFavorite: (id: string) => void;
   onOpenAuth: () => void;
+  onEditProperty?: () => void;
 }
 
 export const PropertyHeader: React.FC<PropertyHeaderProps> = ({
   property,
   user,
   onToggleFavorite,
-  onOpenAuth
+  onOpenAuth,
+  onEditProperty
 }) => {
   const { t } = useTranslation();
   const { displayText: displayTitle } = useAutoTranslate(property.title);
@@ -35,6 +37,7 @@ export const PropertyHeader: React.FC<PropertyHeaderProps> = ({
     onToggleFavorite(property.id);
   };
 
+  const isAdmin = user?.role === 'admin';
   const isFav = user?.favorites.includes(property.id) || false;
 
   return (
@@ -69,7 +72,7 @@ export const PropertyHeader: React.FC<PropertyHeaderProps> = ({
               </span>
             </div>
 
-            {/* Share & Favorite (Mobile) */}
+            {/* Share & Favorite/Edit (Mobile) */}
             <div className="flex gap-2 sm:hidden flex-shrink-0">
               <button
                 onClick={handleShare}
@@ -78,18 +81,31 @@ export const PropertyHeader: React.FC<PropertyHeaderProps> = ({
               >
                 <Share2 size={18} className="text-gray-700" />
               </button>
-              <button
-                onClick={handleFavoriteClick}
-                className={`p-2 rounded-full transition ${isFav ? 'bg-red-50 hover:bg-red-100' : 'bg-gray-100 hover:bg-gray-200'}`}
-                title={isFav ? t('removeFromFavorites') : t('addToFavorites')}
-              >
-                <Heart size={18} className={isFav ? 'text-red-500' : 'text-gray-400'} fill={isFav ? 'currentColor' : 'none'} />
-              </button>
+              {isAdmin ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onEditProperty?.();
+                  }}
+                  className="p-2 bg-brand-teal/10 hover:bg-brand-teal/20 text-brand-teal rounded-full transition"
+                  title="Modifier la propriété"
+                >
+                  <Pencil size={18} />
+                </button>
+              ) : (
+                <button
+                  onClick={handleFavoriteClick}
+                  className={`p-2 rounded-full transition ${isFav ? 'bg-red-50 hover:bg-red-100' : 'bg-gray-100 hover:bg-gray-200'}`}
+                  title={isFav ? t('removeFromFavorites') : t('addToFavorites')}
+                >
+                  <Heart size={18} className={isFav ? 'text-red-500' : 'text-gray-400'} fill={isFav ? 'currentColor' : 'none'} />
+                </button>
+              )}
             </div>
           </div>
         </div>
 
-        {/* Share & Favorite (Desktop) */}
+        {/* Share & Favorite/Edit (Desktop) */}
         <div className="hidden sm:flex gap-2 sm:ml-4 flex-shrink-0">
           <button
             onClick={handleShare}
@@ -98,13 +114,26 @@ export const PropertyHeader: React.FC<PropertyHeaderProps> = ({
           >
             <Share2 size={20} className="text-gray-700" />
           </button>
-          <button
-            onClick={handleFavoriteClick}
-            className={`p-3 rounded-full transition flex-shrink-0 ${isFav ? 'bg-red-50 hover:bg-red-100' : 'bg-gray-100 hover:bg-gray-200'}`}
-            title={isFav ? t('removeFromFavorites') : t('addToFavorites')}
-          >
-            <Heart size={20} className={isFav ? 'text-red-500' : 'text-gray-400'} fill={isFav ? 'currentColor' : 'none'} />
-          </button>
+          {isAdmin ? (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditProperty?.();
+              }}
+              className="p-3 bg-brand-teal/10 hover:bg-brand-teal/20 text-brand-teal rounded-full transition flex-shrink-0 hover:scale-105"
+              title="Modifier la propriété"
+            >
+              <Pencil size={20} />
+            </button>
+          ) : (
+            <button
+              onClick={handleFavoriteClick}
+              className={`p-3 rounded-full transition flex-shrink-0 ${isFav ? 'bg-red-50 hover:bg-red-100' : 'bg-gray-100 hover:bg-gray-200'}`}
+              title={isFav ? t('removeFromFavorites') : t('addToFavorites')}
+            >
+              <Heart size={20} className={isFav ? 'text-red-500' : 'text-gray-400'} fill={isFav ? 'currentColor' : 'none'} />
+            </button>
+          )}
         </div>
       </div>
 

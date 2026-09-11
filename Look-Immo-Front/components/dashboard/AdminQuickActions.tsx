@@ -29,6 +29,19 @@ export const AdminQuickActions: React.FC<AdminQuickActionsProps> = ({
 }) => {
   const { t } = useTranslation();
 
+  // Strip day-name prefix that may be stored with the time value
+  // e.g. "Lun - Ven: 09:00 - 18:00" → "09:00 - 18:00"
+  //      "Samedi: 09:00 - 13:00"    → "09:00 - 13:00"
+  const stripDayPrefix = (val?: string): string => {
+    if (!val) return '';
+    const colonIdx = val.indexOf(':');
+    if (colonIdx > 0 && !/\d/.test(val.slice(0, colonIdx))) {
+      return val.slice(colonIdx + 1).trim();
+    }
+    return val;
+  };
+
+
   return (
     <ScrollReveal className={`lg:col-span-2 space-y-6 ${className}`} delay={200}>
       {/* Quick Actions Grid */}
@@ -103,17 +116,24 @@ export const AdminQuickActions: React.FC<AdminQuickActionsProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
               <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 hover:border-brand-teal/15 transition-all duration-300">
                 <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{t('weekdaysLabel')}</span>
-                <span className="font-semibold text-gray-800">{settings.workingHours?.weekdays}</span>
+                <span className="font-semibold text-gray-800">{stripDayPrefix(settings.workingHours?.weekdays) || '—'}</span>
               </div>
               <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 hover:border-brand-teal/15 transition-all duration-300">
                 <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{t('saturdayLabel')}</span>
-                <span className="font-semibold text-gray-800">{settings.workingHours?.saturday}</span>
+                <span className="font-semibold text-gray-800">{stripDayPrefix(settings.workingHours?.saturday) || '—'}</span>
               </div>
               <div className="bg-gray-50/50 p-4 rounded-2xl border border-gray-100 hover:border-brand-teal/15 transition-all duration-300">
                 <span className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{t('sundayLabel')}</span>
-                <span className={`font-semibold ${settings.workingHours?.sunday === 'Fermé' ? 'text-red-500' : 'text-gray-800'}`}>
-                  {settings.workingHours?.sunday === 'Fermé' || !settings.workingHours?.sunday ? t('closed') : settings.workingHours?.sunday}
-                </span>
+                {(() => {
+                  const raw = settings.workingHours?.sunday;
+                  const stripped = stripDayPrefix(raw);
+                  const isClosed = !raw || /^(ferm[eé]|closed)$/i.test(raw.trim()) || /^(ferm[eé]|closed)$/i.test(stripped.trim());
+                  return (
+                    <span className={`font-semibold ${isClosed ? 'text-red-500' : 'text-gray-800'}`}>
+                      {isClosed ? t('closed') : stripped}
+                    </span>
+                  );
+                })()}
               </div>
             </div>
           ) : (

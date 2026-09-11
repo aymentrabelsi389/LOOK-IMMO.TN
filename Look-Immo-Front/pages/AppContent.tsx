@@ -39,9 +39,11 @@ const ForgotPasswordPage = lazy(() => import('./ForgotPasswordPage'));
 const ScrollToTop = () => {
   const { pathname } = useLocation();
   useEffect(() => {
-    const behavior = (window as any)._forceInstantScroll ? 'auto' : 'smooth';
-    (window as any)._forceInstantScroll = false;
-    window.scrollTo({ top: 0, behavior });
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    } catch {
+      window.scrollTo(0, 0);
+    }
   }, [pathname]);
   return null;
 };

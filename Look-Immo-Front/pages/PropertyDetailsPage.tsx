@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { Property } from '@/types';
@@ -23,6 +23,8 @@ import { PropertyLocationMap } from '@/components/property/PropertyLocationMap';
 import { PropertyBookingForm } from '@/components/property/PropertyBookingForm';
 import { PropertySimilarListings } from '@/components/property/PropertySimilarListings';
 import { PropertyLightbox } from '@/components/property/PropertyLightbox';
+
+const AdminEditPropertyModal = lazy(() => import('@/components/property/AdminEditPropertyModal'));
 
 const PropertyDetailsPage: React.FC = () => {
   const { t } = useTranslation();
@@ -56,6 +58,7 @@ const PropertyDetailsPage: React.FC = () => {
   const [userRating, setUserRating] = useState(0);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showLightbox, setShowLightbox] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Fetch full property (e.g. for complete ratings list)
   useEffect(() => {
@@ -217,6 +220,7 @@ const PropertyDetailsPage: React.FC = () => {
                   user={user}
                   onToggleFavorite={onToggleFavorite}
                   onOpenAuth={onOpenAuth}
+                  onEditProperty={() => setShowEditModal(true)}
                 />
               </div>
 
@@ -269,6 +273,18 @@ const PropertyDetailsPage: React.FC = () => {
         currentImageIndex={currentImageIndex}
         setCurrentImageIndex={setCurrentImageIndex}
       />
+
+      {/* Inline Admin Edit Property Modal */}
+      {user?.role === 'admin' && property && showEditModal && (
+        <Suspense fallback={null}>
+          <AdminEditPropertyModal
+            property={property}
+            isOpen={showEditModal}
+            onClose={() => setShowEditModal(false)}
+            onPropertyUpdated={(updated) => setFullProperty(updated)}
+          />
+        </Suspense>
+      )}
     </>
   );
 };

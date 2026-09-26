@@ -148,3 +148,136 @@ describe('propertyController createProperty', () => {
         expect(prisma.property.create).not.toHaveBeenCalled();
     });
 });
+
+describe('propertyController movePropertyOrder', () => {
+    let mockReq: Partial<AuthRequest>;
+    let mockRes: Partial<Response>;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockReq = {
+            user: {
+                id: 'admin-123',
+                email: 'admin@example.com',
+                role: 'admin',
+            },
+            params: { id: 'prop-3' },
+            body: { action: 'top' },
+        };
+        mockRes = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn().mockReturnThis(),
+        };
+    });
+
+    it('should reject non-admin users with 403', async () => {
+        mockReq.user!.role = 'agent';
+        const { movePropertyOrder } = require('./propertyController');
+        await movePropertyOrder(mockReq as AuthRequest, mockRes as Response);
+
+        expect(mockRes.status).toHaveBeenCalledWith(403);
+        expect(mockRes.json).toHaveBeenCalledWith({ error: 'Only admins can reorder properties' });
+    });
+
+    it('should move property to top and normalize sequential displayOrders', async () => {
+        const mockProps = [
+            { id: 'prop-1', displayOrder: 1 },
+            { id: 'prop-2', displayOrder: 2 },
+            { id: 'prop-3', displayOrder: 3 },
+            { id: 'prop-4', displayOrder: 4 },
+        ];
+
+        const mockTx = {
+            property: {
+                findMany: jest.fn().mockResolvedValue(mockProps),
+                update: jest.fn().mockResolvedValue({}),
+            },
+        };
+
+        (prisma.$transaction as jest.Mock) = jest.fn().mockImplementation(async (cb) => {
+            return cb(mockTx);
+        });
+
+        const { movePropertyOrder } = require('./propertyController');
+        await movePropertyOrder(mockReq as AuthRequest, mockRes as Response);
+
+        // Moving prop-3 to top means order becomes: prop-3 (1), prop-1 (2), prop-2 (3), prop-4 (4)
+        expect(mockTx.property.update).toHaveBeenCalledWith({
+            where: { id: 'prop-3' },
+            data: { displayOrder: 1 },
+        });
+        expect(mockTx.property.update).toHaveBeenCalledWith({
+            where: { id: 'prop-1' },
+            data: { displayOrder: 2 },
+        });
+        expect(mockTx.property.update).toHaveBeenCalledWith({
+            where: { id: 'prop-2' },
+            data: { displayOrder: 3 },
+        });
+
+        expect(clearCachePattern).toHaveBeenCalledWith('properties:list:*');
+        expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+            success: true,
+            data: expect.objectContaining({
+                oldPosition: 3,
+                newPosition: 1,
+                totalProperties: 4,
+            }),
+        }));
+    });
+
+    it('should move property to specific targetPosition (e.g. 5 -> 2)', async () => {
+        mockReq.params = { id: 'prop-5' };
+        mockReq.body = { targetPosition: 2 };
+
+        const mockProps = [
+            { id: 'prop-1', displayOrder: 1 },
+            { id: 'prop-2', displayOrder: 2 },
+            { id: 'prop-3', displayOrder: 3 },
+            { id: 'prop-4', displayOrder: 4 },
+            { id: 'prop-5', displayOrder: 5 },
+        ];
+
+        const mockTx = {
+            property: {
+                findMany: jest.fn().mockResolvedValue(mockProps),
+                update: jest.fn().mockResolvedValue({}),
+            },
+        };
+
+        (prisma.$transaction as jest.Mock) = jest.fn().mockImplementation(async (cb) => {
+            return cb(mockTx);
+        });
+
+        const { movePropertyOrder } = require('./propertyController');
+        await movePropertyOrder(mockReq as AuthRequest, mockRes as Response);
+
+        // prop-5 moved to position 2 -> prop-1 (1), prop-5 (2), prop-2 (3), prop-3 (4), prop-4 (5)
+        expect(mockTx.property.update).toHaveBeenCalledWith({
+            where: { id: 'prop-5' },
+            data: { displayOrder: 2 },
+        });
+        expect(mockTx.property.update).toHaveBeenCalledWith({
+            where: { id: 'prop-2' },
+            data: { displayOrder: 3 },
+        });
+        expect(mockTx.property.update).toHaveBeenCalledWith({
+            where: { id: 'prop-3' },
+            data: { displayOrder: 4 },
+        });
+        expect(mockTx.property.update).toHaveBeenCalledWith({
+            where: { id: 'prop-4' },
+            data: { displayOrder: 5 },
+        });
+
+        expect(mockRes.json).toHaveBeenCalledWith(expect.objectContaining({
+            success: true,
+            data: expect.objectContaining({
+                oldPosition: 5,
+                newPosition: 2,
+                totalProperties: 5,
+            }),
+        }));
+    });
+});
+

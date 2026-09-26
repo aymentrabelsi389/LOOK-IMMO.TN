@@ -164,7 +164,10 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
                 <div className="flex flex-wrap gap-2 mb-2">
                   {aptForm.propertyId && (() => {
                     const prop = properties.find((p) => p.id === aptForm.propertyId);
+                    const loc = prop?.location?.city || prop?.location?.address || '';
+                    const areaStr = prop?.features?.area && prop.features.area > 0 ? `${prop.features.area} m²` : null;
                     const priceStr = prop?.price ? prop.price.toLocaleString(language === 'en' ? 'en-US' : 'fr-TN') + ' DT' : null;
+                    const subtitle = [loc, areaStr, priceStr].filter(Boolean).join(' • ');
                     return (
                       <span className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 bg-brand-teal/10 text-brand-teal text-xs font-bold rounded-full border border-brand-teal/20 max-w-full min-w-0 overflow-hidden">
                         {prop?.images?.[0] ? (
@@ -183,8 +186,8 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
                           </span>
                         )}
                         <span className="flex flex-col leading-tight min-w-0">
-                          <span className="truncate max-w-[110px]">{prop?.title || t('propertyFallback')}</span>
-                          {priceStr && <span className="text-[10px] font-semibold text-brand-teal/70 truncate">{priceStr}</span>}
+                          <span className="truncate max-w-[160px]">{prop?.title || t('propertyFallback')}</span>
+                          {subtitle && <span className="text-[10px] font-semibold text-brand-teal/70 truncate max-w-[160px]">{subtitle}</span>}
                         </span>
                         <button
                           type="button"
@@ -198,7 +201,10 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
                   })()}
                   {addAdditionalProps.filter(Boolean).map((pid, i) => {
                     const prop = properties.find((p) => p.id === pid);
+                    const loc = prop?.location?.city || prop?.location?.address || '';
+                    const areaStr = prop?.features?.area && prop.features.area > 0 ? `${prop.features.area} m²` : null;
                     const priceStr = prop?.price ? prop.price.toLocaleString(language === 'en' ? 'en-US' : 'fr-TN') + ' DT' : null;
+                    const subtitle = [loc, areaStr, priceStr].filter(Boolean).join(' • ');
                     return (
                       <span
                         key={i}
@@ -220,8 +226,8 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
                           </span>
                         )}
                         <span className="flex flex-col leading-tight min-w-0">
-                          <span className="truncate max-w-[110px]">{prop?.title || t('propertyFallback')}</span>
-                          {priceStr && <span className="text-[10px] font-semibold text-gray-400 truncate">{priceStr}</span>}
+                          <span className="truncate max-w-[160px]">{prop?.title || t('propertyFallback')}</span>
+                          {subtitle && <span className="text-[10px] font-semibold text-gray-400 truncate max-w-[160px]">{subtitle}</span>}
                         </span>
                         <button
                           type="button"
@@ -277,7 +283,10 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
                     const isMain = aptForm.propertyId === p.id;
                     const isExtra = addAdditionalProps.includes(p.id);
                     const isSelected = isMain || isExtra;
+                    const loc = p.location?.city || p.location?.address || '';
+                    const areaStr = p.features?.area && p.features.area > 0 ? `${p.features.area} m²` : null;
                     const priceStr = p.price ? p.price.toLocaleString(language === 'en' ? 'en-US' : 'fr-TN') + ' DT' : '';
+                    const detailsStr = [loc, areaStr, priceStr].filter(Boolean).join(' • ');
                     return (
                       <button
                         key={p.id}
@@ -285,7 +294,7 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
                         className={`prop-picker-item w-full flex items-center gap-3 px-4 py-2 text-left text-xs font-semibold transition-all border-t border-gray-50 ${
                           isSelected ? 'bg-brand-teal/5 text-brand-teal' : 'text-gray-600 hover:bg-white'
                         }`}
-                        data-title={`${p.title.toLowerCase()} ${p.price ?? ''}`}
+                        data-title={`${p.title.toLowerCase()} ${p.location?.city?.toLowerCase() || ''} ${p.location?.address?.toLowerCase() || ''} ${p.features?.area ?? ''} ${p.price ?? ''}`}
                         onClick={() => {
                           if (isMain) {
                             setAptForm({ ...aptForm, propertyId: '' });
@@ -324,9 +333,9 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
 
                         <span className="flex-1 min-w-0">
                           <span className="block truncate">{p.title}</span>
-                          {priceStr && (
-                            <span className={`block text-[10px] font-bold mt-0.5 ${isSelected ? 'text-brand-teal/70' : 'text-gray-400'}`}>
-                              {priceStr}
+                          {detailsStr && (
+                            <span className={`block text-[10px] font-bold mt-0.5 ${isSelected ? 'text-brand-teal/70' : 'text-gray-400'} truncate`}>
+                              {detailsStr}
                             </span>
                           )}
                         </span>
@@ -357,17 +366,17 @@ export const AddAppointmentModal: React.FC<AddAppointmentModalProps> = ({
             </div>
           </div>
 
-          <div className="px-6 py-4 flex justify-end gap-3 border-t border-gray-100 flex-shrink-0 bg-white rounded-b-3xl">
+          <div className="px-6 py-4 flex items-center justify-end gap-3 border-t border-gray-100 flex-shrink-0 bg-white rounded-b-3xl">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 bg-gray-100 text-gray-500 font-bold rounded-2xl hover:bg-gray-200 transition text-sm"
+              className="px-5 py-3 bg-gray-100 text-gray-500 font-bold rounded-2xl hover:bg-gray-200 transition text-sm whitespace-nowrap"
             >
               {t('cancelButton')}
             </button>
             <button
               type="submit"
-              className="px-6 py-3 bg-gradient-to-r from-brand-teal to-cyan-500 hover:from-cyan-500 hover:to-brand-teal text-white font-bold rounded-2xl transition-all duration-300 shadow-md shadow-brand-teal/10 text-sm"
+              className="px-6 py-3 bg-gradient-to-r from-brand-teal to-cyan-500 hover:from-cyan-500 hover:to-brand-teal text-white font-bold rounded-2xl transition-all duration-300 shadow-md shadow-brand-teal/10 text-sm whitespace-nowrap"
             >
               {t('addAppointmentButton')}
             </button>

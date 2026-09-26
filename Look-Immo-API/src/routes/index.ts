@@ -25,7 +25,7 @@ import * as exchangeRateController from '../controllers/exchangeRateController';
 import { validate } from '../middleware/validate';
 import { authLimiter, forgotPasswordLimiter, messageLimiter, appointmentLimiter, ratingLimiter, trackVisitLimiter } from '../middleware/rateLimiter';
 import { loginSchema, registerSchema, forgotPasswordSchema, verifyResetCodeSchema, resetPasswordSchema } from '../schemas/authSchema';
-import { createPropertySchema, updatePropertySchema, reorderPropertySchema } from '../schemas/propertySchema';
+import { createPropertySchema, updatePropertySchema, reorderPropertySchema, movePropertyOrderSchema } from '../schemas/propertySchema';
 import { createAppointmentSchema, updateAppointmentSchema } from '../schemas/appointmentSchema';
 import { createMessageSchema, updateMessageSchema } from '../schemas/messageSchema';
 import { createUserSchema, updateUserSchema } from '../schemas/userSchema';
@@ -54,6 +54,7 @@ router.get('/properties', optionalAuth, propertyController.getProperties);
 router.get('/properties/:id', optionalAuth, propertyController.getProperty);
 router.post('/properties', authMiddleware, agentOrAdmin, validate(createPropertySchema), propertyController.createProperty);
 router.put('/properties/reorder', authMiddleware, adminOnly, validate(reorderPropertySchema), propertyController.updatePropertyOrder);
+router.patch('/properties/:id/order', authMiddleware, adminOnly, validate(movePropertyOrderSchema), propertyController.movePropertyOrder);
 router.put('/properties/:id', authMiddleware, agentOrAdmin, validate(updatePropertySchema), propertyController.updateProperty);
 router.delete('/properties/:id', authMiddleware, agentOrAdmin, propertyController.deleteProperty);
 

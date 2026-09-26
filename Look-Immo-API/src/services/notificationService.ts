@@ -92,13 +92,6 @@ export const checkPropertyMatchesAndNotify = async (property: any) => {
 
       let score = 0;
 
-      // 0. Contract Type Match (Rent / Sale) — 20 points
-      if ((demand as any).contractType && property.type) {
-        if ((demand as any).contractType === property.type) {
-          score += 20;
-        }
-      }
-
       // 1. Type Match (Critical: 40 points)
       const allowedTypes = typeMapping[demand.type] || [];
       const propCategory = property.category || 'apartment';
@@ -125,35 +118,40 @@ export const checkPropertyMatchesAndNotify = async (property: any) => {
           else score += 10;                             // 10–15% over
         }
       } else {
-        score += 15;
+        score += 20;
       }
 
       // 3. Location Match (20 points)
-      const demandLoc = demand.location.toLowerCase();
-      const propCity = (property.city || '').toLowerCase();
-      const propAddr = (property.description || '').toLowerCase();
+      const demandLoc = demand.location ? demand.location.toLowerCase().trim() : '';
+      const propCity = (property.city || '').toLowerCase().trim();
+      const propAddr = (property.description || '').toLowerCase().trim();
 
-      if (propCity && (propCity.includes(demandLoc) || demandLoc.includes(propCity))) {
-        score += 20;
-      } else if (propAddr && (propAddr.includes(demandLoc) || demandLoc.includes(propAddr))) {
-        score += 12;
+      if (demandLoc) {
+        if (propCity && (propCity.includes(demandLoc) || demandLoc.includes(propCity))) {
+          score += 20;
+        } else if (propAddr && (propAddr.includes(demandLoc) || demandLoc.includes(propAddr))) {
+          score += 12;
+        }
+      } else {
+        score += 10;
       }
 
       // 4. Area Match (Attempt to extract from description) (10 points)
-      const areaMatch = demand.description.match(/(\d+)\s*m[2²]/);
+      const areaMatch = demand.description ? demand.description.match(/(\d+)\s*m[2²]/) : null;
       const propFeatures = property.features ? (property.features as any) : null;
       if (areaMatch && propFeatures?.area) {
         const requestedArea = parseInt(areaMatch[1]);
         const areaDiff = Math.abs(propFeatures.area - requestedArea) / requestedArea;
         if (areaDiff <= 0.2) score += 10;
         else if (areaDiff <= 0.4) score += 5;
+      } else {
+        score += 10;
       }
 
-      // 5. Priority Bonus (5 points)
-      if (demand.priority === 'high') score += 5;
+      const finalScore = Math.min(100, Math.max(0, Math.round(score)));
 
-      // If it qualifies as a match (score >= 45)
-      if (score >= 45) {
+      // If it qualifies as a match (score >= 70)
+      if (finalScore >= 70) {
         await createNotification({
           type: 'demand_match',
           title: 'Nouvelle Correspondance',
@@ -165,7 +163,7 @@ export const checkPropertyMatchesAndNotify = async (property: any) => {
             demandId: demand.id,
             propertyId: property.id,
             clientName: demand.clientName,
-            score
+            score: finalScore
           }
         });
       }

@@ -179,7 +179,10 @@ export const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
                 <div className="flex flex-wrap gap-2 mb-2">
                   {editForm.propertyId && (() => {
                     const prop = properties.find((p) => p.id === editForm.propertyId);
+                    const loc = prop?.location?.city || prop?.location?.address || '';
+                    const areaStr = prop?.features?.area && prop.features.area > 0 ? `${prop.features.area} m²` : null;
                     const priceStr = prop?.price ? prop.price.toLocaleString(language === 'en' ? 'en-US' : 'fr-TN') + ' DT' : null;
+                    const subtitle = [loc, areaStr, priceStr].filter(Boolean).join(' • ');
                     return (
                       <span className="inline-flex items-center gap-1.5 pl-1.5 pr-2 py-1 bg-brand-teal/10 text-brand-teal text-xs font-bold rounded-full border border-brand-teal/20 max-w-full min-w-0 overflow-hidden">
                         {prop?.images?.[0] ? (
@@ -194,8 +197,8 @@ export const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
                           </span>
                         )}
                         <span className="flex flex-col leading-tight min-w-0">
-                          <span className="truncate max-w-[110px]">{prop?.title || t('propertyFallback')}</span>
-                          {priceStr && <span className="text-[10px] font-semibold text-brand-teal/70 truncate">{priceStr}</span>}
+                          <span className="truncate max-w-[160px]">{prop?.title || t('propertyFallback')}</span>
+                          {subtitle && <span className="text-[10px] font-semibold text-brand-teal/70 truncate max-w-[160px]">{subtitle}</span>}
                         </span>
                         <button
                           type="button"
@@ -209,7 +212,10 @@ export const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
                   })()}
                   {editAdditionalProps.filter(Boolean).map((pid, i) => {
                     const prop = properties.find((p) => p.id === pid);
+                    const loc = prop?.location?.city || prop?.location?.address || '';
+                    const areaStr = prop?.features?.area && prop.features.area > 0 ? `${prop.features.area} m²` : null;
                     const priceStr = prop?.price ? prop.price.toLocaleString(language === 'en' ? 'en-US' : 'fr-TN') + ' DT' : null;
+                    const subtitle = [loc, areaStr, priceStr].filter(Boolean).join(' • ');
                     return (
                       <span
                         key={i}
@@ -227,8 +233,8 @@ export const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
                           </span>
                         )}
                         <span className="flex flex-col leading-tight min-w-0">
-                          <span className="truncate max-w-[110px]">{prop?.title || t('propertyFallback')}</span>
-                          {priceStr && <span className="text-[10px] font-semibold text-gray-400 truncate">{priceStr}</span>}
+                          <span className="truncate max-w-[160px]">{prop?.title || t('propertyFallback')}</span>
+                          {subtitle && <span className="text-[10px] font-semibold text-gray-400 truncate max-w-[160px]">{subtitle}</span>}
                         </span>
                         <button
                           type="button"
@@ -283,7 +289,10 @@ export const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
                     const isMain = editForm.propertyId === p.id;
                     const isExtra = editAdditionalProps.includes(p.id);
                     const isSelected = isMain || isExtra;
+                    const loc = p.location?.city || p.location?.address || '';
+                    const areaStr = p.features?.area && p.features.area > 0 ? `${p.features.area} m²` : null;
                     const priceStr = p.price ? p.price.toLocaleString(language === 'en' ? 'en-US' : 'fr-TN') + ' DT' : '';
+                    const detailsStr = [loc, areaStr, priceStr].filter(Boolean).join(' • ');
                     return (
                       <button
                         key={p.id}
@@ -291,7 +300,7 @@ export const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
                         className={`edit-prop-picker-item w-full flex items-center gap-3 px-4 py-2 text-left text-xs font-semibold transition-all border-t border-gray-50 ${
                           isSelected ? 'bg-brand-teal/5 text-brand-teal' : 'text-gray-600 hover:bg-white'
                         }`}
-                        data-title={`${p.title.toLowerCase()} ${p.price ?? ''}`}
+                        data-title={`${p.title.toLowerCase()} ${p.location?.city?.toLowerCase() || ''} ${p.location?.address?.toLowerCase() || ''} ${p.features?.area ?? ''} ${p.price ?? ''}`}
                         onClick={() => {
                           if (isMain) {
                             setEditForm({ ...editForm, propertyId: '' });
@@ -330,9 +339,9 @@ export const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
 
                         <span className="flex-1 min-w-0">
                           <span className="block truncate">{p.title}</span>
-                          {priceStr && (
-                            <span className={`block text-[10px] font-bold mt-0.5 ${isSelected ? 'text-brand-teal/70' : 'text-gray-400'}`}>
-                              {priceStr}
+                          {detailsStr && (
+                            <span className={`block text-[10px] font-bold mt-0.5 ${isSelected ? 'text-brand-teal/70' : 'text-gray-400'} truncate`}>
+                              {detailsStr}
                             </span>
                           )}
                         </span>
@@ -404,13 +413,13 @@ export const EditAppointmentModal: React.FC<EditAppointmentModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 bg-gray-100 text-gray-500 font-bold rounded-2xl hover:bg-gray-200 transition text-sm"
+              className="flex-1 px-5 py-3 bg-gray-100 text-gray-500 font-bold rounded-2xl hover:bg-gray-200 transition text-sm whitespace-nowrap"
             >
               {t('cancelButton')}
             </button>
             <button
               type="submit"
-              className="flex-1 px-6 py-3 bg-gradient-to-r from-brand-teal to-cyan-500 hover:from-cyan-500 hover:to-brand-teal text-white font-bold rounded-2xl transition-all duration-300 shadow-md shadow-brand-teal/10 text-sm"
+              className="flex-1 px-6 py-3 bg-gradient-to-r from-brand-teal to-cyan-500 hover:from-cyan-500 hover:to-brand-teal text-white font-bold rounded-2xl transition-all duration-300 shadow-md shadow-brand-teal/10 text-sm whitespace-nowrap"
             >
               {t('saveAppointmentButton')}
             </button>

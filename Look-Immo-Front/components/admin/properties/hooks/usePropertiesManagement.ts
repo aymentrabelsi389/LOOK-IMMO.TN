@@ -287,26 +287,31 @@ export function usePropertiesManagement({
               else if (priceDiff <= 0.1) score += 20;
               else if (priceDiff <= 0.2) score += 10;
             } else {
-              score += 15;
+              score += 20;
             }
 
-            const propCity = (newProperty.location?.city || '').toLowerCase();
-            const propAddr = (newProperty.location?.address || '').toLowerCase();
-            if (propCity && (propCity.includes(demandLoc) || demandLoc.includes(propCity))) {
-              score += 20;
-            } else if (propAddr && (propAddr.includes(demandLoc) || demandLoc.includes(propAddr))) {
-              score += 12;
+            const propCity = (newProperty.location?.city || '').toLowerCase().trim();
+            const propAddr = (newProperty.location?.address || '').toLowerCase().trim();
+            if (demandLoc) {
+              if (propCity && (propCity.includes(demandLoc) || demandLoc.includes(propCity))) {
+                score += 20;
+              } else if (propAddr && (propAddr.includes(demandLoc) || demandLoc.includes(propAddr))) {
+                score += 12;
+              }
+            } else {
+              score += 10;
             }
 
             if (requestedArea && newProperty.features?.area) {
               const areaDiff = Math.abs(newProperty.features.area - requestedArea) / requestedArea;
               if (areaDiff <= 0.2) score += 10;
               else if (areaDiff <= 0.4) score += 5;
+            } else {
+              score += 10;
             }
 
-            if (demand.priority === 'high') score += 5;
-
-            return score >= 75;
+            const finalScore = Math.min(100, Math.max(0, Math.round(score)));
+            return finalScore >= 70;
           });
 
           if (matchingDemands.length > 0) {
@@ -445,7 +450,68 @@ export function usePropertiesManagement({
     return Math.ceil(sortedProperties.length / propertiesPerPage);
   }, [sortedProperties.length, propertiesPerPage]);
 
-  // Drag-reorder is only safe when the full unfiltered list is visible.
+  const [reorderingId, setReorderingId] = useState<string | null>(null);
+
+  // Deterministic reorder handler (works with filters, search, and pagination)
+  const handleMoveOrder = useCallback(async (
+    id: string,
+    payload: { action?: 'top' | 'bottom' | 'up' | 'down' | 'set'; targetPosition?: number }
+  ) => {
+    if (reorderingId) return;
+    setReorderingId(id);
+
+    // Compute optimistic reordering on the global full list
+    const currentFullList = [...properties].sort((a, b) => (a.displayOrder || 999) - (b.displayOrder || 999));
+    const currentIndex = currentFullList.findIndex(p => p.id === id);
+    if (currentIndex === -1) {
+      setReorderingId(null);
+      return;
+    }
+
+    const total = currentFullList.length;
+    let newIndex = currentIndex;
+
+    if (payload.action === 'top' || payload.targetPosition === 1) {
+      newIndex = 0;
+    } else if (payload.action === 'bottom' || payload.targetPosition === total) {
+      newIndex = total - 1;
+    } else if (payload.action === 'up') {
+      newIndex = Math.max(0, currentIndex - 1);
+    } else if (payload.action === 'down') {
+      newIndex = Math.min(total - 1, currentIndex + 1);
+    } else if (payload.targetPosition !== undefined && payload.targetPosition >= 1) {
+      newIndex = Math.max(0, Math.min(total - 1, payload.targetPosition - 1));
+    }
+
+    const reordered = [...currentFullList];
+    const [movedItem] = reordered.splice(currentIndex, 1);
+    reordered.splice(newIndex, 0, movedItem);
+
+    // Apply normalized displayOrder 1..N optimistically
+    const optimisticList = reordered.map((p, idx) => ({ ...p, displayOrder: idx + 1 }));
+    setProperties(optimisticList);
+
+    try {
+      const response = await propertiesAPI.moveOrder(id, payload);
+      const newPos = response?.data?.newPosition || newIndex + 1;
+      showNotification('success', `Priorité mise à jour (#${newPos})`);
+      queryClient.invalidateQueries({ queryKey: ['properties'] });
+    } catch (err) {
+      console.error('Failed to move property order:', err);
+      showNotification('error', 'Erreur lors du changement de priorité');
+      await queryClient.invalidateQueries({ queryKey: ['properties'] });
+    } finally {
+      setReorderingId(null);
+    }
+  }, [properties, reorderingId, queryClient]);
+
+  const handleMoveToTop = useCallback((id: string) => handleMoveOrder(id, { action: 'top' }), [handleMoveOrder]);
+  const handleMoveToBottom = useCallback((id: string) => handleMoveOrder(id, { action: 'bottom' }), [handleMoveOrder]);
+  const handleMoveUp = useCallback((id: string) => handleMoveOrder(id, { action: 'up' }), [handleMoveOrder]);
+  const handleMoveDown = useCallback((id: string) => handleMoveOrder(id, { action: 'down' }), [handleMoveOrder]);
+  const handleSetPosition = useCallback((id: string, position: number) => handleMoveOrder(id, { targetPosition: position }), [handleMoveOrder]);
+
+  // Drag-reorder is only active when no conflicting filters are applied
   const isDragReorderEnabled = useMemo(() => {
     return propertyCityFilter === 'all' &&
       propertyTypeFilter === 'all' &&
@@ -457,33 +523,12 @@ export function usePropertiesManagement({
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
-    if (!isDragReorderEnabled) return;
 
     const oldIndex = sortedProperties.findIndex(p => p.id === active.id);
     const newIndex = sortedProperties.findIndex(p => p.id === over.id);
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const newOrder = arrayMove(sortedProperties, oldIndex, newIndex);
-    const updates = newOrder.map((p, i) => ({ id: p.id, displayOrder: i + 1 }));
-    const updateMap = new Map(updates.map(u => [u.id, u.displayOrder]));
-    
-    // Optimistically update local state immediately
-    setProperties(prev => {
-      const updated = prev.map(p => {
-        const newOrderVal = updateMap.get(p.id);
-        return newOrderVal !== undefined ? { ...p, displayOrder: newOrderVal } : p;
-      });
-      return [...updated].sort((a, b) => (a.displayOrder || 999) - (b.displayOrder || 999));
-    });
-
-    try {
-      await propertiesAPI.updateOrder(updates);
-      showNotification('success', 'Ordre des propriétés mis à jour');
-    } catch (err) {
-      console.error('Failed to update property order:', err);
-      await queryClient.invalidateQueries({ queryKey: ['properties'] });
-      showNotification('error', 'Erreur lors de la réorganisation');
-    }
+    await handleMoveOrder(active.id as string, { targetPosition: newIndex + 1 });
   };
 
   return {
@@ -539,6 +584,14 @@ export function usePropertiesManagement({
     paginatedProperties,
     totalPages,
     isDragReorderEnabled,
-    handleDragEnd
+    handleDragEnd,
+    reorderingId,
+    handleMoveOrder,
+    handleMoveToTop,
+    handleMoveToBottom,
+    handleMoveUp,
+    handleMoveDown,
+    handleSetPosition,
   };
 }
+

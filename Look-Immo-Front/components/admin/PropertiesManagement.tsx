@@ -2,7 +2,7 @@ import React, { useState, useMemo, memo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import {
   GripVertical, MapPin, Star, Edit, Trash2, Search, Plus,
-  ChevronRight, X, Image as ImageIcon, List, ChevronDown,
+  ChevronRight, X, Image as ImageIcon, List, ChevronDown, ChevronUp, ChevronsUp, ChevronsDown,
   FileText, Shield, Eye, Download, Calendar, Mail, Phone, Clock, Check, MessageSquare
 } from 'lucide-react';
 import {
@@ -44,13 +44,39 @@ interface SortablePropertyItemProps {
   handleQuickStatusChange: (id: string, status: 'available' | 'sold' | 'rented') => void;
   openHistoryModal: React.Dispatch<React.SetStateAction<Property | null>>;
   index: number;
+  globalPosition: number;
+  totalProperties: number;
+  onMoveToTop: (id: string) => void;
+  onMoveToBottom: (id: string) => void;
+  onMoveUp: (id: string) => void;
+  onMoveDown: (id: string) => void;
+  onSetPosition: (id: string, pos: number) => void;
+  isReordering: boolean;
+  reorderingId: string | null;
 }
 
-const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, handleQuickStatusChange, openHistoryModal }: SortablePropertyItemProps) => {
+const SortablePropertyItem = memo(({
+  p,
+  openEditModal,
+  handleDelete,
+  handleQuickStatusChange,
+  openHistoryModal,
+  globalPosition,
+  totalProperties,
+  onMoveToTop,
+  onMoveToBottom,
+  onMoveUp,
+  onMoveDown,
+  onSetPosition,
+  isReordering,
+  reorderingId
+}: SortablePropertyItemProps) => {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: p.id });
   const [activePlanMenu, setActivePlanMenu] = useState(false);
   const [activePaperMenu, setActivePaperMenu] = useState(false);
   const { appointments } = useData();
+
+  const isThisItemReordering = reorderingId === p.id;
 
   const propertyAppointments = useMemo(() => {
     return appointments?.filter((a: Appointment) => a.propertyId === p.id) || [];
@@ -61,17 +87,97 @@ const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, handleQuick
     transform: CSS.Translate.toString(transform),
     transition: transition || undefined,
     zIndex: isDragging ? 50 : (activePlanMenu || activePaperMenu) ? 30 : 1,
-    opacity: isDragging ? 0.3 : 1,
+    opacity: isDragging ? 0.3 : isThisItemReordering ? 0.6 : 1,
   };
 
   return (
     <div 
       ref={setNodeRef} 
       style={style} 
-      className={`group bg-white border-b border-gray-100 last:border-0 hover:bg-blue-50/20 p-4 md:p-0 md:flex md:items-center md:min-w-[1000px] w-full overflow-hidden ${isDragging ? 'shadow-xl ring-2 ring-brand-teal/40 rounded-xl bg-teal-50/30' : ''}`}
+      className={`group bg-white border-b border-gray-100 last:border-0 hover:bg-blue-50/20 p-4 md:p-0 md:flex md:items-center md:min-w-[1100px] w-full overflow-hidden ${isDragging ? 'shadow-xl ring-2 ring-brand-teal/40 rounded-xl bg-teal-50/30' : ''}`}
     >
       {/* Mobile Card Layout */}
       <div className="flex flex-col w-full md:hidden gap-3">
+        {/* Mobile Priority and Controls Strip */}
+        <div className="flex items-center justify-between gap-2 bg-gray-50/90 p-2 rounded-xl border border-gray-200/70">
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`font-black text-xs px-2 py-0.5 rounded-lg shrink-0 ${
+                globalPosition === 1
+                  ? 'bg-amber-400 text-amber-950 ring-1 ring-amber-300 font-extrabold shadow-sm'
+                  : globalPosition <= 3
+                  ? 'bg-brand-teal text-white font-bold'
+                  : 'bg-white text-gray-700 border border-gray-200 font-semibold'
+              }`}
+            >
+              #{globalPosition}
+            </span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Priorité</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const input = (e.currentTarget.elements.namedItem('pos') as HTMLInputElement);
+                const val = parseInt(input.value);
+                if (!isNaN(val) && val >= 1 && val <= totalProperties && val !== globalPosition) {
+                  onSetPosition(p.id, val);
+                }
+              }}
+              className="flex items-center"
+            >
+              <input
+                name="pos"
+                type="number"
+                min={1}
+                max={totalProperties}
+                defaultValue={globalPosition}
+                key={globalPosition}
+                disabled={isReordering}
+                onBlur={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val) && val >= 1 && val <= totalProperties && val !== globalPosition) {
+                    onSetPosition(p.id, val);
+                  } else {
+                    e.target.value = String(globalPosition);
+                  }
+                }}
+                className="w-10 h-6 text-center text-xs font-bold bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-brand-teal disabled:opacity-50"
+                title="Position"
+              />
+            </form>
+
+            <button
+              type="button"
+              onClick={() => onMoveToTop(p.id)}
+              disabled={globalPosition === 1 || isReordering}
+              className="p-1 px-1.5 rounded-lg text-[10px] font-bold bg-white border border-gray-200 text-gray-600 hover:text-amber-600 hover:bg-amber-50 disabled:opacity-25"
+              title="Placer en 1ère position (Top)"
+            >
+              🔝 1er
+            </button>
+            <button
+              type="button"
+              onClick={() => onMoveUp(p.id)}
+              disabled={globalPosition === 1 || isReordering}
+              className="p-1 rounded-lg bg-white border border-gray-200 text-gray-600 hover:text-brand-teal hover:bg-teal-50 disabled:opacity-25"
+              title="Monter d'un rang"
+            >
+              <ChevronUp size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onMoveDown(p.id)}
+              disabled={globalPosition === totalProperties || isReordering}
+              className="p-1 rounded-lg bg-white border border-gray-200 text-gray-600 hover:text-brand-teal hover:bg-teal-50 disabled:opacity-25"
+              title="Descendre d'un rang"
+            >
+              <ChevronDown size={14} />
+            </button>
+          </div>
+        </div>
+
         {/* Top Info Row: Handle, Image, Details, Price */}
         <div className="flex items-start gap-3">
           {/* Reorder Handle */}
@@ -275,6 +381,94 @@ const SortablePropertyItem = memo(({ p, openEditModal, handleDelete, handleQuick
           >
             <Trash2 size={14} />
           </button>
+        </div>
+      </div>
+
+      {/* Desktop Priority Column */}
+      <div className="hidden md:flex md:w-48 md:px-4 md:py-4 md:items-center shrink-0">
+        <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200/80 rounded-xl px-2 py-1.5 shadow-sm w-full">
+          {/* Current position badge */}
+          <span
+            className={`font-black text-xs px-2 py-0.5 rounded-lg flex items-center justify-center shrink-0 ${
+              globalPosition === 1
+                ? 'bg-amber-400 text-amber-950 font-extrabold shadow-sm ring-1 ring-amber-300'
+                : globalPosition <= 3
+                ? 'bg-brand-teal text-white font-bold'
+                : 'bg-white text-gray-700 border border-gray-200 font-semibold'
+            }`}
+            title={`Priorité globale #${globalPosition} sur ${totalProperties}`}
+          >
+            #{globalPosition}
+          </span>
+
+          {/* Direct numeric position input */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const input = (e.currentTarget.elements.namedItem('pos') as HTMLInputElement);
+              const val = parseInt(input.value);
+              if (!isNaN(val) && val >= 1 && val <= totalProperties && val !== globalPosition) {
+                onSetPosition(p.id, val);
+              }
+            }}
+            className="flex items-center"
+          >
+            <input
+              name="pos"
+              type="number"
+              min={1}
+              max={totalProperties}
+              defaultValue={globalPosition}
+              key={globalPosition}
+              disabled={isReordering}
+              onBlur={(e) => {
+                const val = parseInt(e.target.value);
+                if (!isNaN(val) && val >= 1 && val <= totalProperties && val !== globalPosition) {
+                  onSetPosition(p.id, val);
+                } else {
+                  e.target.value = String(globalPosition);
+                }
+              }}
+              className="w-10 h-6 text-center text-xs font-bold bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal disabled:opacity-50"
+              title="Entrez un numéro de position (1 = premier) et appuyez sur Entrée"
+            />
+          </form>
+
+          {/* Quick Action Buttons */}
+          <div className="flex items-center gap-0.5 ml-auto">
+            {/* Move to Top */}
+            <button
+              type="button"
+              onClick={() => onMoveToTop(p.id)}
+              disabled={globalPosition === 1 || isReordering}
+              className="p-1 rounded-md text-gray-400 hover:text-amber-600 hover:bg-amber-50 disabled:opacity-20 disabled:pointer-events-none transition-colors"
+              title="Placer en 1ère position (Top)"
+            >
+              <ChevronsUp size={14} />
+            </button>
+
+            {/* Move Up */}
+            <button
+              type="button"
+              onClick={() => onMoveUp(p.id)}
+              disabled={globalPosition === 1 || isReordering}
+              className="p-1 rounded-md text-gray-400 hover:text-brand-teal hover:bg-teal-50 disabled:opacity-20 disabled:pointer-events-none transition-colors"
+              title="Monter d'un rang"
+            >
+              <ChevronUp size={14} />
+            </button>
+
+            {/* Move Down */}
+            <button
+              type="button"
+              onClick={() => onMoveDown(p.id)}
+              disabled={globalPosition === totalProperties || isReordering}
+              className="p-1 rounded-md text-gray-400 hover:text-brand-teal hover:bg-teal-50 disabled:opacity-20 disabled:pointer-events-none transition-colors"
+              title="Descendre d'un rang"
+            >
+              <ChevronDown size={14} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -697,20 +891,21 @@ const PropertiesManagement = ({
         />
       </div>
 
-      {!isDragReorderEnabled && (
-        <div className="flex items-start gap-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm">
-          <span className="mt-0.5 text-amber-500 flex-shrink-0">⚠️</span>
+      <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-blue-50/80 via-teal-50/40 to-blue-50/80 border border-blue-100 text-blue-900 rounded-xl px-4 py-2.5 text-xs font-medium shadow-sm">
+        <div className="flex items-center gap-2">
+          <span className="text-amber-500 text-sm">⭐</span>
           <span>
-            <strong>Réorganisation désactivée.</strong> Effacez les filtres et la recherche pour pouvoir glisser-déposer les propriétés et modifier leur ordre d'affichage.
+            <strong>Ordre d'affichage des biens :</strong> Le numéro <strong>#1</strong> s'affiche en premier sur le site public. Utilisez les boutons <strong>🔝 1er</strong>, <strong>⬆️</strong>, <strong>⬇️</strong> ou tapez directement la position souhaitée.
           </span>
         </div>
-      )}
+      </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden w-full">
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={onDragEnd} modifiers={[restrictToVerticalAxis]}>
           <div className="flex flex-col overflow-x-auto custom-scrollbar w-full">
             {/* Table Header - Visible only on Desktop */}
-            <div className="hidden md:flex bg-gray-50 border-b border-gray-100 py-3 text-xs uppercase font-bold text-gray-500 md:min-w-[1000px] w-full">
+            <div className="hidden md:flex bg-gray-50 border-b border-gray-100 py-3 text-xs uppercase font-bold text-gray-500 md:min-w-[1100px] w-full">
+              <div className="w-48 px-4 shrink-0">Priorité</div>
               <div className="flex-1 px-6 min-w-0">Propriété</div>
               <div className="w-44 px-4 shrink-0">Propriétaire</div>
               <div className="w-32 px-4 text-center shrink-0">Documents</div>
@@ -736,6 +931,15 @@ const PropertiesManagement = ({
                     handleQuickStatusChange={handleQuickStatusChange}
                     openHistoryModal={setHistoryProperty}
                     index={index}
+                    globalPosition={p.displayOrder || index + 1}
+                    totalProperties={properties.length}
+                    onMoveToTop={mgmt.handleMoveToTop}
+                    onMoveToBottom={mgmt.handleMoveToBottom}
+                    onMoveUp={mgmt.handleMoveUp}
+                    onMoveDown={mgmt.handleMoveDown}
+                    onSetPosition={mgmt.handleSetPosition}
+                    isReordering={Boolean(mgmt.reorderingId)}
+                    reorderingId={mgmt.reorderingId}
                   />
                 ))
               )}

@@ -166,16 +166,20 @@ const AdminPanel = () => {
         else if (priceDiff <= 0.1) score += 20;
         else if (priceDiff <= 0.2) score += 10;
       } else {
-        score += 15;
+        score += 20;
       }
 
       // 3. Location Match
-      const propCity = (property.location?.city || '').toLowerCase();
-      const propAddr = (property.location?.address || '').toLowerCase();
-      if (propCity && (propCity.includes(demandLoc) || demandLoc.includes(propCity))) {
-        score += 20;
-      } else if (propAddr && (propAddr.includes(demandLoc) || demandLoc.includes(propAddr))) {
-        score += 12;
+      const propCity = (property.location?.city || '').toLowerCase().trim();
+      const propAddr = (property.location?.address || '').toLowerCase().trim();
+      if (demandLoc) {
+        if (propCity && (propCity.includes(demandLoc) || demandLoc.includes(propCity))) {
+          score += 20;
+        } else if (propAddr && (propAddr.includes(demandLoc) || demandLoc.includes(propAddr))) {
+          score += 12;
+        }
+      } else {
+        score += 10;
       }
 
       // 4. Area Match
@@ -183,12 +187,12 @@ const AdminPanel = () => {
         const areaDiff = Math.abs(property.features.area - requestedArea) / requestedArea;
         if (areaDiff <= 0.2) score += 10;
         else if (areaDiff <= 0.4) score += 5;
+      } else {
+        score += 10;
       }
 
-      // 5. Priority
-      if (demand.priority === 'high') score += 5;
-
-      if (score >= 75) {
+      const finalScore = Math.min(100, Math.max(0, Math.round(score)));
+      if (finalScore >= 70) {
         count++;
       }
     }

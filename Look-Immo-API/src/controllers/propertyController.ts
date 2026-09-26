@@ -463,12 +463,15 @@ export const updatePropertyOrder = async (req: AuthRequest, res: Response): Prom
             return;
         }
 
+        // Sort updates by requested displayOrder and normalize sequentially 1..N
+        const sortedUpdates = [...updates].sort((a, b) => a.displayOrder - b.displayOrder);
+
         // Batch update using transaction
         await prisma.$transaction(
-            updates.map(({ id, displayOrder }) =>
+            sortedUpdates.map(({ id }, index) =>
                 prisma.property.update({
                     where: { id },
-                    data: { displayOrder }
+                    data: { displayOrder: index + 1 }
                 })
             )
         );
@@ -482,3 +485,104 @@ export const updatePropertyOrder = async (req: AuthRequest, res: Response): Prom
         res.status(500).json({ error: 'Failed to update property order' });
     }
 };
+
+// Move a single property to a deterministic position or action (top, bottom, up, down, set)
+export const movePropertyOrder = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const { action, targetPosition } = req.body;
+        const userRole = req.user?.role;
+
+        if (userRole !== 'admin') {
+            res.status(403).json({ error: 'Only admins can reorder properties' });
+            return;
+        }
+
+        // Run reordering inside a single transaction
+        const result = await prisma.$transaction(async (tx) => {
+            // 1. Fetch all properties sorted by current displayOrder, createdAt
+            const allProperties = await tx.property.findMany({
+                select: { id: true, displayOrder: true },
+                orderBy: [
+                    { displayOrder: 'asc' },
+                    { createdAt: 'desc' },
+                ],
+            });
+
+            const currentIndex = allProperties.findIndex((p) => p.id === id);
+            if (currentIndex === -1) {
+                return null;
+            }
+
+            const total = allProperties.length;
+            let newIndex = currentIndex;
+
+            if (action === 'top' || targetPosition === 1) {
+                newIndex = 0;
+            } else if (action === 'bottom' || targetPosition === total) {
+                newIndex = total - 1;
+            } else if (action === 'up') {
+                newIndex = Math.max(0, currentIndex - 1);
+            } else if (action === 'down') {
+                newIndex = Math.min(total - 1, currentIndex + 1);
+            } else if (targetPosition !== undefined && targetPosition >= 1) {
+                newIndex = Math.max(0, Math.min(total - 1, targetPosition - 1));
+            }
+
+            // Move the element in the array
+            const reordered = [...allProperties];
+            const [movedItem] = reordered.splice(currentIndex, 1);
+            reordered.splice(newIndex, 0, movedItem);
+
+            // Normalize displayOrder from 1 to N and prepare updates
+            const updatePromises: Promise<any>[] = [];
+            const updatedItems: { id: string; displayOrder: number }[] = [];
+
+            for (let i = 0; i < reordered.length; i++) {
+                const normalizedPosition = i + 1;
+                const prop = reordered[i];
+                updatedItems.push({ id: prop.id, displayOrder: normalizedPosition });
+
+                if (prop.displayOrder !== normalizedPosition) {
+                    updatePromises.push(
+                        tx.property.update({
+                            where: { id: prop.id },
+                            data: { displayOrder: normalizedPosition },
+                        })
+                    );
+                }
+            }
+
+            if (updatePromises.length > 0) {
+                await Promise.all(updatePromises);
+            }
+
+            return {
+                id,
+                oldPosition: currentIndex + 1,
+                newPosition: newIndex + 1,
+                totalProperties: total,
+                updates: updatedItems,
+            };
+        });
+
+        if (!result) {
+            res.status(404).json({ error: 'Property not found' });
+            return;
+        }
+
+        // Invalidate cache
+        await clearCachePattern('properties:list:*');
+        await deleteCache(`properties:detail:${id}`);
+
+        res.json({
+            success: true,
+            message: `Property moved from #${result.oldPosition} to #${result.newPosition}`,
+            data: result,
+        });
+    } catch (error) {
+        logger.error('Move property order error:', error);
+        res.status(500).json({ error: 'Failed to move property order' });
+    }
+};
+

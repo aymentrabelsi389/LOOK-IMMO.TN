@@ -122,9 +122,9 @@ const PropertyCard: React.FC<PropertyCardProps> = memo(({ property, onSelect, is
               {property.listingType === 'rent' && <span className="ml-1 text-[0.7em] font-medium">{t('perMonth')}</span>}
             </p>
             {property.type === 'land' && (property.priceType === 'per_m2' || (!property.priceType && property.price < 20_000)) && property.features?.area && property.features.area > 0 && (
-              <p className="text-[11px] md:text-xs text-brand-teal font-medium drop-shadow-sm mt-0.5 inline-flex items-baseline gap-1">
-                <span>{t('estimatedTotal')}</span>
-                <Price amount={property.price * property.features.area} />
+              <p className="text-[10px] sm:text-[11px] md:text-xs text-brand-teal font-medium drop-shadow-sm mt-0.5 flex items-baseline gap-1 whitespace-nowrap overflow-hidden">
+                <span className="whitespace-nowrap flex-shrink-0">{t('estimatedTotal')}</span>
+                <Price amount={property.price * property.features.area} className="whitespace-nowrap" />
               </p>
             )}
           </div>

@@ -637,6 +637,14 @@ export const propertiesAPI = {
         });
         return res.json();
     },
+
+    moveOrder: async (id: string, payload: { action?: 'top' | 'bottom' | 'up' | 'down' | 'set'; targetPosition?: number }): Promise<any> => {
+        const res = await apiFetch(`/properties/${id}/order`, {
+            method: 'PATCH',
+            body: JSON.stringify(payload),
+        });
+        return res.json();
+    },
 };
 
 // ==================== APPOINTMENTS API ====================

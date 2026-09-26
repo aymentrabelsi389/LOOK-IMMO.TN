@@ -187,14 +187,7 @@ export function useDemandsManagement({
           let score = 0;
           const effectivePrice = getEffectivePrice(property);
 
-          // 0. Contract Type Match (Rent / Sale) — 20 points
-          if (demand.contractType && property.listingType) {
-            if (demand.contractType === property.listingType) {
-              score += 20;
-            }
-          }
-
-          // 1. Property Type Match — 40 points
+          // 1. Property Type Match — 40 points max
           const allowedTypes = typeMapping[demand.type] || [];
           if (allowedTypes.includes(property.type)) {
             score += 40;
@@ -203,7 +196,7 @@ export function useDemandsManagement({
             if (demand.type === 'villa' && property.type === 'apartment') score += 5;
           }
 
-          // 2. Budget Match — 30 points (tiers adjusted per contract type, using total price for land)
+          // 2. Budget Match — 30 points max (tiers adjusted per contract type, using total price for land)
           if (demand.budget && demand.budget > 0) {
             const priceDiff = (effectivePrice - demand.budget) / demand.budget;
             if (demand.contractType === 'rent') {
@@ -219,35 +212,39 @@ export function useDemandsManagement({
               else if (priceDiff <= 0.15) score += 10; // 10–15%
             }
           } else {
-            score += 15;
-          }
-
-          // 3. Location Match — 20 points
-          const demandLoc = demand.location.toLowerCase();
-          const propCity = (property.location?.city || '').toLowerCase();
-          const propAddr = (property.location?.address || '').toLowerCase();
-
-          if (propCity && (propCity.includes(demandLoc) || demandLoc.includes(propCity))) {
             score += 20;
-          } else if (propAddr && (propAddr.includes(demandLoc) || demandLoc.includes(propAddr))) {
-            score += 12;
           }
 
-          // 4. Area Match — 10 points
-          const areaMatch = demand.description.match(/(\d+)\s*m[2²]/);
+          // 3. Location Match — 20 points max
+          const demandLoc = demand.location ? demand.location.toLowerCase().trim() : '';
+          const propCity = (property.location?.city || '').toLowerCase().trim();
+          const propAddr = (property.location?.address || '').toLowerCase().trim();
+
+          if (demandLoc) {
+            if (propCity && (propCity.includes(demandLoc) || demandLoc.includes(propCity))) {
+              score += 20;
+            } else if (propAddr && (propAddr.includes(demandLoc) || demandLoc.includes(propAddr))) {
+              score += 12;
+            }
+          } else {
+            score += 10;
+          }
+
+          // 4. Area Match — 10 points max
+          const areaMatch = demand.description ? demand.description.match(/(\d+)\s*m[2²]/) : null;
           if (areaMatch && property.features?.area) {
             const requestedArea = parseInt(areaMatch[1]);
             const areaDiff = Math.abs(property.features.area - requestedArea) / requestedArea;
             if (areaDiff <= 0.2) score += 10;
             else if (areaDiff <= 0.4) score += 5;
+          } else {
+            score += 10;
           }
 
-          // 5. Priority Bonus — 5 points
-          if (demand.priority === 'high') score += 5;
-
-          return { property, score };
+          const finalScore = Math.min(100, Math.max(0, Math.round(score)));
+          return { property, score: finalScore };
         })
-        .filter(m => m.score >= 75)
+        .filter(m => m.score >= 70)
         .sort((a, b) => b.score - a.score);
 
       map.set(demand.id, matches);

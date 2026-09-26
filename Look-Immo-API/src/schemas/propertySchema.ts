@@ -128,3 +128,17 @@ export const reorderPropertySchema = z.object({
         ).min(1, "At least one update is required"),
     }),
 });
+
+// Schema for deterministic single property move / reorder
+export const movePropertyOrderSchema = z.object({
+    params: z.object({
+        id: z.string().min(1, 'Property ID is required'),
+    }),
+    body: z.object({
+        action: z.enum(['top', 'bottom', 'up', 'down', 'set']).optional(),
+        targetPosition: z.number().int().min(1, 'Target position must be at least 1').optional(),
+    }).refine(data => data.action !== undefined || data.targetPosition !== undefined, {
+        message: "Either 'action' or 'targetPosition' must be provided",
+    }),
+});
+

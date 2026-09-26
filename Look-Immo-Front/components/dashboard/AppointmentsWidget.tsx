@@ -129,9 +129,10 @@ export const AppointmentsWidget: React.FC<AppointmentsWidgetProps> = ({
                   {(() => {
                     const p = properties.find((pr) => pr.id === apt.propertyId);
                     const title = p?.title || apt.propertyTitle || t('noPropertyAssigned');
-                    const details = p
-                      ? `${p.location.city}${p.price ? ` • ${p.price.toLocaleString(language === 'en' ? 'en-US' : 'fr-TN')} DT` : ''}`
-                      : '';
+                    const loc = p?.location?.city || p?.location?.address || '';
+                    const areaStr = p?.features?.area && p.features.area > 0 ? `${p.features.area} m²` : null;
+                    const priceStr = p?.price ? `${p.price.toLocaleString(language === 'en' ? 'en-US' : 'fr-TN')} DT` : null;
+                    const details = [loc, areaStr, priceStr].filter(Boolean).join(' • ');
                     return (
                       <div className="flex items-start gap-2.5">
                         <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0 mt-0.5">
@@ -156,7 +157,10 @@ export const AppointmentsWidget: React.FC<AppointmentsWidgetProps> = ({
                     return propertyIds.map((pid) => {
                       const p = properties.find((pr) => pr.id === pid);
                       if (!p) return null;
-                      const details = `${p.location.city}${p.price ? ` • ${p.price.toLocaleString(language === 'en' ? 'en-US' : 'fr-TN')} DT` : ''}`;
+                      const loc = p.location?.city || p.location?.address || '';
+                      const areaStr = p.features?.area && p.features.area > 0 ? `${p.features.area} m²` : null;
+                      const priceStr = p.price ? `${p.price.toLocaleString(language === 'en' ? 'en-US' : 'fr-TN')} DT` : null;
+                      const details = [loc, areaStr, priceStr].filter(Boolean).join(' • ');
                       return (
                         <div key={pid} className="flex items-start gap-2.5">
                           <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 flex-shrink-0 mt-0.5">

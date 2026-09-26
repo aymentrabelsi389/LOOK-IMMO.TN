@@ -36,6 +36,7 @@ const STATIC_ROUTES = [
 async function fetchJsonSafe(url, { timeoutMs = 8000 } = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  if (timer.unref) timer.unref();
   try {
     const res = await fetch(url, { signal: controller.signal });
     if (!res.ok) {

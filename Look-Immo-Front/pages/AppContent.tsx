@@ -65,7 +65,7 @@ const AppContent = () => {
 
   const location = useLocation();
   const { isAdminOrAgent } = useAdmin();
-  const { user, handleLogout } = useAuthStore();
+  const { user, handleLogout, isSessionLoading } = useAuthStore();
   const { siteSettings, isLoading, appointments } = useData();
 
   // Automatic Meta Pixel tracking on all pages and route changes
@@ -73,8 +73,8 @@ const AppContent = () => {
 
   const isAdminView = location.pathname.startsWith('/admin') && isAdminOrAgent;
 
-  if (!siteSettings || isLoading) {
-    return <LuxuryLoader message={!siteSettings ? 'Initialisation de la plateforme...' : 'Chargement des propriétés...'} />;
+  if (isSessionLoading || !siteSettings || isLoading) {
+    return <LuxuryLoader message={isSessionLoading ? 'Vérification de la session...' : !siteSettings ? 'Initialisation de la plateforme...' : 'Chargement des propriétés...'} />;
   }
 
   const getPageKey = (pathname: string): string => {

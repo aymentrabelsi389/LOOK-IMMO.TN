@@ -10,6 +10,7 @@ import * as emailService from './emailService';
 jest.mock('../cache/redis', () => ({
     redisClient: {
         isOpen: true,
+        isReady: true,
         rPush: jest.fn(),
         lPop: jest.fn(),
     },
@@ -24,6 +25,7 @@ describe('Background Email Queue (emailQueue)', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         (redisClient as any).isOpen = true;
+        (redisClient as any).isReady = true;
     });
 
     describe('enqueueEmail', () => {

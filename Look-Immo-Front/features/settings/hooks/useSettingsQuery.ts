@@ -20,7 +20,7 @@ export const useSettingsQuery = () => {
     staleTime: 10 * 60 * 1000,
   });
 
-  const siteSettings = qSettings === undefined ? null : qSettings ?? DEFAULT_SITE_SETTINGS;
+  const siteSettings = qSettings ?? (isFetched ? DEFAULT_SITE_SETTINGS : null);
 
   const setSiteSettings: React.Dispatch<React.SetStateAction<SiteSettings | null>> = (updater) => {
     queryClient.setQueryData(['settings'], (old: SiteSettings | null | undefined) => {

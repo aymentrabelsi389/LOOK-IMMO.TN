@@ -45,7 +45,7 @@ export const enqueueEmail = async (params: {
         createdAt: new Date().toISOString(),
     };
 
-    if (redisClient.isOpen) {
+    if (redisClient.isOpen && redisClient.isReady) {
         try {
             await redisClient.rPush(EMAIL_QUEUE_KEY, JSON.stringify(job));
             logger.debug(`[EMAIL QUEUE] Enqueued job ${job.id} for ${job.to}`);
@@ -78,12 +78,13 @@ export const enqueueEmail = async (params: {
  * Returns number of jobs processed.
  */
 export const processEmailQueueBatch = async (batchSize = 5): Promise<number> => {
-    if (!redisClient.isOpen) return 0;
+    if (!redisClient.isOpen || !redisClient.isReady) return 0;
 
     let processedCount = 0;
 
     for (let i = 0; i < batchSize; i++) {
         try {
+            if (!redisClient.isOpen || !redisClient.isReady) break;
             const raw = await redisClient.lPop(EMAIL_QUEUE_KEY);
             if (!raw) break;
 
@@ -130,7 +131,9 @@ export const processEmailQueueBatch = async (batchSize = 5): Promise<number> => 
                 }
             }
         } catch (queueErr) {
-            logger.error('[EMAIL QUEUE] Error during queue processing cycle:', queueErr);
+            if (redisClient.isOpen && redisClient.isReady) {
+                logger.error('[EMAIL QUEUE] Error during queue processing cycle:', queueErr);
+            }
             break;
         }
     }

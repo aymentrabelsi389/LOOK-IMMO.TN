@@ -202,10 +202,10 @@ const InfiniteCarousel = <T extends { id: string }>({
               pauseAutoPlay();
               handlePrev();
             }}
-            className="absolute left-2 top-[40%] -translate-y-1/2 z-30 w-10 h-10 bg-white/90 rounded-full shadow-md flex items-center justify-center hover:bg-white hover:scale-110 transition-all cursor-pointer"
+            className="absolute left-4 top-[32%] -translate-y-1/2 z-30 w-11 h-11 bg-white/90 hover:bg-brand-dark text-brand-dark hover:text-white backdrop-blur-md rounded-full shadow-xl border border-white/60 flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 cursor-pointer"
             aria-label="Previous"
           >
-            <ChevronLeft size={24} className="text-gray-700" />
+            <ChevronLeft size={22} className="stroke-[2.5]" />
           </button>
           <button
             type="button"
@@ -213,10 +213,10 @@ const InfiniteCarousel = <T extends { id: string }>({
               pauseAutoPlay();
               handleNext();
             }}
-            className="absolute right-2 top-[40%] -translate-y-1/2 z-30 w-10 h-10 bg-white/90 rounded-full shadow-md flex items-center justify-center hover:bg-white hover:scale-110 transition-all cursor-pointer"
+            className="absolute right-4 top-[32%] -translate-y-1/2 z-30 w-11 h-11 bg-white/90 hover:bg-brand-dark text-brand-dark hover:text-white backdrop-blur-md rounded-full shadow-xl border border-white/60 flex items-center justify-center transition-all duration-300 transform hover:scale-110 active:scale-95 cursor-pointer"
             aria-label="Next"
           >
-            <ChevronRight size={24} className="text-gray-700" />
+            <ChevronRight size={22} className="stroke-[2.5]" />
           </button>
         </>
       )}

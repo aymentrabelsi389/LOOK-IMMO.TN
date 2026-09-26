@@ -1,0 +1,1274 @@
+import React, { useState, useMemo, memo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
+import {
+  GripVertical, MapPin, Star, Edit, Trash2, Search, Plus,
+  ChevronRight, X, Image as ImageIcon, List, ChevronDown, ChevronUp, ChevronsUp, ChevronsDown,
+  FileText, Shield, Eye, Download, Calendar, Mail, Phone, Clock, Check, MessageSquare
+} from 'lucide-react';
+import {
+  DndContext, closestCenter, KeyboardSensor, MouseSensor, TouchSensor, useSensor, useSensors, DragOverlay, type DragStartEvent
+} from '@dnd-kit/core';
+import {
+  SortableContext, verticalListSortingStrategy, useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import { Property, PropertyType, User, Appointment, ClientDemand } from '@/types';
+import { BACKEND_URL } from '@/services/api';
+import Pagination from '@/components/ui/Pagination';
+import { useData } from '@/context/DataContext';
+import Price from '@/components/common/Price';
+import PropertyModal from './PropertyModal';
+import { getImageSrc } from '@/utils/imageUtils';
+import { usePropertiesManagement } from '../hooks/usePropertiesManagement';
+import { useClickOutside } from '@/hooks/useClickOutside';
+const getDownloadUrl = (url: string) => {
+  if (!url) return '';
+  const cleanUrl = url.replace(BACKEND_URL, '');
+  return `${BACKEND_URL}/api/download?url=${encodeURIComponent(cleanUrl)}`;
+};
+
+interface PropertiesManagementProps {
+  properties: Property[];
+  setProperties: React.Dispatch<React.SetStateAction<Property[]>>;
+  availableLocations: string[];
+  showNotification: (type: 'success' | 'error' | 'info' | 'warning', message: string, options?: { duration?: number }) => void;
+  user: User | null;
+  clientDemands?: ClientDemand[];
+}
+
+interface SortablePropertyItemProps {
+  p: Property;
+  openEditModal: (p: Property) => Promise<void>;
+  handleDelete: (id: string) => void;
+  handleQuickStatusChange: (id: string, status: 'available' | 'sold' | 'rented') => void;
+  openHistoryModal: React.Dispatch<React.SetStateAction<Property | null>>;
+  index: number;
+  globalPosition: number;
+  totalProperties: number;
+  onMoveToTop: (id: string) => void;
+  onMoveToBottom: (id: string) => void;
+  onMoveUp: (id: string) => void;
+  onMoveDown: (id: string) => void;
+  onSetPosition: (id: string, pos: number) => void;
+  isReordering: boolean;
+  reorderingId: string | null;
+}
+
+const SortablePropertyItem = memo(({
+  p,
+  openEditModal,
+  handleDelete,
+  handleQuickStatusChange,
+  openHistoryModal,
+  globalPosition,
+  totalProperties,
+  onMoveToTop,
+  onMoveToBottom,
+  onMoveUp,
+  onMoveDown,
+  onSetPosition,
+  isReordering,
+  reorderingId
+}: SortablePropertyItemProps) => {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: p.id });
+  const [activePlanMenu, setActivePlanMenu] = useState(false);
+  const [activePaperMenu, setActivePaperMenu] = useState(false);
+  const { appointments } = useData();
+
+  const isThisItemReordering = reorderingId === p.id;
+
+  const propertyAppointments = useMemo(() => {
+    return appointments?.filter((a: Appointment) => a.propertyId === p.id) || [];
+  }, [appointments, p.id]);
+  const appointmentsCount = propertyAppointments.length;
+
+  const style: React.CSSProperties = {
+    transform: CSS.Translate.toString(transform),
+    transition: transition || undefined,
+    zIndex: isDragging ? 50 : (activePlanMenu || activePaperMenu) ? 30 : 1,
+    opacity: isDragging ? 0.3 : isThisItemReordering ? 0.6 : 1,
+  };
+
+  return (
+    <div 
+      ref={setNodeRef} 
+      style={style} 
+      className={`group bg-white border-b border-gray-100 last:border-0 hover:bg-blue-50/20 p-4 md:p-0 md:flex md:items-center md:min-w-[1100px] w-full overflow-hidden ${isDragging ? 'shadow-xl ring-2 ring-brand-teal/40 rounded-xl bg-teal-50/30' : ''}`}
+    >
+      {/* Mobile Card Layout */}
+      <div className="flex flex-col w-full md:hidden gap-3">
+        {/* Mobile Priority and Controls Strip */}
+        <div className="flex items-center justify-between gap-2 bg-gray-50/90 p-2 rounded-xl border border-gray-200/70">
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`font-black text-xs px-2 py-0.5 rounded-lg shrink-0 ${
+                globalPosition === 1
+                  ? 'bg-amber-400 text-amber-950 ring-1 ring-amber-300 font-extrabold shadow-sm'
+                  : globalPosition <= 3
+                  ? 'bg-brand-teal text-white font-bold'
+                  : 'bg-white text-gray-700 border border-gray-200 font-semibold'
+              }`}
+            >
+              #{globalPosition}
+            </span>
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Priorité</span>
+          </div>
+
+          <div className="flex items-center gap-1">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const input = (e.currentTarget.elements.namedItem('pos') as HTMLInputElement);
+                const val = parseInt(input.value);
+                if (!isNaN(val) && val >= 1 && val <= totalProperties && val !== globalPosition) {
+                  onSetPosition(p.id, val);
+                }
+              }}
+              className="flex items-center"
+            >
+              <input
+                name="pos"
+                type="number"
+                min={1}
+                max={totalProperties}
+                defaultValue={globalPosition}
+                key={globalPosition}
+                disabled={isReordering}
+                onBlur={(e) => {
+                  const val = parseInt(e.target.value);
+                  if (!isNaN(val) && val >= 1 && val <= totalProperties && val !== globalPosition) {
+                    onSetPosition(p.id, val);
+                  } else {
+                    e.target.value = String(globalPosition);
+                  }
+                }}
+                className="w-10 h-6 text-center text-xs font-bold bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-brand-teal disabled:opacity-50"
+                title="Position"
+              />
+            </form>
+
+            <button
+              type="button"
+              onClick={() => onMoveToTop(p.id)}
+              disabled={globalPosition === 1 || isReordering}
+              className="p-1 px-1.5 rounded-lg text-[10px] font-bold bg-white border border-gray-200 text-gray-600 hover:text-amber-600 hover:bg-amber-50 disabled:opacity-25"
+              title="Placer en 1ère position (Top)"
+            >
+              🔝 1er
+            </button>
+            <button
+              type="button"
+              onClick={() => onMoveUp(p.id)}
+              disabled={globalPosition === 1 || isReordering}
+              className="p-1 rounded-lg bg-white border border-gray-200 text-gray-600 hover:text-brand-teal hover:bg-teal-50 disabled:opacity-25"
+              title="Monter d'un rang"
+            >
+              <ChevronUp size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onMoveDown(p.id)}
+              disabled={globalPosition === totalProperties || isReordering}
+              className="p-1 rounded-lg bg-white border border-gray-200 text-gray-600 hover:text-brand-teal hover:bg-teal-50 disabled:opacity-25"
+              title="Descendre d'un rang"
+            >
+              <ChevronDown size={14} />
+            </button>
+          </div>
+        </div>
+
+        {/* Top Info Row: Handle, Image, Details, Price */}
+        <div className="flex items-start gap-3">
+          {/* Reorder Handle */}
+          <button {...attributes} {...listeners} className="p-1.5 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing focus:outline-none shrink-0 self-center touch-none">
+            <GripVertical size={16} />
+          </button>
+          
+          {/* Property Image */}
+          <div className="w-16 h-16 rounded-xl overflow-hidden border border-gray-200 shrink-0 relative shadow-sm">
+            <img src={getImageSrc(p.images?.[0], 'thumb')} className="w-full h-full object-cover" alt="" loading="lazy" />
+          </div>
+          
+          {/* Details (Title, Location, Price) */}
+          <div className="flex-1 min-w-0">
+            <h4 className="font-extrabold text-gray-900 leading-tight truncate text-sm">{p.title}</h4>
+            <div className="flex items-center text-[10px] text-gray-400 mt-0.5">
+              <MapPin size={10} className="mr-1 shrink-0" />
+              <span className="truncate">{p.location?.city || (p as unknown as { city?: string }).city || 'N/A'}</span>
+            </div>
+            {p.ownerPhone && (
+              <a href={`tel:${p.ownerPhone}`} className="flex items-center gap-1 text-[10px] text-blue-600 font-bold mt-0.5 hover:underline truncate max-w-[130px]">
+                <span>📞</span>
+                <span className="truncate">{p.ownerPhone}</span>
+              </a>
+            )}
+            
+            {/* Price badge right below details */}
+            <div className="mt-1">
+              <span className="font-extrabold text-blue-600 text-xs">
+                <Price amount={p.price} priceType={p.priceType} />
+                {p.listingType === 'rent' && <span className="text-[9px] text-gray-400 ml-0.5">/ Mois</span>}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Metadata Badge Bar */}
+        <div className="flex flex-wrap items-center gap-1.5 bg-gray-50/60 p-2 rounded-xl border border-gray-100/50">
+          {/* Status Badge - only show when not available */}
+          {p.status === 'sold' && <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold bg-red-100 text-red-800 uppercase tracking-wider">Vendu</span>}
+          {p.status === 'rented' && <span className="px-2 py-0.5 rounded-md text-[9px] font-extrabold bg-orange-100 text-orange-800 uppercase tracking-wider">Loué</span>}
+
+          {/* Listing Type Badge */}
+          <span className={`px-2 py-0.5 rounded-md text-[9px] font-extrabold uppercase tracking-wider ${p.listingType === 'sale' ? 'bg-blue-100 text-blue-800' : 'bg-teal-100 text-teal-800'}`}>
+            {p.listingType === 'sale' ? 'Vente' : 'Location'}
+          </span>
+
+          {/* Rating Badge */}
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[9px] font-extrabold bg-yellow-50 text-yellow-750 border border-yellow-100 shadow-sm">
+            <Star size={9} fill="currentColor" className="text-yellow-500" />
+            {p.averageRating || 0}
+          </span>
+
+          {/* Document Plan Badge */}
+          {p.features?.propertyPlan && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setActivePlanMenu(!activePlanMenu)}
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-sky-50 border border-sky-100 text-sky-700 rounded-md text-[9px] font-extrabold outline-none hover:bg-sky-100 transition-colors"
+              >
+                <FileText size={8} /> Plan
+              </button>
+              {activePlanMenu && (
+                <>
+                  <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setActivePlanMenu(false)} />
+                  <div className="absolute bottom-full left-0 mb-1.5 z-50 bg-white border border-gray-150 rounded-xl shadow-xl p-1 min-w-[140px] text-[10px] font-bold text-gray-700">
+                    <a
+                      href={p.features.propertyPlan}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => setActivePlanMenu(false)}
+                      className="flex items-center gap-2 px-3 py-1.5 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                    >
+                      <Eye size={12} /> Voir le PDF
+                    </a>
+                    <a
+                      href={getDownloadUrl(p.features.propertyPlan)}
+                      onClick={() => setActivePlanMenu(false)}
+                      className="flex items-center gap-2 px-3 py-1.5 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors border-t border-gray-50"
+                    >
+                      <Download size={12} /> Télécharger
+                    </a>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Document Titre Bleu Badge */}
+          {p.features?.ownerPaper && (
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setActivePaperMenu(!activePaperMenu)}
+                className="inline-flex items-center gap-1 px-2 py-0.5 bg-purple-50 border border-purple-100 text-purple-700 rounded-md text-[9px] font-extrabold outline-none hover:bg-purple-100 transition-colors"
+              >
+                <Shield size={8} /> Titre bleu
+              </button>
+              {activePaperMenu && (
+                <>
+                  <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setActivePaperMenu(false)} />
+                  <div className="absolute bottom-full left-0 mb-1.5 z-50 bg-white border border-gray-150 rounded-xl shadow-xl p-1 min-w-[140px] text-[10px] font-bold text-gray-700">
+                    <a
+                      href={p.features.ownerPaper}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={() => setActivePaperMenu(false)}
+                      className="flex items-center gap-2 px-3 py-1.5 hover:bg-purple-50 hover:text-purple-600 rounded-lg transition-colors"
+                    >
+                      <Eye size={12} /> Voir le PDF
+                    </a>
+                    <a
+                      href={getDownloadUrl(p.features.ownerPaper)}
+                      onClick={() => setActivePaperMenu(false)}
+                      className="flex items-center gap-2 px-3 py-1.5 hover:bg-purple-50 hover:text-purple-600 rounded-lg transition-colors border-t border-gray-50"
+                    >
+                      <Download size={12} /> Télécharger
+                    </a>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Rendez-vous Row */}
+        {appointmentsCount > 0 ? (
+          <button
+            type="button"
+            onClick={() => openHistoryModal(p)}
+            className="group/btn w-full flex items-center justify-between px-3 py-2.5 bg-emerald-50 hover:bg-emerald-600 border border-emerald-100 hover:border-emerald-600 rounded-xl transition-all active:scale-[0.98] outline-none"
+          >
+            <div className="flex items-center gap-2">
+              <Calendar size={13} className="text-emerald-500 group-hover/btn:text-white transition-colors" />
+              <span className="text-xs font-extrabold text-emerald-700 group-hover/btn:text-white transition-colors">
+                {appointmentsCount} Rendez-vous
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {propertyAppointments.filter((a: Appointment) => a.status === 'pending').length > 0 && (
+                <span className="flex items-center gap-1 text-[9px] font-bold text-yellow-600 group-hover/btn:text-yellow-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+                  {propertyAppointments.filter((a: Appointment) => a.status === 'pending').length} en attente
+                </span>
+              )}
+              {propertyAppointments.filter((a: Appointment) => a.status === 'accepted').length > 0 && (
+                <span className="flex items-center gap-1 text-[9px] font-bold text-green-600 group-hover/btn:text-green-200">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                  {propertyAppointments.filter((a: Appointment) => a.status === 'accepted').length} confirmés
+                </span>
+              )}
+              <ChevronRight size={13} className="text-emerald-400 group-hover/btn:text-white transition-colors" />
+            </div>
+          </button>
+        ) : (
+          <div className="w-full flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-100 rounded-xl">
+            <Calendar size={12} className="text-gray-300" />
+            <span className="text-[10px] font-bold text-gray-400">Aucun rendez-vous</span>
+          </div>
+        )}
+
+        {/* Action Button Row */}
+        <div className="flex items-center gap-2 mt-1">
+          {/* Quick Status Toggle */}
+          <button
+            type="button"
+            onClick={() => handleQuickStatusChange(
+              p.id,
+              p.status === 'available'
+                ? (p.listingType === 'rent' ? 'rented' : 'sold')
+                : 'available'
+            )}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border font-bold text-[10px] transition-all active:scale-[0.98] ${
+              p.status === 'available'
+                ? p.listingType === 'rent'
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600'
+                  : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600'
+                : p.status === 'rented'
+                  ? 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'
+                  : 'bg-red-50 border-red-200 text-red-700 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'
+            }`}
+            title={
+              p.status === 'available'
+                ? p.listingType === 'rent' ? 'Marquer comme loué' : 'Marquer comme vendu'
+                : 'Marquer comme disponible'
+            }
+          >
+            <span>{p.status === 'available' ? '✅' : p.status === 'rented' ? '🟠' : '🔴'}</span>
+            <span>{p.status === 'available' ? 'Dispo' : p.status === 'rented' ? 'Loué' : 'Vendu'}</span>
+          </button>
+          <button 
+            onClick={() => openEditModal(p)} 
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all font-bold text-xs shadow-md shadow-blue-200 active:scale-[0.98]"
+          >
+            <Edit size={14} /> Modifier
+          </button>
+          <button 
+            onClick={() => handleDelete(p.id)} 
+            className="w-9 h-9 shrink-0 flex items-center justify-center bg-red-50 border border-red-100 text-red-500 rounded-xl hover:bg-red-500 hover:text-white transition-all font-bold active:scale-[0.98]"
+          >
+            <Trash2 size={14} />
+          </button>
+        </div>
+      </div>
+
+      {/* Desktop Priority Column */}
+      <div className="hidden md:flex md:w-48 md:px-4 md:py-4 md:items-center shrink-0">
+        <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-200/80 rounded-xl px-2 py-1.5 shadow-sm w-full">
+          {/* Current position badge */}
+          <span
+            className={`font-black text-xs px-2 py-0.5 rounded-lg flex items-center justify-center shrink-0 ${
+              globalPosition === 1
+                ? 'bg-amber-400 text-amber-950 font-extrabold shadow-sm ring-1 ring-amber-300'
+                : globalPosition <= 3
+                ? 'bg-brand-teal text-white font-bold'
+                : 'bg-white text-gray-700 border border-gray-200 font-semibold'
+            }`}
+            title={`Priorité globale #${globalPosition} sur ${totalProperties}`}
+          >
+            #{globalPosition}
+          </span>
+
+          {/* Direct numeric position input */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const input = (e.currentTarget.elements.namedItem('pos') as HTMLInputElement);
+              const val = parseInt(input.value);
+              if (!isNaN(val) && val >= 1 && val <= totalProperties && val !== globalPosition) {
+                onSetPosition(p.id, val);
+              }
+            }}
+            className="flex items-center"
+          >
+            <input
+              name="pos"
+              type="number"
+              min={1}
+              max={totalProperties}
+              defaultValue={globalPosition}
+              key={globalPosition}
+              disabled={isReordering}
+              onBlur={(e) => {
+                const val = parseInt(e.target.value);
+                if (!isNaN(val) && val >= 1 && val <= totalProperties && val !== globalPosition) {
+                  onSetPosition(p.id, val);
+                } else {
+                  e.target.value = String(globalPosition);
+                }
+              }}
+              className="w-10 h-6 text-center text-xs font-bold bg-white border border-gray-200 rounded-lg focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal disabled:opacity-50"
+              title="Entrez un numéro de position (1 = premier) et appuyez sur Entrée"
+            />
+          </form>
+
+          {/* Quick Action Buttons */}
+          <div className="flex items-center gap-0.5 ml-auto">
+            {/* Move to Top */}
+            <button
+              type="button"
+              onClick={() => onMoveToTop(p.id)}
+              disabled={globalPosition === 1 || isReordering}
+              className="p-1 rounded-md text-gray-400 hover:text-amber-600 hover:bg-amber-50 disabled:opacity-20 disabled:pointer-events-none transition-colors"
+              title="Placer en 1ère position (Top)"
+            >
+              <ChevronsUp size={14} />
+            </button>
+
+            {/* Move Up */}
+            <button
+              type="button"
+              onClick={() => onMoveUp(p.id)}
+              disabled={globalPosition === 1 || isReordering}
+              className="p-1 rounded-md text-gray-400 hover:text-brand-teal hover:bg-teal-50 disabled:opacity-20 disabled:pointer-events-none transition-colors"
+              title="Monter d'un rang"
+            >
+              <ChevronUp size={14} />
+            </button>
+
+            {/* Move Down */}
+            <button
+              type="button"
+              onClick={() => onMoveDown(p.id)}
+              disabled={globalPosition === totalProperties || isReordering}
+              className="p-1 rounded-md text-gray-400 hover:text-brand-teal hover:bg-teal-50 disabled:opacity-20 disabled:pointer-events-none transition-colors"
+              title="Descendre d'un rang"
+            >
+              <ChevronDown size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Handle & Image Row */}
+      <div className="hidden md:flex md:items-center md:flex-1 md:px-6 md:py-4 min-w-0 overflow-hidden">
+        <div className="flex items-center flex-1 min-w-0 overflow-hidden">
+          <button {...attributes} {...listeners} className="p-2 mr-1 text-gray-400 hover:text-gray-600 cursor-grab active:cursor-grabbing focus:outline-none shrink-0 touch-none">
+            <GripVertical size={18} />
+          </button>
+          <div className="w-16 h-12 rounded-lg overflow-hidden border border-gray-200 mr-3 shrink-0 relative">
+            <img src={getImageSrc(p.images?.[0], 'medium')} className="w-full h-full object-cover" alt="" loading="lazy" />
+          </div>
+          <div className="min-w-0 flex-1 overflow-hidden">
+            <h4 className="font-bold text-gray-900 group-hover:text-blue-600 transition text-sm md:text-base truncate block" title={p.title}>{p.title}</h4>
+            <div className="flex items-center text-[10px] md:text-xs text-gray-400 mt-0.5">
+              <MapPin size={10} className="mr-1 shrink-0" />
+              <span className="truncate">{p.location?.city || (p as unknown as { city?: string }).city || 'N/A'}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Desktop Owner Phone Column */}
+      <div className="hidden md:flex md:w-44 md:px-4 md:py-4 md:items-center shrink-0">
+        {p.ownerPhone ? (
+          <a 
+            href={`tel:${p.ownerPhone}`} 
+            className="text-xs font-bold text-gray-600 hover:text-blue-600 bg-gray-100 hover:bg-blue-50 border border-gray-200 hover:border-blue-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1.5 transition-all whitespace-nowrap"
+          >
+            <span className="text-[10px]">📞</span> {p.ownerPhone}
+          </a>
+        ) : (
+          <span className="text-gray-300 text-xs font-bold">—</span>
+        )}
+      </div>
+
+      {/* Desktop Documents Column */}
+      <div className="hidden md:flex md:w-32 md:px-4 md:py-4 md:items-center md:justify-center md:gap-3 shrink-0">
+        {p.features?.propertyPlan ? (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setActivePlanMenu(!activePlanMenu)}
+              title="Plan de la propriété"
+              className="p-2 bg-blue-50 border border-blue-100 text-blue-600 rounded-xl hover:bg-blue-600 hover:text-white transition shadow-sm outline-none"
+            >
+              <FileText size={16} />
+            </button>
+            {activePlanMenu && (
+              <>
+                <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setActivePlanMenu(false)} />
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 z-50 bg-white border border-gray-150 rounded-xl shadow-xl p-1 min-w-[140px] text-xs font-bold text-gray-700 animate-scale-in">
+                  <a
+                    href={p.features.propertyPlan}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => setActivePlanMenu(false)}
+                    className="flex items-center gap-2 px-3 py-2 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors"
+                  >
+                    <Eye size={14} /> Voir le PDF
+                  </a>
+                  <a
+                    href={getDownloadUrl(p.features.propertyPlan)}
+                    onClick={() => setActivePlanMenu(false)}
+                    className="flex items-center gap-2 px-3 py-2 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-colors border-t border-gray-50"
+                  >
+                    <Download size={14} /> Télécharger
+                  </a>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <span className="text-gray-300 text-xs">-</span>
+        )}
+
+        {p.features?.ownerPaper ? (
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setActivePaperMenu(!activePaperMenu)}
+              title="Titre bleu / Papier de propriété"
+              className="p-2 bg-purple-50 border border-purple-100 text-purple-600 rounded-xl hover:bg-purple-600 hover:text-white transition shadow-sm outline-none"
+            >
+              <Shield size={16} />
+            </button>
+            {activePaperMenu && (
+              <>
+                <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setActivePaperMenu(false)} />
+                <div className="absolute top-full left-1/2 -translate-x-1/2 mt-1.5 z-50 bg-white border border-gray-150 rounded-xl shadow-xl p-1 min-w-[140px] text-xs font-bold text-gray-700 animate-scale-in">
+                  <a
+                    href={p.features.ownerPaper}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={() => setActivePaperMenu(false)}
+                    className="flex items-center gap-2 px-3 py-2 hover:bg-purple-50 hover:text-purple-600 rounded-lg transition-colors"
+                  >
+                    <Eye size={14} /> Voir le PDF
+                  </a>
+                  <a
+                    href={getDownloadUrl(p.features.ownerPaper)}
+                    onClick={() => setActivePaperMenu(false)}
+                    className="flex items-center gap-2 px-3 py-2 hover:bg-purple-50 hover:text-purple-600 rounded-lg transition-colors border-t border-gray-50"
+                  >
+                    <Download size={14} /> Télécharger
+                  </a>
+                </div>
+              </>
+            )}
+          </div>
+        ) : (
+          <span className="text-gray-300 text-xs">-</span>
+        )}
+      </div>
+
+      {/* Desktop Price Column */}
+      <div className="hidden md:block md:w-44 md:px-4 md:py-4 shrink-0">
+        <span className="font-bold text-gray-900 bg-gray-100 px-3 py-1 rounded-lg border border-gray-200 text-sm whitespace-nowrap">
+          <Price amount={p.price} priceType={p.priceType} />
+          {p.listingType === 'rent' && <span className="text-[10px] text-gray-400 ml-0.5"> / Mois</span>}
+        </span>
+      </div>
+
+      {/* Desktop Status & Type Row */}
+      <div className="hidden md:flex md:items-center md:justify-start md:gap-4 md:w-48 md:px-4 md:py-4 shrink-0">
+        <div className="flex gap-2 items-center">
+          {/* Only show status badge when not 'available' */}
+          {p.status === 'sold' && <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-red-100 text-red-800">Vendu</span>}
+          {p.status === 'rented' && <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold bg-orange-100 text-orange-800">Loué</span>}
+          <span className={`text-[10px] font-extrabold uppercase tracking-wider whitespace-nowrap ${p.listingType === 'sale' ? 'text-blue-600' : 'text-green-600'}`}>
+            {p.listingType === 'sale' ? 'Vente' : 'Location'}
+          </span>
+        </div>
+        <div className="hidden lg:flex items-center whitespace-nowrap">
+          <div className="flex text-yellow-400 mr-1.5">
+            <Star size={11} fill="currentColor" />
+          </div>
+          <span className="text-[10px] text-gray-400 font-bold">{p.averageRating || 0}</span>
+        </div>
+      </div>
+
+      {/* Desktop Rendez-vous Column */}
+      <div className="hidden md:flex md:w-36 md:px-4 md:py-4 md:items-center md:justify-center shrink-0">
+        {appointmentsCount > 0 ? (
+          <button
+            onClick={() => openHistoryModal(p)}
+            className="group/btn flex flex-col items-center gap-1 px-3 py-2 rounded-xl border border-emerald-100 bg-emerald-50 hover:bg-emerald-600 hover:border-emerald-600 transition-all active:scale-95 outline-none w-full"
+            title="Voir l'historique des rendez-vous"
+          >
+            <div className="flex items-center gap-1.5">
+              <Calendar size={12} className="text-emerald-500 group-hover/btn:text-white transition-colors" />
+              <span className="text-sm font-black text-emerald-700 group-hover/btn:text-white transition-colors">{appointmentsCount}</span>
+            </div>
+            <div className="flex items-center gap-1">
+              {propertyAppointments.filter((a: Appointment) => a.status === 'pending').length > 0 && (
+                <span className="w-1.5 h-1.5 rounded-full bg-yellow-400"></span>
+              )}
+              {propertyAppointments.filter((a: Appointment) => a.status === 'accepted').length > 0 && (
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+              )}
+              {propertyAppointments.filter((a: Appointment) => a.status === 'rejected').length > 0 && (
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+              )}
+            </div>
+          </button>
+        ) : (
+          <span className="text-gray-300 text-xs font-bold">—</span>
+        )}
+      </div>
+
+      {/* Desktop Actions */}
+      <div className="hidden md:flex md:items-center md:justify-end md:gap-2.5 md:w-44 md:px-4 md:py-4 shrink-0">
+        {/* Quick Status Toggle */}
+        <button
+          type="button"
+          onClick={() => handleQuickStatusChange(
+            p.id,
+            p.status === 'available'
+              ? (p.listingType === 'rent' ? 'rented' : 'sold')
+              : 'available'
+          )}
+          title={
+            p.status === 'available'
+              ? p.listingType === 'rent' ? 'Marquer comme loué' : 'Marquer comme vendu'
+              : 'Marquer comme disponible'
+          }
+          className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border font-bold text-[10px] transition-all active:scale-95 shrink-0 ${
+            p.status === 'available'
+              ? p.listingType === 'rent'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-600'
+                : 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600'
+              : p.status === 'rented'
+                ? 'bg-orange-50 border-orange-200 text-orange-700 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'
+                : 'bg-red-50 border-red-200 text-red-700 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'
+          }`}
+        >
+          <span className="text-xs">{p.status === 'available' ? '✅' : p.status === 'rented' ? '🟠' : '🔴'}</span>
+          <span className="hidden lg:inline">{p.status === 'available' ? 'Dispo' : p.status === 'rented' ? 'Loué' : 'Vendu'}</span>
+        </button>
+        <button 
+          onClick={() => openEditModal(p)} 
+          className="w-9 h-9 flex items-center justify-center bg-blue-50 border border-blue-100 text-blue-600 rounded-lg hover:bg-blue-600 hover:text-white transition-all shadow-sm font-bold active:scale-95 shrink-0"
+        >
+          <Edit size={14} />
+        </button>
+        <button 
+          onClick={() => handleDelete(p.id)} 
+          className="w-9 h-9 flex items-center justify-center bg-gray-50 border border-gray-100 text-gray-400 rounded-lg hover:border-red-500 hover:text-red-500 transition-all shadow-sm font-bold active:scale-95 shrink-0"
+        >
+          <Trash2 size={14} />
+        </button>
+      </div>
+    </div>
+  );
+});
+
+interface DropdownProps {
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  placeholder?: string;
+}
+
+const CustomDropdown = ({ value, onChange, options, placeholder }: DropdownProps) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+  useClickOutside(dropdownRef, () => setIsOpen(false));
+
+  const selectedOption = options.find(opt => opt.value === value) || { label: placeholder || 'Choisir...', value };
+
+  return (
+    <div ref={dropdownRef} className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-2.5 bg-white border border-gray-200 rounded-xl shadow-sm hover:border-blue-500 focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 transition-all text-xs font-bold text-gray-600 cursor-pointer"
+      >
+        <span className="truncate">{selectedOption.label}</span>
+        <ChevronDown className={`text-gray-400 transform transition-transform duration-200 shrink-0 ml-2 ${isOpen ? 'rotate-180' : ''}`} size={14} />
+      </button>
+
+      {isOpen && (
+        <div className="absolute right-0 z-[60] mt-2 w-full bg-white border border-gray-150 rounded-2xl shadow-lg py-2 overflow-y-auto max-h-60 animate-fade-in-up">
+          {options.map((option) => {
+            const isSelected = option.value === value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className={`w-full flex items-center justify-between px-4 py-2.5 text-left text-xs font-bold transition-colors ${
+                  isSelected
+                    ? 'bg-blue-50 text-blue-600 font-black'
+                    : 'text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <span>{option.label}</span>
+                {isSelected && <Check size={14} className="text-blue-600 flex-shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PropertiesManagement = ({
+  properties,
+  setProperties,
+  availableLocations,
+  showNotification,
+  clientDemands = []
+}: PropertiesManagementProps) => {
+  const mgmt = usePropertiesManagement({ properties, setProperties, availableLocations, showNotification, clientDemands });
+  const {
+    appointments,
+    showModal, setShowModal,
+    isEditing,
+    historyProperty, setHistoryProperty,
+    historyStatusFilter, setHistoryStatusFilter,
+    handleUpdateStatus,
+    handleDeleteAppointment,
+    formatDate,
+    propertyCityFilter, setPropertyCityFilter,
+    propertySearchQuery, setPropertySearchQuery,
+    propertyTypeFilter, setPropertyTypeFilter,
+    propertyStatusFilter, setPropertyStatusFilter,
+    propertyListingTypeFilter, setPropertyListingTypeFilter,
+    propertyCurrentPage, setPropertyCurrentPage,
+    isAdminShowAll, setIsAdminShowAll,
+    propertiesPerPage,
+    deleteConfirmId, setDeleteConfirmId,
+    cityOptions,
+    typeOptions,
+    formData, setFormData,
+    gpsInput, setGpsInput,
+    formErrors,
+    clearError,
+    openAddModal,
+    openEditModal,
+    handleDelete,
+    handleQuickStatusChange,
+    confirmDelete,
+    handleSave,
+    handleImageUpload,
+    handleImagesReorder,
+    removeImage,
+    handleLocationChange,
+    sortedProperties,
+    paginatedProperties,
+    totalPages,
+    isDragReorderEnabled,
+    handleDragEnd
+  } = mgmt;
+
+  const [activeDragId, setActiveDragId] = useState<string | null>(null);
+  const activeDragProperty = activeDragId ? paginatedProperties.find(p => p.id === activeDragId) : null;
+
+  const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 4,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 150,
+        tolerance: 5,
+      },
+    }),
+    useSensor(KeyboardSensor)
+  );
+
+  const handleDragStart = useCallback((event: DragStartEvent) => {
+    setActiveDragId(String(event.active.id));
+  }, []);
+
+  const onDragEnd = useCallback((event: any) => {
+    setActiveDragId(null);
+    handleDragEnd(event);
+  }, [handleDragEnd]);
+
+  return (
+    <div className="animate-fade-in-up space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Gestion des Propriétés</h2>
+          <p className="text-sm text-gray-500 mt-1">Gérez et suivez votre portefeuille immobilier</p>
+        </div>
+        <div className="flex flex-col sm:flex-row flex-wrap gap-2 w-full md:w-auto">
+          {/* Location Filter */}
+          <div className="relative w-full sm:w-44">
+            <CustomDropdown
+              value={propertyCityFilter}
+              onChange={setPropertyCityFilter}
+              options={cityOptions}
+              placeholder="Toutes les villes"
+            />
+          </div>
+
+          {/* Type Filter */}
+          <div className="relative w-full sm:w-44">
+            <CustomDropdown
+              value={propertyTypeFilter}
+              onChange={(v) => setPropertyTypeFilter(v as PropertyType | 'all')}
+              options={typeOptions}
+              placeholder="Tous les types"
+            />
+          </div>
+          {/* Status Filter */}
+          <div className="relative w-full sm:w-44">
+            <CustomDropdown
+              value={propertyStatusFilter}
+              onChange={(v) => setPropertyStatusFilter(v as 'all' | 'available' | 'sold' | 'rented')}
+              options={[
+                { value: 'all', label: 'Tous les statuts' },
+                { value: 'available', label: '✅ Disponible' },
+                { value: 'sold', label: '🔴 Vendu' },
+                { value: 'rented', label: '🟠 Loué' },
+              ]}
+              placeholder="Tous les statuts"
+            />
+          </div>
+          {/* Listing Type Filter (Sale / Rent) */}
+          <div className="relative w-full sm:w-44">
+            <CustomDropdown
+              value={propertyListingTypeFilter}
+              onChange={(v) => setPropertyListingTypeFilter(v as 'all' | 'sale' | 'rent')}
+              options={[
+                { value: 'all', label: 'Toutes les offres' },
+                { value: 'sale', label: '🔵 À Vendre' },
+                { value: 'rent', label: '🟢 À Louer' },
+              ]}
+              placeholder="Toutes les offres"
+            />
+          </div>
+
+          <button 
+            onClick={openAddModal} 
+            className="w-full sm:w-auto bg-blue-600 text-white px-5 py-2.5 rounded-xl font-bold flex items-center justify-center shadow-lg shadow-blue-600/20 active:scale-95 transition-all shrink-0"
+          >
+            <Plus size={18} className="mr-2" /> Ajouter
+          </button>
+        </div>
+      </div>
+
+      <div className="relative">
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
+        <input 
+          type="text" 
+          placeholder="Rechercher par nom ou ville..." 
+          value={propertySearchQuery} 
+          onChange={e => setPropertySearchQuery(e.target.value)} 
+          className="w-full pl-12 pr-4 py-3.5 border-gray-100 border rounded-xl bg-white shadow-sm focus:border-blue-400 focus:ring-4 focus:ring-blue-400/5 outline-none transition-all" 
+        />
+      </div>
+
+      <div className="flex items-center justify-between gap-3 bg-gradient-to-r from-blue-50/80 via-teal-50/40 to-blue-50/80 border border-blue-100 text-blue-900 rounded-xl px-4 py-2.5 text-xs font-medium shadow-sm">
+        <div className="flex items-center gap-2">
+          <span className="text-amber-500 text-sm">⭐</span>
+          <span>
+            <strong>Ordre d'affichage des biens :</strong> Le numéro <strong>#1</strong> s'affiche en premier sur le site public. Utilisez les boutons <strong>🔝 1er</strong>, <strong>⬆️</strong>, <strong>⬇️</strong> ou tapez directement la position souhaitée.
+          </span>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden w-full">
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={onDragEnd} modifiers={[restrictToVerticalAxis]}>
+          <div className="flex flex-col overflow-x-auto custom-scrollbar w-full">
+            {/* Table Header - Visible only on Desktop */}
+            <div className="hidden md:flex bg-gray-50 border-b border-gray-100 py-3 text-xs uppercase font-bold text-gray-500 md:min-w-[1100px] w-full">
+              <div className="w-48 px-4 shrink-0">Priorité</div>
+              <div className="flex-1 px-6 min-w-0">Propriété</div>
+              <div className="w-44 px-4 shrink-0">Propriétaire</div>
+              <div className="w-32 px-4 text-center shrink-0">Documents</div>
+              <div className="w-44 px-4 shrink-0">Prix</div>
+              <div className="w-48 px-4 shrink-0">Infos</div>
+              <div className="w-36 px-4 text-center shrink-0">Rendez-vous</div>
+              <div className="w-44 px-4 text-right shrink-0">Actions</div>
+            </div>
+            
+            <SortableContext items={paginatedProperties.map(p => p.id)} strategy={verticalListSortingStrategy}>
+              {paginatedProperties.length === 0 ? (
+                <div className="p-16 text-center text-gray-400">
+                   <ImageIcon className="mx-auto mb-4 opacity-20" size={64} />
+                   <p className="font-bold">Aucune propriété trouvée</p>
+                </div>
+              ) : (
+                paginatedProperties.map((p, index) => (
+                  <SortablePropertyItem
+                    key={p.id}
+                    p={p}
+                    openEditModal={openEditModal}
+                    handleDelete={handleDelete}
+                    handleQuickStatusChange={handleQuickStatusChange}
+                    openHistoryModal={setHistoryProperty}
+                    index={index}
+                    globalPosition={p.displayOrder || index + 1}
+                    totalProperties={properties.length}
+                    onMoveToTop={mgmt.handleMoveToTop}
+                    onMoveToBottom={mgmt.handleMoveToBottom}
+                    onMoveUp={mgmt.handleMoveUp}
+                    onMoveDown={mgmt.handleMoveDown}
+                    onSetPosition={mgmt.handleSetPosition}
+                    isReordering={Boolean(mgmt.reorderingId)}
+                    reorderingId={mgmt.reorderingId}
+                  />
+                ))
+              )}
+            </SortableContext>
+          </div>
+          <DragOverlay dropAnimation={{
+            duration: 220,
+            easing: 'cubic-bezier(0.2, 0, 0, 1)',
+          }}>
+            {activeDragProperty ? (
+              <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border-2 border-brand-teal ring-4 ring-brand-teal/15 p-4 flex items-center justify-between gap-4 max-w-2xl cursor-grabbing select-none">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="p-2 text-brand-teal cursor-grabbing shrink-0">
+                    <GripVertical size={20} />
+                  </div>
+                  <div className="w-14 h-14 rounded-xl overflow-hidden border border-gray-200 shrink-0 shadow-sm">
+                    <img src={getImageSrc(activeDragProperty.images?.[0], 'thumb')} className="w-full h-full object-cover" alt="" />
+                  </div>
+                  <div className="min-w-0">
+                    <h4 className="font-extrabold text-gray-900 text-sm truncate">{activeDragProperty.title}</h4>
+                    <p className="text-xs text-gray-400 flex items-center gap-1 mt-0.5">
+                      <MapPin size={11} className="text-brand-teal" />
+                      <span>{activeDragProperty.location?.city || 'N/A'}</span>
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right shrink-0 px-3">
+                  <span className="font-extrabold text-brand-dark text-sm">
+                    <Price amount={activeDragProperty.price} priceType={activeDragProperty.priceType} />
+                  </span>
+                  <span className="block text-[10px] font-black text-brand-teal uppercase tracking-wider">
+                    {activeDragProperty.listingType === 'sale' ? 'Vente' : 'Location'}
+                  </span>
+                </div>
+              </div>
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+
+        {/* Footer with Pagination and Show All */}
+        <div className="px-4 py-3 border-t border-gray-100 bg-white flex flex-wrap items-center justify-between gap-2">
+          <div className="text-xs text-gray-500 font-medium whitespace-nowrap">
+            Affichage de <span className="font-bold text-gray-900">{(propertyCurrentPage - 1) * propertiesPerPage + 1}</span> à <span className="font-bold text-gray-900">{Math.min(propertyCurrentPage * propertiesPerPage, sortedProperties.length)}</span> sur <span className="font-bold text-gray-900">{sortedProperties.length}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Show All Toggle Integrated */}
+            {sortedProperties.length > propertiesPerPage && (
+              <button
+                onClick={() => setIsAdminShowAll(!isAdminShowAll)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl border transition-all shadow-sm ${
+                  isAdminShowAll 
+                    ? 'bg-blue-600 border-blue-600 text-white shadow-blue-200' 
+                    : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <List size={13} />
+                {isAdminShowAll ? 'Pagination' : 'Afficher tout'}
+              </button>
+            )}
+
+            {!isAdminShowAll && totalPages > 1 && (
+              <Pagination
+                currentPage={propertyCurrentPage}
+                totalPages={totalPages}
+                onPrev={() => setPropertyCurrentPage(prev => Math.max(prev - 1, 1))}
+                onNext={() => setPropertyCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                onPageSelect={(page) => setPropertyCurrentPage(page)}
+              />
+            )}
+          </div>
+        </div>
+
+      </div>
+
+      <PropertyModal
+        showModal={showModal}
+        setShowModal={setShowModal}
+        isEditing={isEditing}
+        formData={formData}
+        setFormData={setFormData}
+        gpsInput={gpsInput}
+        setGpsInput={setGpsInput}
+        availableLocations={availableLocations}
+        handleSave={handleSave}
+        handleImageUpload={handleImageUpload}
+        removeImage={removeImage}
+        onImagesReorder={handleImagesReorder}
+        onLocationChange={handleLocationChange}
+        errors={formErrors}
+        clearError={clearError}
+      />
+
+      {deleteConfirmId && createPortal(
+        <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl w-full max-w-md p-8 text-center animate-bounce-in shadow-2xl">
+            <div className="w-20 h-20 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto mb-6">
+              <Trash2 size={40} />
+            </div>
+            <h3 className="text-2xl font-bold text-gray-900 mb-2">Supprimer ?</h3>
+            <p className="text-gray-500 text-sm mb-8">Cette action est irréversible. Toutes les données de cette propriété seront perdues.</p>
+            <div className="flex space-x-3">
+              <button onClick={() => setDeleteConfirmId(null)} className="flex-1 px-4 py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition">Annuler</button>
+              <button onClick={confirmDelete} className="flex-1 px-4 py-4 bg-red-500 text-white font-bold rounded-2xl hover:bg-red-600 transition shadow-lg shadow-red-500/20">Supprimer</button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {historyProperty && createPortal((() => {
+        const historyPropertyApts = appointments.filter(a => a.propertyId === historyProperty.id);
+        const filteredHistoryApts = historyStatusFilter === 'all'
+          ? historyPropertyApts
+          : historyPropertyApts.filter(a => a.status === historyStatusFilter);
+
+        const sortedHistoryApts = [...filteredHistoryApts].sort(
+          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+
+        return (
+          <div className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-3xl w-full max-w-2xl max-h-[85vh] overflow-hidden flex flex-col shadow-xl animate-scale-in">
+              {/* Header */}
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-emerald-50 text-emerald-600 rounded-2xl">
+                    <Calendar size={22} />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-gray-900 leading-tight">Historique des Rendez-vous</h3>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate max-w-[320px] md:max-w-[400px]" title={historyProperty.title}>
+                      {historyProperty.title}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="px-3 py-1 bg-emerald-100/70 border border-emerald-250 text-emerald-800 rounded-full text-[10px] font-black uppercase tracking-wider whitespace-nowrap shrink-0">
+                    {historyPropertyApts.length} au total
+                  </span>
+                  <button
+                    onClick={() => { setHistoryProperty(null); setHistoryStatusFilter('all'); }}
+                    className="p-1.5 hover:bg-gray-100 rounded-lg text-gray-400 hover:text-gray-600 transition"
+                  >
+                    <X size={18} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Status Filters inside Modal */}
+              <div className="px-6 py-3 border-b border-gray-150 flex flex-wrap items-center gap-1.5 bg-white">
+                <span className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest mr-2">Filtrer:</span>
+                <button
+                  onClick={() => setHistoryStatusFilter('all')}
+                  className={`px-3 py-1 text-[10px] font-extrabold rounded-lg border transition ${
+                    historyStatusFilter === 'all'
+                      ? 'bg-blue-600 border-blue-600 text-white shadow-sm'
+                      : 'bg-gray-50 border-gray-200 text-gray-600 hover:bg-gray-100'
+                  }`}
+                >
+                  Tous ({historyPropertyApts.length})
+                </button>
+                <button
+                  onClick={() => setHistoryStatusFilter('pending')}
+                  className={`px-3 py-1 text-[10px] font-extrabold rounded-lg border transition ${
+                    historyStatusFilter === 'pending'
+                      ? 'bg-yellow-500 border-yellow-500 text-white shadow-sm'
+                      : 'bg-yellow-50/50 border-yellow-100 text-yellow-700 hover:bg-yellow-50'
+                  }`}
+                >
+                  En attente ({historyPropertyApts.filter(a => a.status === 'pending').length})
+                </button>
+                <button
+                  onClick={() => setHistoryStatusFilter('accepted')}
+                  className={`px-3 py-1 text-[10px] font-extrabold rounded-lg border transition ${
+                    historyStatusFilter === 'accepted'
+                      ? 'bg-green-600 border-green-600 text-white shadow-sm'
+                      : 'bg-green-50 border-green-150 text-green-700 hover:bg-green-50'
+                  }`}
+                >
+                  Confirmés ({historyPropertyApts.filter(a => a.status === 'accepted').length})
+                </button>
+                <button
+                  onClick={() => setHistoryStatusFilter('rejected')}
+                  className={`px-3 py-1 text-[10px] font-extrabold rounded-lg border transition ${
+                    historyStatusFilter === 'rejected'
+                      ? 'bg-red-500 border-red-500 text-white shadow-sm'
+                      : 'bg-red-50 border-red-150 text-red-700 hover:bg-red-50'
+                  }`}
+                >
+                  Annulés ({historyPropertyApts.filter(a => a.status === 'rejected').length})
+                </button>
+              </div>
+
+              {/* Scrollable Body */}
+              <div className="p-6 overflow-y-auto space-y-4 flex-1 bg-gray-50/30">
+                {sortedHistoryApts.length === 0 ? (
+                  <div className="p-16 text-center text-gray-400 bg-white rounded-2xl border border-gray-100">
+                    <Calendar size={48} className="mx-auto mb-4 opacity-20 text-emerald-500" />
+                    <p className="font-extrabold text-sm">Aucun rendez-vous trouvé</p>
+                    <p className="text-xs text-gray-400 mt-1">Aucune demande correspondant à ces critères.</p>
+                  </div>
+                ) : (
+                  sortedHistoryApts.map(apt => {
+                    const clientName = apt.clientName || apt.userName || 'Client inconnu';
+                    const email = apt.clientEmail || apt.userEmail || '';
+                    const phone = apt.clientPhone || apt.userPhone || '';
+                    
+                    // Parse custom notes safely
+                    const rawNotes = apt.notes || apt.message || '';
+                    const cleanNotes = rawNotes.match(/^\[PROPS:[^\]]*\](.*)/s)
+                      ? rawNotes.replace(/^\[PROPS:[^\]]*\]/s, '').trim()
+                      : rawNotes;
+
+                    return (
+                      <div
+                        key={apt.id}
+                        className={`p-5 rounded-2xl border bg-white shadow-sm transition-all flex flex-col gap-3 hover:shadow-md ${
+                          apt.status === 'pending' ? 'border-yellow-200 bg-yellow-50/20' : 
+                          apt.status === 'accepted' ? 'border-green-100' :
+                          apt.status === 'rejected' ? 'border-red-100' :
+                          'border-gray-100'
+                        }`}
+                      >
+                        {/* Row 1: Client info + Status badge */}
+                        <div className="flex justify-between items-start gap-4">
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-gray-100 border border-gray-200 text-gray-600 flex items-center justify-center font-black text-sm shrink-0">
+                              {clientName.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <h4 className="font-bold text-gray-900 text-sm leading-tight truncate">{clientName}</h4>
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 text-[10px] text-gray-400 font-medium min-w-0">
+                                {email && (
+                                  <span className="flex items-center gap-1 min-w-0 max-w-[160px] sm:max-w-none" title={email}>
+                                    <Mail size={10} className="text-emerald-500 shrink-0" />
+                                    <span className="truncate">{email}</span>
+                                  </span>
+                                )}
+                                {phone && (
+                                  <a href={`tel:${phone}`} className="flex items-center gap-1 shrink-0 hover:text-emerald-600 transition-colors">
+                                    <Phone size={10} className="text-emerald-500" /> {phone}
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Status Badge */}
+                          <div className={`px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider whitespace-nowrap border shrink-0 ${
+                            apt.status === 'accepted' ? 'bg-green-50 text-green-700 border-green-200' :
+                            apt.status === 'rejected' ? 'bg-red-50 text-red-700 border-red-200' :
+                            'bg-amber-50 text-amber-800 border-amber-200'
+                          }`}>
+                            {apt.status === 'accepted' ? 'Confirmé' : apt.status === 'rejected' ? 'Annulé' : 'En attente'}
+                          </div>
+                        </div>
+
+                        {/* Row 2: Date, Time & Meeting Type */}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-3 border-t border-gray-100">
+                          <div className="flex items-center gap-4">
+                            <span className="flex items-center gap-1.5 text-xs font-bold text-gray-600">
+                              <Calendar size={13} className="text-emerald-500" /> {formatDate(apt.date)}
+                            </span>
+                            <span className="flex items-center gap-1.5 text-xs font-semibold text-gray-400">
+                              <Clock size={13} /> {apt.time}
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-bold text-gray-400 bg-gray-50 border border-gray-100 px-2 py-1 rounded-lg">
+                            {apt.meetingType === 'visite' ? '🏠 Visite sur place' : apt.meetingType === 'appel' ? '📞 Appel téléphonique' : '🏢 Réunion en agence'}
+                          </span>
+                        </div>
+
+                        {/* Row 3: Client notes */}
+                        {cleanNotes && (
+                          <div className="text-xs text-gray-600 bg-gray-50 rounded-xl p-3 border border-gray-100 italic flex items-start gap-2 leading-relaxed">
+                            <MessageSquare size={13} className="text-emerald-500/80 mt-0.5 flex-shrink-0" />
+                            <span>"{cleanNotes}"</span>
+                          </div>
+                        )}
+
+                        {/* Row 4: Quick Actions */}
+                        <div className="flex items-center justify-end gap-2">
+                          {apt.status === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => handleUpdateStatus(apt.id, 'accepted')}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition font-bold text-xs shadow-sm shadow-green-100 active:scale-95"
+                              >
+                                <Check size={13} /> Confirmer
+                              </button>
+                              <button
+                                onClick={() => handleUpdateStatus(apt.id, 'rejected')}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition font-bold text-xs shadow-sm shadow-red-100 active:scale-95"
+                              >
+                                <X size={13} /> Refuser
+                              </button>
+                            </>
+                          )}
+                          
+                          <button
+                            onClick={() => handleDeleteAppointment(apt.id)}
+                            className="p-1.5 bg-white border border-gray-200 text-gray-400 rounded-lg hover:text-red-500 hover:border-red-200 hover:bg-red-50 transition shrink-0 ml-auto active:scale-95"
+                            title="Supprimer définitivement"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              {/* Footer */}
+              <div className="p-4 border-t border-gray-100 flex justify-end bg-gray-50/30">
+                <button
+                  onClick={() => { setHistoryProperty(null); setHistoryStatusFilter('all'); }}
+                  className="px-5 py-2.5 bg-gray-200 text-gray-700 hover:bg-gray-300 font-bold text-xs rounded-xl transition outline-none active:scale-[0.98]"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })(), document.body)}
+    </div>
+  );
+};
+
+export default PropertiesManagement;

@@ -1,9 +1,9 @@
 import { seoInjector } from './seoInjector';
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../utils/prisma';
+import { prisma } from '../core/database/prisma';
 import fs from 'fs';
 
-jest.mock('../utils/logger', () => ({
+jest.mock('../core/logger/logger', () => ({
     logger: {
         info:  jest.fn(),
         warn:  jest.fn(),
@@ -12,11 +12,11 @@ jest.mock('../utils/logger', () => ({
     },
 }));
 
-jest.mock('../utils/requestContext', () => ({
+jest.mock('../core/context/requestContext', () => ({
     getRequestContext: jest.fn(() => ({})),
 }));
 
-jest.mock('../utils/prisma', () => ({
+jest.mock('../core/database/prisma', () => ({
     prisma: {
         property: {
             findUnique: jest.fn(),

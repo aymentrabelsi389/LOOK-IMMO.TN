@@ -103,7 +103,7 @@ export interface PropertyAltContext {
   parking?: boolean;
 }
 
-import { PROPERTY_TYPE_LABELS } from './propertyUtils';
+import { PROPERTY_TYPE_LABELS } from '@/features/properties/utils/propertyUtils';
 
 /** Map internal type keys to French labels for alt text. */
 const TYPE_LABELS = PROPERTY_TYPE_LABELS;

@@ -12,7 +12,7 @@ import { socketService } from '@/services/socket';
 import { notify } from '@/services/notificationStore';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useUI } from './UIContext';
-import { useAdmin } from '@/hooks/useAdmin';
+import { useAdmin } from '@/features/admin/hooks/useAdmin';
 import {
   usePropertiesQuery,
   useSettingsQuery,

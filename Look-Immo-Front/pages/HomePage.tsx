@@ -4,10 +4,10 @@ import {
   DEFAULT_MAX_PRICE, DEFAULT_MIN_PRICE, DEFAULT_MIN_BEDROOMS, DEFAULT_MIN_AREA,
 } from '@/constants/filterConstants';
 
-import FeaturedPropertiesSection from '@/components/home/FeaturedPropertiesSection';
-import NewPropertiesSection from '@/components/home/NewPropertiesSection';
-import PromotionLandsSection from '@/components/home/PromotionLandsSection';
-import NewsSection from '@/components/home/NewsSection';
+import FeaturedPropertiesSection from '@/features/properties/components/FeaturedPropertiesSection';
+import NewPropertiesSection from '@/features/properties/components/NewPropertiesSection';
+import PromotionLandsSection from '@/features/properties/components/PromotionLandsSection';
+import NewsSection from '@/features/blog/components/NewsSection';
 import { useSEO } from '@/hooks/useSEO';
 import { useUI } from '@/context/UIContext';
 import { useAuthStore } from '@/stores/useAuthStore';

@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../utils/prisma';
+import { prisma } from '../core/database/prisma';
 import fs from 'fs';
 import path from 'path';
-import { logger } from '../utils/logger';
+import { logger } from '../core/logger/logger';
 
 // ─── Bot Detection ────────────────────────────────────────────────────────────
 // Matches all major social crawlers, search engine bots, and link-preview agents.

@@ -65,12 +65,12 @@ const seoInjector_1 = require("./middleware/seoInjector");
 const rateLimiter_1 = require("./middleware/rateLimiter");
 const csrfGuard_1 = require("./middleware/csrfGuard");
 const requestLogger_1 = require("./middleware/requestLogger");
-const redis_1 = require("./utils/redis");
-const socket_1 = require("./utils/socket");
-const prisma_1 = require("./utils/prisma");
-const exchangeRateService_1 = require("./services/exchangeRateService");
-const cronService_1 = require("./services/cronService");
-const logger_1 = require("./utils/logger");
+const redis_1 = require("./core/cache/redis");
+const socket_1 = require("./core/socket/socket");
+const prisma_1 = require("./core/database/prisma");
+const exchangeRate_service_1 = require("./modules/exchange-rates/exchangeRate.service");
+const cron_1 = require("./jobs/cron");
+const logger_1 = require("./core/logger/logger");
 // ─── Startup Environment Validation ──────────────────────────────────────────
 // Fail fast if critical env vars are missing — prevents silent misconfiguration
 const isProd = process.env.NODE_ENV === 'production';
@@ -174,9 +174,9 @@ app.use((err, req, res, _next) => {
 const server = http_1.default.createServer(app);
 (0, socket_1.initSocket)(server);
 (0, redis_1.connectRedis)();
-(0, exchangeRateService_1.initExchangeRateCron)();
-(0, cronService_1.initMorningReminderCron)();
-(0, cronService_1.initRefreshTokenCleanupCron)();
+(0, exchangeRate_service_1.initExchangeRateCron)();
+(0, cron_1.initMorningReminderCron)();
+(0, cron_1.initRefreshTokenCleanupCron)();
 server.listen(PORT, () => {
     logger_1.logger.info('Server started', {
         env: process.env.NODE_ENV || 'development',

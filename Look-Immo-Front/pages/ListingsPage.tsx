@@ -10,8 +10,8 @@ import {
   DollarSign, Square, BedDouble, RefreshCw, ChevronLeft, ChevronRight, Search, X, SlidersHorizontal
 } from 'lucide-react';
 
-import PropertyCard from '@/components/PropertyCard';
-import Price from '@/components/Price';
+import PropertyCard from '@/features/properties/components/PropertyCard';
+import Price from '@/components/common/Price';
 import { SkeletonPropertyCard } from '@/components/ui/SkeletonCard';
 import { useClickOutside } from '@/hooks/useClickOutside';
 import { useSEO } from '@/hooks/useSEO';
@@ -19,7 +19,7 @@ import { useUI } from '@/context/UIContext';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useData } from '@/context/DataContext';
 import { propertiesAPI } from '@/services/api';
-import { formatPropertyType } from '@/utils/propertyUtils';
+import { formatPropertyType } from '@/features/properties/utils/propertyUtils';
 import { useTranslation } from '@/hooks/useTranslation';
 
 const ListingsPage = () => {

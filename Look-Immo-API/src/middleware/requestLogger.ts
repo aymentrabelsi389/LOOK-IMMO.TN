@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import morgan from 'morgan';
 import { v4 as uuidv4 } from 'uuid';
-import { requestContextStore } from '../utils/requestContext';
-import { logger } from '../utils/logger';
+import { requestContextStore } from '../core/context/requestContext';
+import { logger } from '../core/logger/logger';
 
 // ─── 1. Request-ID Middleware ─────────────────────────────────────────────────
 // Must be the FIRST middleware registered so the requestId is available to all

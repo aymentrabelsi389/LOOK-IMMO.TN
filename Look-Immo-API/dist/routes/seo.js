@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
-const prisma_1 = require("../utils/prisma");
-const logger_1 = require("../utils/logger");
+const prisma_1 = require("../core/database/prisma");
+const logger_1 = require("../core/logger/logger");
 const router = (0, express_1.Router)();
 const SITE_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 /**
@@ -38,13 +38,13 @@ ${staticPages.map(p => `  <url>
     <changefreq>${p.changefreq}</changefreq>
     <priority>${p.priority}</priority>
   </url>`).join('\n')}
-${properties.map(p => `  <url>
+${properties.map((p) => `  <url>
     <loc>${SITE_URL}/property/${p.id}</loc>
     <lastmod>${new Date(p.updatedAt).toISOString().split('T')[0]}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`).join('\n')}
-${blogPosts.map(p => `  <url>
+${blogPosts.map((p) => `  <url>
     <loc>${SITE_URL}/blog-post/${p.id}</loc>
     <lastmod>${new Date(p.updatedAt).toISOString().split('T')[0]}</lastmod>
     <changefreq>monthly</changefreq>

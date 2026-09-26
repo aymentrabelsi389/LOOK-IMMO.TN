@@ -30,7 +30,7 @@ import {
     DeleteObjectsCommand,
     type ObjectIdentifier,
 } from '@aws-sdk/client-s3';
-import { logger } from '../utils/logger';
+import { logger } from '../core/logger/logger';
 
 // ─── Configuration ────────────────────────────────────────────────────────────
 

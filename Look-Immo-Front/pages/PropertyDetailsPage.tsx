@@ -2,29 +2,29 @@ import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { useParams } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import { Property } from '@/types';
-import { PropertyGallery } from '@/components/PropertyGallery';
+import { PropertyGallery } from '@/features/properties/components/PropertyGallery';
 import { propertiesAPI } from '@/services/api';
 import { useSEO } from '@/hooks/useSEO';
 import { useBreadcrumbSchema } from '@/hooks/useBreadcrumbSchema';
 import { useUI } from '@/context/UIContext';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useData } from '@/context/DataContext';
-import { formatPropertyType } from '@/utils/propertyUtils';
+import { formatPropertyType } from '@/features/properties/utils/propertyUtils';
 import { trackViewContent } from '@/utils/metaPixel';
 import { useTranslation } from '@/hooks/useTranslation';
 import { useAutoTranslate } from '@/hooks/useAutoTranslate';
 import Breadcrumb from '@/components/ui/Breadcrumb';
 
 // Modular Subcomponents
-import { PropertyHeader } from '@/components/property/PropertyHeader';
-import { PropertyFeaturesGrid } from '@/components/property/PropertyFeaturesGrid';
-import { PropertyRatingSection } from '@/components/property/PropertyRatingSection';
-import { PropertyLocationMap } from '@/components/property/PropertyLocationMap';
-import { PropertyBookingForm } from '@/components/property/PropertyBookingForm';
-import { PropertySimilarListings } from '@/components/property/PropertySimilarListings';
-import { PropertyLightbox } from '@/components/property/PropertyLightbox';
+import { PropertyHeader } from '@/features/properties/components/PropertyHeader';
+import { PropertyFeaturesGrid } from '@/features/properties/components/PropertyFeaturesGrid';
+import { PropertyRatingSection } from '@/features/ratings/components/PropertyRatingSection';
+import { PropertyLocationMap } from '@/features/properties/components/PropertyLocationMap';
+import { PropertyBookingForm } from '@/features/appointments/components/PropertyBookingForm';
+import { PropertySimilarListings } from '@/features/properties/components/PropertySimilarListings';
+import { PropertyLightbox } from '@/features/properties/components/PropertyLightbox';
 
-const AdminEditPropertyModal = lazy(() => import('@/components/property/AdminEditPropertyModal'));
+const AdminEditPropertyModal = lazy(() => import('@/features/properties/admin/AdminEditPropertyModal'));
 
 const PropertyDetailsPage: React.FC = () => {
   const { t } = useTranslation();

@@ -1,6 +1,6 @@
 import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter } from 'react-router-dom';
-import AppLayout from './layouts/AppLayout';
+import AppLayout from '@/components/layout/AppLayout';
 import { UIProvider } from './context/UIContext';
 import { DataProvider } from './context/DataContext';
 import { ConfirmProvider } from './context/ConfirmContext';
@@ -9,7 +9,7 @@ import { useAuthStore } from './stores/useAuthStore';
 import { useCurrencyStore } from './stores/useCurrencyStore';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import * as Sentry from '@sentry/react';
-import { ErrorBoundaryFallback } from './components/ErrorBoundaryFallback';
+import { ErrorBoundaryFallback } from '@/components/common/ErrorBoundaryFallback';
 
 import { useLanguageStore } from './stores/useLanguageStore';
 

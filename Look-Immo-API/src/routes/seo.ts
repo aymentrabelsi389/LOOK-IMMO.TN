@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { prisma } from '../utils/prisma';
-import { logger } from '../utils/logger';
+import { prisma } from '../core/database/prisma';
+import { logger } from '../core/logger/logger';
 
 const router = Router();
 
@@ -42,13 +42,13 @@ ${staticPages.map(p => `  <url>
     <changefreq>${p.changefreq}</changefreq>
     <priority>${p.priority}</priority>
   </url>`).join('\n')}
-${properties.map(p => `  <url>
+${properties.map((p: any) => `  <url>
     <loc>${SITE_URL}/property/${p.id}</loc>
     <lastmod>${new Date(p.updatedAt).toISOString().split('T')[0]}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>`).join('\n')}
-${blogPosts.map(p => `  <url>
+${blogPosts.map((p: any) => `  <url>
     <loc>${SITE_URL}/blog-post/${p.id}</loc>
     <lastmod>${new Date(p.updatedAt).toISOString().split('T')[0]}</lastmod>
     <changefreq>monthly</changefreq>

@@ -8,18 +8,18 @@ import { Suspense, lazy } from 'react';
 import { useUI } from '@/context/UIContext';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useData } from '@/context/DataContext';
-import { useAdmin } from '@/hooks/useAdmin';
+import { useAdmin } from '@/features/admin/hooks/useAdmin';
 import { useMetaPixel } from '@/utils/metaPixel';
 
 // Layout Components
-import Navbar from '@/layouts/Navbar';
-import Footer from '@/layouts/Footer';
-import SocialSidebar from '@/layouts/SocialSidebar';
+import Navbar from '@/components/layout/Navbar';
+import Footer from '@/components/layout/Footer';
+import SocialSidebar from '@/components/layout/SocialSidebar';
 import ToastContainer from '@/components/ui/ToastContainer';
 import AuthRequiredModal from '@/components/ui/AuthRequiredModal';
 import { PrivacyModal, TermsModal } from '@/components/ui/LegalModals';
-import MobileBottomNavigation from '@/components/admin/MobileBottomNavigation';
-import ClientMobileBottomNavigation from '@/components/admin/ClientMobileBottomNavigation';
+import MobileBottomNavigation from '@/features/admin/components/MobileBottomNavigation';
+import ClientMobileBottomNavigation from '@/components/layout/ClientMobileBottomNavigation';
 
 // Page Components (Lazy Loaded)
 const HomePage = lazy(() => import('./HomePage'));

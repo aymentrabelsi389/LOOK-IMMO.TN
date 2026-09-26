@@ -31,12 +31,12 @@ import { seoInjector } from './middleware/seoInjector';
 import { globalLimiter } from './middleware/rateLimiter';
 import { csrfGuard } from './middleware/csrfGuard';
 import { requestIdMiddleware, httpLogger } from './middleware/requestLogger';
-import { connectRedis } from './utils/redis';
-import { initSocket } from './utils/socket';
-import { prisma } from './utils/prisma';
-import { initExchangeRateCron } from './services/exchangeRateService';
-import { initMorningReminderCron, initRefreshTokenCleanupCron } from './services/cronService';
-import { logger } from './utils/logger';
+import { connectRedis } from './core/cache/redis';
+import { initSocket } from './core/socket/socket';
+import { prisma } from './core/database/prisma';
+import { initExchangeRateCron } from './modules/exchange-rates/exchangeRate.service';
+import { initMorningReminderCron, initRefreshTokenCleanupCron } from './jobs/cron';
+import { logger } from './core/logger/logger';
 
 // ─── Startup Environment Validation ──────────────────────────────────────────
 // Fail fast if critical env vars are missing — prevents silent misconfiguration

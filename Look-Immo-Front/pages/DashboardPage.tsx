@@ -9,17 +9,17 @@ import { useData } from '@/context/DataContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { notify } from '@/services/notificationStore';
 import { useConfirm } from '@/context/ConfirmContext';
-import { useAdmin } from '@/hooks/useAdmin';
+import { useAdmin } from '@/features/admin/hooks/useAdmin';
 
 // Subcomponents
-import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
-import { AppointmentsWidget } from '@/components/dashboard/AppointmentsWidget';
-import { FavoritesSection } from '@/components/dashboard/FavoritesSection';
-import { AdminQuickActions } from '@/components/dashboard/AdminQuickActions';
-import { AccountSettings } from '@/components/dashboard/AccountSettings';
-import { AddAppointmentModal } from '@/components/dashboard/modals/AddAppointmentModal';
-import { EditAppointmentModal } from '@/components/dashboard/modals/EditAppointmentModal';
-import { AddDemandModal } from '@/components/dashboard/modals/AddDemandModal';
+import { DashboardHeader } from '@/components/common/DashboardHeader';
+import { AppointmentsWidget } from '@/features/appointments/components/AppointmentsWidget';
+import { FavoritesSection } from '@/features/users/components/FavoritesSection';
+import { AdminQuickActions } from '@/features/admin/components/AdminQuickActions';
+import { AccountSettings } from '@/features/users/components/AccountSettings';
+import { AddAppointmentModal } from '@/features/appointments/modals/AddAppointmentModal';
+import { EditAppointmentModal } from '@/features/appointments/modals/EditAppointmentModal';
+import { AddDemandModal } from '@/features/demands/modals/AddDemandModal';
 
 const DashboardPage: React.FC = () => {
   const { t } = useTranslation();

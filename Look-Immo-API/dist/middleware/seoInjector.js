@@ -4,10 +4,10 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.seoInjector = void 0;
-const prisma_1 = require("../utils/prisma");
+const prisma_1 = require("../core/database/prisma");
 const fs_1 = __importDefault(require("fs"));
 const path_1 = __importDefault(require("path"));
-const logger_1 = require("../utils/logger");
+const logger_1 = require("../core/logger/logger");
 // ─── Bot Detection ────────────────────────────────────────────────────────────
 // Matches all major social crawlers, search engine bots, and link-preview agents.
 // Includes: WhatsApp, Facebook, Instagram, Twitter/X, LinkedIn, Slack, Discord,

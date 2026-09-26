@@ -1,5 +1,5 @@
-export { usePropertiesQuery } from './usePropertiesQuery';
-export { useSettingsQuery, DEFAULT_SITE_SETTINGS } from './useSettingsQuery';
-export { useLocationsQuery } from './useLocationsQuery';
-export { useBlogPostsQuery } from './useBlogPostsQuery';
-export { useAppointmentsQuery } from './useAppointmentsQuery';
+export { usePropertiesQuery } from '@/features/properties/hooks/usePropertiesQuery';
+export { useSettingsQuery, DEFAULT_SITE_SETTINGS } from '@/features/settings/hooks/useSettingsQuery';
+export { useLocationsQuery } from '@/features/locations/hooks/useLocationsQuery';
+export { useBlogPostsQuery } from '@/features/blog/hooks/useBlogPostsQuery';
+export { useAppointmentsQuery } from '@/features/appointments/hooks/useAppointmentsQuery';

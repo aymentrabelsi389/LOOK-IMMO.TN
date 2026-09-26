@@ -3,8 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { ClientDemand } from '@/types';
 import { statsAPI, clientDemandsAPI } from '@/services/api';
 
-import AdminSidebar from '@/components/admin/AdminSidebar';
-import AdminHeader from '@/components/admin/AdminHeader';
+import AdminSidebar from '@/features/admin/components/AdminSidebar';
+import AdminHeader from '@/features/admin/components/AdminHeader';
 import { useSEO } from '@/hooks/useSEO';
 import { useUI } from '@/context/UIContext';
 import { useAuthStore } from '@/stores/useAuthStore';
@@ -12,17 +12,17 @@ import { useData } from '@/context/DataContext';
 import { notify } from '@/services/notificationStore';
 
 // Sub-components from modular directory (lazy loaded)
-const DashboardStats = lazy(() => import('./DashboardStats'));
-const PropertiesManagement = lazy(() => import('@/components/admin/PropertiesManagement'));
-const AppointmentsManagement = lazy(() => import('@/components/admin/AppointmentsManagement'));
-const LocationsManagement = lazy(() => import('@/components/admin/LocationsManagement'));
-const UsersManagement = lazy(() => import('@/components/admin/UsersManagement'));
-const MessagesManagement = lazy(() => import('@/components/admin/MessagesManagement'));
-const BlogManagement = lazy(() => import('@/components/admin/BlogManagement'));
-const EditableSettings = lazy(() => import('@/components/admin/EditableSettings'));
-const RatingsManagement = lazy(() => import('@/components/admin/RatingsManagement'));
-const DemandsManagement = lazy(() => import('@/components/admin/DemandsManagement'));
-const FinancesManagement = lazy(() => import('@/components/admin/FinancesManagement'));
+const DashboardStats = lazy(() => import('@/features/admin/components/DashboardStats'));
+const PropertiesManagement = lazy(() => import('@/features/properties/admin/PropertiesManagement'));
+const AppointmentsManagement = lazy(() => import('@/features/appointments/admin/AppointmentsManagement'));
+const LocationsManagement = lazy(() => import('@/features/locations/admin/LocationsManagement'));
+const UsersManagement = lazy(() => import('@/features/users/admin/UsersManagement'));
+const MessagesManagement = lazy(() => import('@/features/messages/admin/MessagesManagement'));
+const BlogManagement = lazy(() => import('@/features/blog/admin/BlogManagement'));
+const EditableSettings = lazy(() => import('@/features/settings/admin/EditableSettings'));
+const RatingsManagement = lazy(() => import('@/features/ratings/admin/RatingsManagement'));
+const DemandsManagement = lazy(() => import('@/features/demands/admin/DemandsManagement'));
+const FinancesManagement = lazy(() => import('@/features/finances/admin/FinancesManagement'));
 
 const AdminPanel = () => {
   const { handleNavigate } = useUI();

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { logger } from '../utils/logger';
+import { logger } from '../core/logger/logger';
 
 // Retrieve allowed origins from environment (matching CORS configuration)
 const getAllowedOrigins = (): string[] => {

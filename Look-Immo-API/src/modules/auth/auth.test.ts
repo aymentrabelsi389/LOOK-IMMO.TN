@@ -89,17 +89,14 @@ describe('authController resetPassword', () => {
         });
     });
 
-    it('should return 400 if user does not exist or has no reset code', async () => {
+    it('should throw BadRequestError if user does not exist or has no reset code', async () => {
         (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
 
-        await resetPassword(mockReq as Request, mockRes as Response);
-
-        expect(mockRes.status).toHaveBeenCalledWith(400);
-        expect(mockRes.json).toHaveBeenCalledWith({ error: 'Code invalide ou expiré' });
+        await expect(resetPassword(mockReq as Request, mockRes as Response)).rejects.toThrow('Code invalide ou expiré');
         expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
     });
 
-    it('should return 400 if reset code has expired', async () => {
+    it('should throw BadRequestError if reset code has expired', async () => {
         const mockUser = {
             id: 'user-123',
             email: 'test@example.com',
@@ -110,14 +107,11 @@ describe('authController resetPassword', () => {
 
         (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
 
-        await resetPassword(mockReq as Request, mockRes as Response);
-
-        expect(mockRes.status).toHaveBeenCalledWith(400);
-        expect(mockRes.json).toHaveBeenCalledWith({ error: 'Code expiré' });
+        await expect(resetPassword(mockReq as Request, mockRes as Response)).rejects.toThrow('Code expiré');
         expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
     });
 
-    it('should return 400 if reset code is invalid and increment attempts', async () => {
+    it('should throw BadRequestError if reset code is invalid and increment attempts', async () => {
         const mockUser = {
             id: 'user-123',
             email: 'test@example.com',
@@ -129,14 +123,12 @@ describe('authController resetPassword', () => {
         (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
         (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-        await resetPassword(mockReq as Request, mockRes as Response);
+        await expect(resetPassword(mockReq as Request, mockRes as Response)).rejects.toThrow('Code de vérification incorrect');
 
         expect(prisma.user.update).toHaveBeenCalledWith({
             where: { id: 'user-123' },
             data: { resetAttempts: { increment: 1 } }
         });
-        expect(mockRes.status).toHaveBeenCalledWith(400);
-        expect(mockRes.json).toHaveBeenCalledWith({ error: 'Code de vérification incorrect' });
         expect(prisma.refreshToken.deleteMany).not.toHaveBeenCalled();
     });
 });

@@ -54,3 +54,10 @@ export const resetPasswordSchema = z.object({
     }).strict()
 });
 
+// Strict DTO types inferred directly from Zod schemas
+export type RegisterDTO = z.infer<typeof registerSchema>['body'];
+export type LoginDTO = z.infer<typeof loginSchema>['body'];
+export type ForgotPasswordDTO = z.infer<typeof forgotPasswordSchema>['body'];
+export type VerifyResetCodeDTO = z.infer<typeof verifyResetCodeSchema>['body'];
+export type ResetPasswordDTO = z.infer<typeof resetPasswordSchema>['body'];
+

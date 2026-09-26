@@ -142,3 +142,9 @@ export const movePropertyOrderSchema = z.object({
     }),
 });
 
+// Strict DTO types inferred directly from Zod schemas
+export type CreatePropertyDTO = z.infer<typeof createPropertySchema>['body'];
+export type UpdatePropertyDTO = z.infer<typeof updatePropertySchema>['body'];
+export type ReorderPropertyDTO = z.infer<typeof reorderPropertySchema>['body'];
+export type MovePropertyOrderDTO = z.infer<typeof movePropertyOrderSchema>['body'];
+

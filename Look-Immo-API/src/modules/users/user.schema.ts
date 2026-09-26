@@ -35,3 +35,7 @@ export const updateUserSchema = z.object({
         id: z.string().min(1),
     })
 });
+
+// Strict DTO types inferred directly from Zod schemas
+export type CreateUserDTO = z.infer<typeof createUserSchema>['body'];
+export type UpdateUserDTO = z.infer<typeof updateUserSchema>['body'];

@@ -35,8 +35,12 @@ import { connectRedis } from './core/cache/redis';
 import { initSocket } from './core/socket/socket';
 import { prisma } from './core/database/prisma';
 import { initExchangeRateCron } from './modules/exchange-rates/exchangeRate.service';
-import { initMorningReminderCron, initRefreshTokenCleanupCron } from './jobs/cron';
+import { initMorningReminderCron, initRefreshTokenCleanupCron, initAnalyticsFlushCron } from './jobs/cron';
+import { flushVisitBuffer } from './modules/stats/stats.service';
+import { startEmailQueueWorker, stopEmailQueueWorker } from './core/email/emailQueue';
+import { swaggerRoutes } from './core/docs/swagger';
 import { logger } from './core/logger/logger';
+import { AppError, ValidationError as AppValidationError } from './core/errors';
 
 // ─── Startup Environment Validation ──────────────────────────────────────────
 // Fail fast if critical env vars are missing — prevents silent misconfiguration
@@ -94,6 +98,7 @@ app.use(compression());
 
 // Base security headers with 1-year HSTS (HTTP Strict Transport Security)
 app.use(helmet({
+    contentSecurityPolicy: false,
     crossOriginResourcePolicy: { policy: 'cross-origin' }, // allow loading images cross-origin
     hsts: {
         maxAge: 31536000, // 1 year in seconds
@@ -108,6 +113,9 @@ app.use(express.urlencoded({ extended: true, limit: '30mb' }));
 
 // Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
+// ─── API Documentation (Swagger / OpenAPI 3.0) ──────────────────────────────
+app.use(swaggerRoutes);
 
 // Apply global rate limiting to all /api routes
 app.use('/api', globalLimiter);
@@ -152,7 +160,25 @@ if (process.env.SENTRY_DSN) {
 
 // ─── Error Handler ────────────────────────────────────────────────────────────
 // In production: log full error server-side but return generic message to client
+// AppError instances (operational errors) always include their specific status + message
 app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    // ── Operational errors (expected: 400, 401, 403, 404, 409, 422, 429) ──
+    if (err instanceof AppError) {
+        // Only log operational errors at warn level (they're expected application flow)
+        logger.warn(err.message, { statusCode: err.statusCode, path: req.path, method: req.method });
+
+        const body: Record<string, unknown> = { error: err.message };
+
+        // Include validation details if available (e.g. Zod-style field errors)
+        if (err instanceof AppValidationError && err.details) {
+            body.details = err.details;
+        }
+
+        res.status(err.statusCode).json(body);
+        return;
+    }
+
+    // ── Unexpected errors (bugs, DB crashes, etc.) ──
     logger.error(err.message, { stack: err.stack, path: req.path, method: req.method });
     const message = isProd ? 'Internal server error' : (err.message || 'Internal server error');
     res.status(500).json({ error: message });
@@ -165,6 +191,8 @@ connectRedis();
 initExchangeRateCron();
 initMorningReminderCron();
 initRefreshTokenCleanupCron();
+initAnalyticsFlushCron();
+startEmailQueueWorker();
 
 server.listen(PORT, () => {
     logger.info('Server started', {
@@ -179,8 +207,11 @@ server.listen(PORT, () => {
 // ─── Graceful Shutdown ────────────────────────────────────────────────────────
 const shutdown = async (signal: string) => {
     logger.info(`Graceful shutdown initiated`, { signal });
+    stopEmailQueueWorker();
     server.close(async () => {
         try {
+            // Flush any remaining buffered visits to database before disconnecting
+            await flushVisitBuffer();
             await prisma.$disconnect();
             logger.info('Database connections closed.');
         } catch (e) {

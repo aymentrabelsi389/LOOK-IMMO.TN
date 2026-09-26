@@ -73,3 +73,16 @@ export const initRefreshTokenCleanupCron = () => {
         await cleanupExpiredRefreshTokens();
     });
 };
+
+export const initAnalyticsFlushCron = () => {
+    // Run every 1 minute to flush buffered website visits from Redis to PostgreSQL
+    cron.schedule('*/1 * * * *', async () => {
+        try {
+            const { flushVisitBuffer } = require('../modules/stats/stats.service');
+            await flushVisitBuffer();
+        } catch (err) {
+            logger.error('[CRON] Failed to flush website visits buffer:', err);
+        }
+    });
+};
+

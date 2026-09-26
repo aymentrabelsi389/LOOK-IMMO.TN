@@ -77,3 +77,7 @@ export const updateAppointmentSchema = z.object({
         { message: "At least one field is required to update" }
     ),
 });
+
+// Strict DTO types inferred directly from Zod schemas
+export type CreateAppointmentDTO = z.infer<typeof createAppointmentSchema>['body'];
+export type UpdateAppointmentDTO = z.infer<typeof updateAppointmentSchema>['body'];

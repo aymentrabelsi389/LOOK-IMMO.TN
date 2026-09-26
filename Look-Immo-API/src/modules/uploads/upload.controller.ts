@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { uploadFileToStorage } from '../../core/storage/upload';
-import { logger } from '../../core/logger/logger';
+import { asyncHandler, BadRequestError, ForbiddenError, NotFoundError } from '../../core/errors';
 
 /**
  * Build the set of trusted redirect origins from env vars at startup.
@@ -58,38 +58,31 @@ export const handleImageUpload = (req: Request, res: Response): void => {
  * Called after `uploadContract.single('file')` middleware.
  * Enforces strictly PDF documents and returns the public URL path.
  */
-export const handleDocumentUpload = async (req: Request, res: Response): Promise<void> => {
+export const handleDocumentUpload = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     if (!req.file) {
-        res.status(400).json({ error: 'Aucun fichier reçu.' });
-        return;
+        throw new BadRequestError('Aucun fichier reçu.');
     }
 
     // Strictly enforce PDF format
     if (req.file.mimetype !== 'application/pdf') {
-        res.status(400).json({ error: 'Seuls les fichiers PDF sont autorisés.' });
-        return;
+        throw new BadRequestError('Seuls les fichiers PDF sont autorisés.');
     }
 
-    try {
-        const uid = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-        const filename = `contract-${uid}${path.extname(req.file.originalname)}`;
-        
-        const fileUrl = await uploadFileToStorage(
-            req.file.buffer,
-            'contracts',
-            filename,
-            req.file.mimetype
-        );
+    const uid = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const filename = `contract-${uid}${path.extname(req.file.originalname)}`;
+    
+    const fileUrl = await uploadFileToStorage(
+        req.file.buffer,
+        'contracts',
+        filename,
+        req.file.mimetype
+    );
 
-        res.status(201).json({
-            url: fileUrl,
-            message: 'Document mis en ligne avec succès',
-        });
-    } catch (error) {
-        logger.error('[UPLOAD] Document upload failed:', error);
-        res.status(500).json({ error: 'Erreur lors du téléchargement du document.' });
-    }
-};
+    res.status(201).json({
+        url: fileUrl,
+        message: 'Document mis en ligne avec succès',
+    });
+});
 
 /**
  * GET /api/download
@@ -142,9 +135,7 @@ export const downloadFile = (req: Request, res: Response): void => {
         // Force browser download
         res.download(absolutePath);
     } catch (error) {
-        logger.error('File download error:', error);
-        res.status(500).json({ error: 'Erreur lors du téléchargement.' });
+        // downloadFile is synchronous — errors here are truly unexpected
+        throw error;
     }
 };
-
-

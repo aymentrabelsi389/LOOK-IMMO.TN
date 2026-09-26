@@ -6,6 +6,14 @@ import { prisma } from '../../core/database/prisma';
 import { sendResetCodeEmail } from '../../core/email/emailService';
 import { createNotification } from '../notifications/notification.service';
 import { logger } from '../../core/logger/logger';
+import { asyncHandler, BadRequestError, UnauthorizedError } from '../../core/errors';
+import {
+    RegisterDTO,
+    LoginDTO,
+    ForgotPasswordDTO,
+    VerifyResetCodeDTO,
+    ResetPasswordDTO,
+} from './auth.schema';
 
 const getAccessTokenSecret = () => {
     const secret = process.env.JWT_SECRET;
@@ -79,99 +87,84 @@ const setAuthCookies = async (
     return { accessToken, refreshToken };
 };
 
-export const register = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { name, email, password, phone } = req.body;
+export const register = asyncHandler(async (req: Request<any, any, RegisterDTO>, res: Response): Promise<void> => {
+    const { name, email, password, phone } = req.body;
 
-        if (!name || !email || !password) {
-            res.status(400).json({ error: 'Name, email, and password are required' });
-            return;
-        }
-
-        const existingUser = await prisma.user.findUnique({ where: { email } });
-        if (existingUser) {
-            res.status(400).json({ error: 'Email already registered' });
-            return;
-        }
-
-        const hashedPassword = await bcrypt.hash(password, 12);
-
-        const user = await prisma.user.create({
-            data: { name, email, password: hashedPassword, phone, role: 'client' },
-            select: { id: true, name: true, email: true, phone: true, role: true, createdAt: true },
-        });
-
-        const tokens = await setAuthCookies(res, user.id, user.email, user.role);
-
-        // Send registration notification for admins
-        try {
-            await createNotification({
-                type: 'user_signup',
-                title: 'Nouvel Utilisateur',
-                message: `${user.name} a créé un nouveau compte.`,
-                icon: 'UserPlus',
-                link: '/admin',
-                userId: null,
-                metadata: { userId: user.id }
-            });
-        } catch (notifErr) {
-            logger.error('Failed to create signup notification:', notifErr);
-        }
-
-        res.status(201).json({ user: { ...user, favorites: [] }, accessToken: tokens.accessToken });
-    } catch (error) {
-        logger.error('Register error:', error);
-        res.status(500).json({ error: 'Failed to register user' });
+    if (!name || !email || !password) {
+        throw new BadRequestError('Name, email, and password are required');
     }
-};
 
-export const login = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { email, password } = req.body;
-
-        if (!email || !password) {
-            res.status(400).json({ error: 'Email and password are required' });
-            return;
-        }
-
-        const user = await prisma.user.findUnique({
-            where: { email },
-            include: { favorites: { select: { propertyId: true } } },
-        });
-
-        if (!user) {
-            res.status(401).json({ error: 'Aucun compte trouvé avec cet e-mail' });
-            return;
-        }
-
-        const isValidPassword = await bcrypt.compare(password, user.password);
-        if (!isValidPassword) {
-            res.status(401).json({ error: 'Mot de passe incorrect' });
-            return;
-        }
-
-        await prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } });
-
-        const tokens = await setAuthCookies(res, user.id, user.email, user.role);
-
-        res.json({
-            accessToken: tokens.accessToken,
-            user: {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                phone: user.phone,
-                role: user.role,
-                createdAt: user.createdAt,
-                lastLogin: user.lastLogin,
-                favorites: user.favorites.map((f: any) => f.propertyId),
-            },
-        });
-    } catch (error) {
-        logger.error('Login error:', error);
-        res.status(500).json({ error: 'Failed to login' });
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
+        throw new BadRequestError('Email already registered');
     }
-};
+
+    const hashedPassword = await bcrypt.hash(password, 12);
+
+    const user = await prisma.user.create({
+        data: { name, email, password: hashedPassword, phone, role: 'client' },
+        select: { id: true, name: true, email: true, phone: true, role: true, createdAt: true },
+    });
+
+    const tokens = await setAuthCookies(res, user.id, user.email, user.role);
+
+    // Send registration notification for admins
+    try {
+        await createNotification({
+            type: 'user_signup',
+            title: 'Nouvel Utilisateur',
+            message: `${user.name} a créé un nouveau compte.`,
+            icon: 'UserPlus',
+            link: '/admin',
+            userId: null,
+            metadata: { userId: user.id }
+        });
+    } catch (notifErr) {
+        logger.error('Failed to create signup notification:', notifErr);
+    }
+
+    res.status(201).json({ user: { ...user, favorites: [] }, accessToken: tokens.accessToken });
+});
+
+export const login = asyncHandler(async (req: Request<any, any, LoginDTO>, res: Response): Promise<void> => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        throw new BadRequestError('Email and password are required');
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { email },
+        include: { favorites: { select: { propertyId: true } } },
+    });
+
+    if (!user) {
+        throw new UnauthorizedError('Aucun compte trouvé avec cet e-mail');
+    }
+
+    const isValidPassword = await bcrypt.compare(password, user.password);
+    if (!isValidPassword) {
+        throw new UnauthorizedError('Mot de passe incorrect');
+    }
+
+    await prisma.user.update({ where: { id: user.id }, data: { lastLogin: new Date() } });
+
+    const tokens = await setAuthCookies(res, user.id, user.email, user.role);
+
+    res.json({
+        accessToken: tokens.accessToken,
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            role: user.role,
+            createdAt: user.createdAt,
+            lastLogin: user.lastLogin,
+            favorites: user.favorites.map((f: any) => f.propertyId),
+        },
+    });
+});
 
 export const logout = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -280,196 +273,164 @@ export const refresh = async (req: Request, res: Response): Promise<void> => {
     }
 };
 
-export const getMe = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const userId = (req as any).user?.id;
+export const getMe = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const userId = (req as any).user?.id;
 
-        const user = await prisma.user.findUnique({
-            where: { id: userId },
-            select: {
-                id: true,
-                name: true,
-                email: true,
-                phone: true,
-                role: true,
-                createdAt: true,
-                lastLogin: true, // ✅ Include lastLogin
-                favorites: { select: { propertyId: true } },
-            },
-        });
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            role: true,
+            createdAt: true,
+            lastLogin: true, // ✅ Include lastLogin
+            favorites: { select: { propertyId: true } },
+        },
+    });
 
-        if (!user) {
-            res.status(404).json({ error: 'User not found' });
-            return;
-        }
-
-        res.json({
-            ...user,
-            favorites: user.favorites.map((f: any) => f.propertyId),
-        });
-    } catch (error) {
-        logger.error('Get me error:', error);
-        res.status(500).json({ error: 'Failed to get user' });
+    if (!user) {
+        throw new UnauthorizedError('User not found');
     }
-};
 
-export const forgotPassword = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { email } = req.body;
+    res.json({
+        ...user,
+        favorites: user.favorites.map((f: any) => f.propertyId),
+    });
+});
 
-        if (!email) {
-            res.status(400).json({ error: 'Email is required' });
-            return;
-        }
+export const forgotPassword = asyncHandler(async (req: Request<any, any, ForgotPasswordDTO>, res: Response): Promise<void> => {
+    const { email } = req.body;
 
-        // Generic response to prevent user enumeration
-        const genericSuccess = { message: "Si un compte est associé à cet e-mail, un code de vérification vous a été envoyé." };
+    if (!email) {
+        throw new BadRequestError('Email is required');
+    }
 
-        const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-        if (!user) {
-            // Log audit for security
-            logger.info(`[AUDIT] Password reset requested for non-existent email: ${email}`);
-            res.json(genericSuccess);
-            return;
-        }
+    // Generic response to prevent user enumeration
+    const genericSuccess = { message: "Si un compte est associé à cet e-mail, un code de vérification vous a été envoyé." };
 
-        // Generate secure random 6-digit code
-        const code = crypto.randomInt(100000, 999999).toString();
-        const resetCodeHash = await bcrypt.hash(code, 10);
-        const resetCodeExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-
-        await prisma.user.update({
-            where: { id: user.id },
-            data: {
-                resetCodeHash,
-                resetCodeExpiresAt,
-                resetAttempts: 0
-            }
-        });
-
-        logger.info(`[AUDIT] Password reset code generated and hashed for user: ${user.email}`);
-
-        // Send email
-        await sendResetCodeEmail(user.email, code);
-
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    if (!user) {
+        // Log audit for security
+        logger.info(`[AUDIT] Password reset requested for non-existent email: ${email}`);
         res.json(genericSuccess);
-    } catch (error) {
-        logger.error('Forgot password error:', error);
-        res.status(500).json({ error: 'Failed to process forgot password request' });
+        return;
     }
-};
 
-export const verifyResetCode = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { email, code } = req.body;
+    // Generate secure random 6-digit code
+    const code = crypto.randomInt(100000, 999999).toString();
+    const resetCodeHash = await bcrypt.hash(code, 10);
+    const resetCodeExpiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-        if (!email || !code) {
-            res.status(400).json({ error: 'Email and code are required' });
-            return;
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            resetCodeHash,
+            resetCodeExpiresAt,
+            resetAttempts: 0
         }
+    });
 
-        const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-        if (!user || !user.resetCodeHash || !user.resetCodeExpiresAt) {
-            res.status(400).json({ error: 'Code invalide ou expiré' });
-            return;
-        }
+    logger.info(`[AUDIT] Password reset code generated and hashed for user: ${user.email}`);
 
-        // Check if code has expired
-        if (new Date() > user.resetCodeExpiresAt) {
-            res.status(400).json({ error: 'Code expiré' });
-            return;
-        }
+    // Send email
+    await sendResetCodeEmail(user.email, code);
 
-        // Check attempts limit
-        if (user.resetAttempts >= 5) {
-            res.status(400).json({ error: 'Trop de tentatives infructueuses. Veuillez générer un nouveau code.' });
-            return;
-        }
+    res.json(genericSuccess);
+});
 
-        // Increment attempts first
+export const verifyResetCode = asyncHandler(async (req: Request<any, any, VerifyResetCodeDTO>, res: Response): Promise<void> => {
+    const { email, code } = req.body;
+
+    if (!email || !code) {
+        throw new BadRequestError('Email and code are required');
+    }
+
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    if (!user || !user.resetCodeHash || !user.resetCodeExpiresAt) {
+        throw new BadRequestError('Code invalide ou expiré');
+    }
+
+    // Check if code has expired
+    if (new Date() > user.resetCodeExpiresAt) {
+        throw new BadRequestError('Code expiré');
+    }
+
+    // Check attempts limit
+    if (user.resetAttempts >= 5) {
+        throw new BadRequestError('Trop de tentatives infructueuses. Veuillez générer un nouveau code.');
+    }
+
+    // Increment attempts first
+    await prisma.user.update({
+        where: { id: user.id },
+        data: { resetAttempts: { increment: 1 } }
+    });
+
+    const isValid = await bcrypt.compare(code, user.resetCodeHash);
+    if (!isValid) {
+        logger.info(`[AUDIT] Failed reset code attempt (${user.resetAttempts + 1}/5) for user: ${user.email}`);
+        throw new BadRequestError('Code de vérification incorrect');
+    }
+
+    res.json({ message: 'Code vérifié avec succès' });
+});
+
+export const resetPassword = asyncHandler(async (req: Request<any, any, ResetPasswordDTO>, res: Response): Promise<void> => {
+    const { email, code, password } = req.body;
+
+    if (!email || !code || !password) {
+        throw new BadRequestError('Email, code, and new password are required');
+    }
+
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
+    if (!user || !user.resetCodeHash || !user.resetCodeExpiresAt) {
+        throw new BadRequestError('Code invalide ou expiré');
+    }
+
+    if (new Date() > user.resetCodeExpiresAt) {
+        throw new BadRequestError('Code expiré');
+    }
+
+    if (user.resetAttempts >= 5) {
+        throw new BadRequestError('Trop de tentatives. Veuillez générer un nouveau code.');
+    }
+
+    // Verify code
+    const isValid = await bcrypt.compare(code, user.resetCodeHash);
+    if (!isValid) {
         await prisma.user.update({
             where: { id: user.id },
             data: { resetAttempts: { increment: 1 } }
         });
-
-        const isValid = await bcrypt.compare(code, user.resetCodeHash);
-        if (!isValid) {
-            logger.info(`[AUDIT] Failed reset code attempt (${user.resetAttempts + 1}/5) for user: ${user.email}`);
-            res.status(400).json({ error: 'Code de vérification incorrect' });
-            return;
-        }
-
-        res.json({ message: 'Code vérifié avec succès' });
-    } catch (error) {
-        logger.error('Verify reset code error:', error);
-        res.status(500).json({ error: 'Failed to verify reset code' });
+        throw new BadRequestError('Code de vérification incorrect');
     }
-};
 
-export const resetPassword = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { email, code, password } = req.body;
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-        if (!email || !code || !password) {
-            res.status(400).json({ error: 'Email, code, and new password are required' });
-            return;
+    // Update password and clear reset fields
+    await prisma.user.update({
+        where: { id: user.id },
+        data: {
+            password: hashedPassword,
+            resetCodeHash: null,
+            resetCodeExpiresAt: null,
+            resetAttempts: 0
         }
+    });
 
-        const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() } });
-        if (!user || !user.resetCodeHash || !user.resetCodeExpiresAt) {
-            res.status(400).json({ error: 'Code invalide ou expiré' });
-            return;
-        }
+    // Revoke all active sessions (refresh tokens) for the user
+    await prisma.refreshToken.deleteMany({
+        where: { userId: user.id }
+    });
 
-        if (new Date() > user.resetCodeExpiresAt) {
-            res.status(400).json({ error: 'Code expiré' });
-            return;
-        }
+    logger.info(`[AUDIT] Password reset successfully for user: ${user.email}`);
 
-        if (user.resetAttempts >= 5) {
-            res.status(400).json({ error: 'Trop de tentatives. Veuillez générer un nouveau code.' });
-            return;
-        }
+    // Invalidate sessions on the client by clearing auth cookies
+    res.clearCookie('access_token', COOKIE_OPTIONS);
+    res.clearCookie('refresh_token', COOKIE_OPTIONS);
 
-        // Verify code
-        const isValid = await bcrypt.compare(code, user.resetCodeHash);
-        if (!isValid) {
-            await prisma.user.update({
-                where: { id: user.id },
-                data: { resetAttempts: { increment: 1 } }
-            });
-            res.status(400).json({ error: 'Code de vérification incorrect' });
-            return;
-        }
-
-        // Hash new password
-        const hashedPassword = await bcrypt.hash(password, 12);
-
-        // Update password and clear reset fields
-        await prisma.user.update({
-            where: { id: user.id },
-            data: {
-                password: hashedPassword,
-                resetCodeHash: null,
-                resetCodeExpiresAt: null,
-                resetAttempts: 0
-            }
-        });
-
-        // Revoke all active sessions (refresh tokens) for the user
-        await prisma.refreshToken.deleteMany({
-            where: { userId: user.id }
-        });
-
-        logger.info(`[AUDIT] Password reset successfully for user: ${user.email}`);
-
-        // Invalidate sessions on the client by clearing auth cookies
-        res.clearCookie('access_token', COOKIE_OPTIONS);
-        res.clearCookie('refresh_token', COOKIE_OPTIONS);
-
-        res.json({ message: 'Votre mot de passe a été réinitialisé avec succès.' });
-    } catch (error) {
-        logger.error('Reset password error:', error);
-        res.status(500).json({ error: 'Failed to reset password' });
-    }
-};
+    res.json({ message: 'Votre mot de passe a été réinitialisé avec succès.' });
+});

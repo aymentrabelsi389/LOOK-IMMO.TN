@@ -70,6 +70,7 @@ const socket_1 = require("./core/socket/socket");
 const prisma_1 = require("./core/database/prisma");
 const exchangeRate_service_1 = require("./modules/exchange-rates/exchangeRate.service");
 const cron_1 = require("./jobs/cron");
+const stats_service_1 = require("./modules/stats/stats.service");
 const logger_1 = require("./core/logger/logger");
 // ─── Startup Environment Validation ──────────────────────────────────────────
 // Fail fast if critical env vars are missing — prevents silent misconfiguration
@@ -177,6 +178,7 @@ const server = http_1.default.createServer(app);
 (0, exchangeRate_service_1.initExchangeRateCron)();
 (0, cron_1.initMorningReminderCron)();
 (0, cron_1.initRefreshTokenCleanupCron)();
+(0, cron_1.initAnalyticsFlushCron)();
 server.listen(PORT, () => {
     logger_1.logger.info('Server started', {
         env: process.env.NODE_ENV || 'development',
@@ -191,6 +193,8 @@ const shutdown = async (signal) => {
     logger_1.logger.info(`Graceful shutdown initiated`, { signal });
     server.close(async () => {
         try {
+            // Flush any remaining buffered visits to database before disconnecting
+            await (0, stats_service_1.flushVisitBuffer)();
             await prisma_1.prisma.$disconnect();
             logger_1.logger.info('Database connections closed.');
         }

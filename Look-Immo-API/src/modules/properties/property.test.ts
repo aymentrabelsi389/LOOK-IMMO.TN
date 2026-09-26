@@ -138,13 +138,10 @@ describe('propertyController createProperty', () => {
         expect(mockRes.json).toHaveBeenCalledWith(mockCreatedProperty);
     });
 
-    it('should return 400 if required fields are missing', async () => {
+    it('should throw BadRequestError (400) if required fields are missing', async () => {
         mockReq.body.title = ''; // missing title
 
-        await createProperty(mockReq as AuthRequest, mockRes as Response);
-
-        expect(mockRes.status).toHaveBeenCalledWith(400);
-        expect(mockRes.json).toHaveBeenCalledWith({ error: 'Title, price, type, and city are required' });
+        await expect(createProperty(mockReq as AuthRequest, mockRes as Response)).rejects.toThrow('Title, price, type, and city are required');
         expect(prisma.property.create).not.toHaveBeenCalled();
     });
 });
@@ -173,10 +170,7 @@ describe('propertyController movePropertyOrder', () => {
     it('should reject non-admin users with 403', async () => {
         mockReq.user!.role = 'agent';
         const { movePropertyOrder } = require('./property.controller');
-        await movePropertyOrder(mockReq as AuthRequest, mockRes as Response);
-
-        expect(mockRes.status).toHaveBeenCalledWith(403);
-        expect(mockRes.json).toHaveBeenCalledWith({ error: 'Only admins can reorder properties' });
+        await expect(movePropertyOrder(mockReq as AuthRequest, mockRes as Response)).rejects.toThrow('Only admins can reorder properties');
     });
 
     it('should move property to top and normalize sequential displayOrders', async () => {
@@ -277,6 +271,50 @@ describe('propertyController movePropertyOrder', () => {
                 newPosition: 2,
                 totalProperties: 5,
             }),
+        }));
+    });
+});
+
+describe('propertyController getProperties noLimit security', () => {
+    let mockReq: Partial<AuthRequest>;
+    let mockRes: Partial<Response>;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        (prisma.property.findMany as jest.Mock) = jest.fn().mockResolvedValue([]);
+        (prisma.property.count as jest.Mock) = jest.fn().mockResolvedValue(0);
+        mockRes = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn().mockReturnThis(),
+        };
+    });
+
+    it('should ignore noLimit=true and cap limit to 100 for unauthenticated users', async () => {
+        mockReq = {
+            query: { noLimit: 'true', limit: '500' },
+        };
+
+        const { getProperties } = require('./property.controller');
+        await getProperties(mockReq as any, mockRes as Response);
+
+        expect(prisma.property.findMany).toHaveBeenCalledWith(expect.objectContaining({
+            take: 100, // Capped at max 100 instead of 500 or 9999
+            skip: 0,
+        }));
+    });
+
+    it('should allow noLimit=true for authenticated admin users', async () => {
+        mockReq = {
+            user: { id: 'admin-1', email: 'admin@lookimmo.tn', role: 'admin' },
+            query: { noLimit: 'true' },
+        };
+
+        const { getProperties } = require('./property.controller');
+        await getProperties(mockReq as any, mockRes as Response);
+
+        expect(prisma.property.findMany).toHaveBeenCalledWith(expect.objectContaining({
+            take: 9999,
+            skip: 0,
         }));
     });
 });

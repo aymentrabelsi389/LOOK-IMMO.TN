@@ -2,6 +2,8 @@ import { Server as SocketServer, Socket } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import jwt from 'jsonwebtoken';
 import { parse as parseCookie } from 'cookie';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { createClient } from 'redis';
 import { logger } from '../logger/logger';
 
 interface AuthedSocket extends Socket {
@@ -12,6 +14,8 @@ interface AuthedSocket extends Socket {
 }
 
 let io: SocketServer;
+let pubClient: ReturnType<typeof createClient> | null = null;
+let subClient: ReturnType<typeof createClient> | null = null;
 
 /**
  * Verifies the `access_token` HTTP-only cookie (same cookie/secret used by
@@ -82,6 +86,25 @@ export const initSocket = (server: HttpServer) => {
         transports: ['polling', 'websocket'],
     });
 
+    // ── Attach Redis Adapter for Multi-Process Cluster Scaling ────────────────
+    const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+    pubClient = createClient({ url: redisUrl });
+    subClient = pubClient.duplicate();
+
+    pubClient.on('error', () => {});
+    subClient.on('error', () => {});
+
+    Promise.all([pubClient.connect(), subClient.connect()])
+        .then(() => {
+            if (pubClient && subClient) {
+                io.adapter(createAdapter(pubClient, subClient));
+                logger.info('[SOCKET] Redis adapter attached for multi-core clustering.');
+            }
+        })
+        .catch((err) => {
+            logger.warn('[SOCKET] Could not attach Redis adapter (fallback to standalone in-memory):', err.message);
+        });
+
     io.use(authenticateSocket as any);
 
     io.on('connection', (socket: AuthedSocket) => {
@@ -106,6 +129,16 @@ export const initSocket = (server: HttpServer) => {
     return io;
 };
 
+export const closeSocket = async () => {
+    try {
+        if (pubClient?.isOpen) await pubClient.disconnect();
+        if (subClient?.isOpen) await subClient.disconnect();
+        if (io) io.close();
+    } catch (e) {
+        logger.warn('[SOCKET] Error closing socket/adapter connections:', e);
+    }
+};
+
 export const getIO = () => {
     if (!io) {
         throw new Error('Socket.io not initialized!');
@@ -124,3 +157,4 @@ export const emitToUser = (userId: string, event: string, data: any) => {
         io.to(`user:${userId}`).emit(event, data);
     }
 };
+

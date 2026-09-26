@@ -47,7 +47,6 @@ export const createMessageSchema = z.object({
 });
 
 
-// Schema for updating a message status (admin/agent only)
 export const updateMessageSchema = z.object({
     params: z.object({
         id: z.string().min(1, "Message ID is required"),
@@ -58,3 +57,7 @@ export const updateMessageSchema = z.object({
         }),
     }),
 });
+
+// Strict DTO types inferred directly from Zod schemas
+export type CreateMessageDTO = z.infer<typeof createMessageSchema>['body'];
+export type UpdateMessageDTO = z.infer<typeof updateMessageSchema>['body'];

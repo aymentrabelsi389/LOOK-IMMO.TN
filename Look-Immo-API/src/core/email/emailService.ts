@@ -1,12 +1,13 @@
 import nodemailer from 'nodemailer';
 import { logger } from '../logger/logger';
+import { enqueueEmail } from './emailQueue';
 
 // Create a transport using SMTP environment variables
 const host = process.env.SMTP_HOST || '';
 const port = parseInt(process.env.SMTP_PORT || '587', 10);
 const user = process.env.SMTP_USER || '';
 const pass = process.env.SMTP_PASS || '';
-const from = process.env.SMTP_FROM || 'Look Immo <no-reply@look-immo.tn>';
+const defaultFrom = process.env.SMTP_FROM || 'Look Immo <no-reply@look-immo.tn>';
 
 let transporter: nodemailer.Transporter | null = null;
 
@@ -23,7 +24,44 @@ if (host && user && pass) {
     });
 }
 
-export const sendResetCodeEmail = async (email: string, code: string): Promise<void> => {
+/**
+ * Direct Nodemailer transport sender invoked by the background worker.
+ */
+export const sendMailDirect = async (options: {
+    to: string;
+    subject: string;
+    html: string;
+    text?: string;
+    from?: string;
+}): Promise<void> => {
+    const fromAddress = options.from || defaultFrom;
+
+    if (!transporter) {
+        logger.warn('\n⚠️  [EMAIL SERVICE] Nodemailer is not configured (missing SMTP environment variables).');
+        logger.warn(`👉 [SIMULATED EMAIL TO ${options.to}]: ${options.subject}`);
+        logger.warn('Please add SMTP config in .env to send real emails.\n');
+        return;
+    }
+
+    try {
+        await transporter.sendMail({
+            from: fromAddress,
+            to: options.to,
+            subject: options.subject,
+            text: options.text,
+            html: options.html,
+        });
+        logger.info(`✅ [EMAIL SERVICE] Email "${options.subject}" sent successfully to: ${options.to}`);
+    } catch (error) {
+        logger.error(`❌ [EMAIL SERVICE] Failed to send email to ${options.to}:`, error);
+        throw error;
+    }
+};
+
+/**
+ * Offload reset code email dispatch to the background email queue.
+ */
+export const sendResetCodeEmail = async (email: string, code: string): Promise<string> => {
     const html = `
     <!DOCTYPE html>
     <html lang="fr">
@@ -145,24 +183,10 @@ Si vous n'êtes pas à l'origine de cette demande, ignorez cet email.
 L'équipe Look Immo
     `;
 
-    if (!transporter) {
-        logger.warn('\n⚠️  [EMAIL SERVICE] Nodemailer is not configured (missing SMTP environment variables).');
-        logger.warn(`👉 [RESET CODE FOR ${email}]: ${code}`);
-        logger.warn('Please add SMTP config in .env to send real emails.\n');
-        return;
-    }
-
-    try {
-        await transporter.sendMail({
-            from,
-            to: email,
-            subject: 'Réinitialisation de votre mot de passe - Look Immo',
-            text,
-            html,
-        });
-        logger.info(`✅ [EMAIL SERVICE] Reset code email sent successfully to: ${email}`);
-    } catch (error) {
-        logger.error(`❌ [EMAIL SERVICE] Failed to send email to ${email}:`, error);
-        throw new Error("Impossible d'envoyer l'e-mail de réinitialisation.");
-    }
+    return enqueueEmail({
+        to: email,
+        subject: 'Réinitialisation de votre mot de passe - Look Immo',
+        html,
+        text,
+    });
 };

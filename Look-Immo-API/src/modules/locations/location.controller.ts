@@ -2,207 +2,172 @@ import { Request, Response } from 'express';
 import { AuthRequest } from '../../middleware/auth';
 import { prisma } from '../../core/database/prisma';
 import { createNotification } from '../notifications/notification.service';
-import { logger } from '../../core/logger/logger';
+import { asyncHandler, BadRequestError, NotFoundError, ForbiddenError } from '../../core/errors';
+import { CreateLocationDTO, UpdateLocationDTO, ReorderLocationDTO } from './location.schema';
 
 // Get all locations
-export const getLocations = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { search } = req.query;
+export const getLocations = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { search } = req.query;
 
-        const locations = await prisma.location.findMany({
-            where: search
-                ? {
-                    name: { contains: search as string, mode: 'insensitive' as any },
-                }
-                : {},
-            orderBy: { displayOrder: 'asc' },
-        });
+    const locations = await prisma.location.findMany({
+        where: search
+            ? {
+                name: { contains: search as string, mode: 'insensitive' as any },
+            }
+            : {},
+        orderBy: { displayOrder: 'asc' },
+    });
 
-        res.json(locations);
-    } catch (error) {
-        logger.error('Get locations error:', error);
-        res.status(500).json({ error: 'Failed to get locations' });
-    }
-};
+    res.json(locations);
+});
 
 // Get single location
-export const getLocation = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { id } = req.params;
+export const getLocation = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
 
-        const location = await prisma.location.findUnique({
-            where: { id },
-        });
+    const location = await prisma.location.findUnique({
+        where: { id },
+    });
 
-        if (!location) {
-            res.status(404).json({ error: 'Location not found' });
-            return;
-        }
-
-        res.json(location);
-    } catch (error) {
-        logger.error('Get location error:', error);
-        res.status(500).json({ error: 'Failed to get location' });
+    if (!location) {
+        throw new NotFoundError('Location not found');
     }
-};
+
+    res.json(location);
+});
 
 // Create location
-export const createLocation = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { name, centerLat, centerLng, radius } = req.body;
+export const createLocation = asyncHandler(async (req: Request<Record<string, never>, unknown, CreateLocationDTO>, res: Response): Promise<void> => {
+    const { name, centerLat, centerLng, radius } = req.body;
 
-        if (!name || centerLat === undefined || centerLng === undefined || radius === undefined) {
-            res.status(400).json({ error: 'Name, centerLat, centerLng, and radius are required' });
-            return;
-        }
-
-        const location = await prisma.location.create({
-            data: {
-                name,
-                centerLat: parseFloat(centerLat),
-                centerLng: parseFloat(centerLng),
-                radius: parseFloat(radius),
-            },
-        });
-
-        // Create notification
-        try {
-            await createNotification({
-                type: 'location_add',
-                title: 'Nouvelle Zone',
-                message: `Nouvelle zone ajoutée : ${location.name}`,
-                icon: 'MapPin',
-                link: '/admin',
-                userId: null,
-                metadata: { locationId: location.id },
-            });
-        } catch (notifError) {
-            logger.error('Failed to create location notification:', notifError);
-        }
-
-        res.status(201).json(location);
-    } catch (error) {
-        logger.error('Create location error:', error);
-        res.status(500).json({ error: 'Failed to create location' });
+    if (!name || centerLat === undefined || centerLng === undefined || radius === undefined) {
+        throw new BadRequestError('Name, centerLat, centerLng, and radius are required');
     }
-};
+
+    const location = await prisma.location.create({
+        data: {
+            name,
+            centerLat: typeof centerLat === 'number' ? centerLat : parseFloat(centerLat),
+            centerLng: typeof centerLng === 'number' ? centerLng : parseFloat(centerLng),
+            radius: typeof radius === 'number' ? radius : parseFloat(radius),
+        },
+    });
+
+    // Create notification
+    try {
+        await createNotification({
+            type: 'location_add',
+            title: 'Nouvelle Zone',
+            message: `Nouvelle zone ajoutée : ${location.name}`,
+            icon: 'MapPin',
+            link: '/admin',
+            userId: null,
+            metadata: { locationId: location.id },
+        });
+    } catch (notifError) {
+        // notification failures should not abort location creation
+    }
+
+    res.status(201).json(location);
+});
 
 // Update location
-export const updateLocation = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { id } = req.params;
-        const { name, centerLat, centerLng, radius } = req.body;
+export const updateLocation = asyncHandler(async (req: Request<{ id: string }, unknown, UpdateLocationDTO>, res: Response): Promise<void> => {
+    const { id } = req.params;
+    const { name, centerLat, centerLng, radius } = req.body;
 
-        const existingLocation = await prisma.location.findUnique({
-            where: { id },
-        });
+    const existingLocation = await prisma.location.findUnique({
+        where: { id },
+    });
 
-        if (!existingLocation) {
-            res.status(404).json({ error: 'Location not found' });
-            return;
-        }
-
-        const location = await prisma.location.update({
-            where: { id },
-            data: {
-                ...(name && { name }),
-                ...(centerLat !== undefined && { centerLat: parseFloat(centerLat) }),
-                ...(centerLng !== undefined && { centerLng: parseFloat(centerLng) }),
-                ...(radius !== undefined && { radius: parseFloat(radius) }),
-            },
-        });
-
-        // Create notification
-        try {
-            await createNotification({
-                type: 'location_edit',
-                title: 'Zone Modifiée',
-                message: `Zone mise à jour : ${location.name}`,
-                icon: 'MapPin',
-                link: '/admin',
-                userId: null,
-                metadata: { locationId: location.id },
-            });
-        } catch (notifError) {
-            logger.error('Failed to create location update notification:', notifError);
-        }
-
-        res.json(location);
-    } catch (error) {
-        logger.error('Update location error:', error);
-        res.status(500).json({ error: 'Failed to update location' });
+    if (!existingLocation) {
+        throw new NotFoundError('Location not found');
     }
-};
+
+    const location = await prisma.location.update({
+        where: { id },
+        data: {
+            ...(name && { name }),
+            ...(centerLat !== undefined && { centerLat: typeof centerLat === 'number' ? centerLat : parseFloat(centerLat) }),
+            ...(centerLng !== undefined && { centerLng: typeof centerLng === 'number' ? centerLng : parseFloat(centerLng) }),
+            ...(radius !== undefined && { radius: typeof radius === 'number' ? radius : parseFloat(radius) }),
+        },
+    });
+
+    // Create notification
+    try {
+        await createNotification({
+            type: 'location_edit',
+            title: 'Zone Modifiée',
+            message: `Zone mise à jour : ${location.name}`,
+            icon: 'MapPin',
+            link: '/admin',
+            userId: null,
+            metadata: { locationId: location.id },
+        });
+    } catch (notifError) {
+        // notification failures should not abort location update
+    }
+
+    res.json(location);
+});
 
 // Delete location
-export const deleteLocation = async (req: Request, res: Response): Promise<void> => {
-    try {
-        const { id } = req.params;
+export const deleteLocation = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
 
-        const location = await prisma.location.findUnique({
-            where: { id },
-        });
+    const location = await prisma.location.findUnique({
+        where: { id },
+    });
 
-        if (!location) {
-            res.status(404).json({ error: 'Location not found' });
-            return;
-        }
-
-        await prisma.location.delete({
-            where: { id },
-        });
-
-        // Create notification
-        try {
-            await createNotification({
-                type: 'location_delete',
-                title: 'Zone Supprimée',
-                message: `Zone supprimée : ${location.name}`,
-                icon: 'MapPin',
-                link: '/admin',
-                userId: null,
-                metadata: { locationId: id },
-            });
-        } catch (notifError) {
-            logger.error('Failed to create location delete notification:', notifError);
-        }
-
-        res.json({ message: 'Location deleted successfully' });
-    } catch (error) {
-        logger.error('Delete location error:', error);
-        res.status(500).json({ error: 'Failed to delete location' });
+    if (!location) {
+        throw new NotFoundError('Location not found');
     }
-};
+
+    await prisma.location.delete({
+        where: { id },
+    });
+
+    // Create notification
+    try {
+        await createNotification({
+            type: 'location_delete',
+            title: 'Zone Supprimée',
+            message: `Zone supprimée : ${location.name}`,
+            icon: 'MapPin',
+            link: '/admin',
+            userId: null,
+            metadata: { locationId: id },
+        });
+    } catch (notifError) {
+        // notification failures should not abort location delete
+    }
+
+    res.json({ message: 'Location deleted successfully' });
+});
 
 // Update location order (bulk)
-export const updateLocationOrder = async (req: AuthRequest, res: Response): Promise<void> => {
-    try {
-        const { updates }: { updates: { id: string; displayOrder: number }[] } = req.body;
+export const updateLocationOrder = asyncHandler(async (req: AuthRequest & { body: ReorderLocationDTO }, res: Response): Promise<void> => {
+    const { updates } = req.body;
 
-        if (!updates || !Array.isArray(updates)) {
-            res.status(400).json({ error: 'Invalid updates format' });
-            return;
-        }
-
-        // Only admins can reorder properties
-        if (req.user?.role !== 'admin') {
-            res.status(403).json({ error: 'Only admins can reorder locations' });
-            return;
-        }
-
-        // Use transaction for atomic bulk update
-        await prisma.$transaction(
-            updates.map(({ id, displayOrder }) =>
-                prisma.location.update({
-                    where: { id },
-                    data: { displayOrder }
-                })
-            )
-        );
-
-        res.json({ success: true, message: 'Location order updated successfully' });
-    } catch (error) {
-        logger.error('Update location order error:', error);
-        res.status(500).json({ error: 'Failed to update location order' });
+    if (!updates || !Array.isArray(updates)) {
+        throw new BadRequestError('Invalid updates format');
     }
-};
+
+    // Only admins can reorder properties
+    if (req.user?.role !== 'admin') {
+        throw new ForbiddenError('Only admins can reorder locations');
+    }
+
+    // Use transaction for atomic bulk update
+    await prisma.$transaction(
+        updates.map(({ id, displayOrder }) =>
+            prisma.location.update({
+                where: { id },
+                data: { displayOrder }
+            })
+        )
+    );
+
+    res.json({ success: true, message: 'Location order updated successfully' });
+});
